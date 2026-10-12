@@ -1,7 +1,9 @@
 // main.cjs
 const path = require('path');
-const { app, BrowserWindow, ipcMain, desktopCapturer, session } = require('electron');
+const { app, BrowserWindow, ipcMain, desktopCapturer, session, nativeImage } = require('electron');
 const config = require('./config.json');
+const iconConfig = require('./src/config/appIcon.json');
+const { roundIconCorners } = require('./iconRounding.cjs');
 
 
 
@@ -10,7 +12,51 @@ const LOWEST_POSSIBLE_OPACITY = 0.004;
 const APP_TITLE = 'Hallu';
 const WINDOW_DEFAULTS = { width: 1280, height: 800 };
 const WIN_PRELOAD = path.join(__dirname, 'preload.cjs');
-const WIN_ICON = path.join(__dirname, 'src', 'assets', 'icons', 'app', 'hallu_day.ico');
+const ICON_DIR = path.join(__dirname, 'src', 'assets', 'icons', 'app');
+const DAY_START_HOUR = 7;
+const NIGHT_START_HOUR = 19;
+const ICON_CHECK_INTERVAL_MS = 60 * 1000;
+const TASKBAR_ICON_SIZE_PX = 256;
+const roundedIconCache = new Map();
+
+function isNightTime(date = new Date()) {
+  const hour = date.getHours();
+  return hour >= NIGHT_START_HOUR || hour < DAY_START_HOUR;
+}
+
+// Radius comes from src/config/appIcon.json and scales with the icon size.
+function getRoundedIcon(variant) {
+  if (roundedIconCache.has(variant)) return roundedIconCache.get(variant);
+
+  const source = nativeImage.createFromPath(path.join(ICON_DIR, `hallu_${variant}.png`));
+  let icon = path.join(ICON_DIR, `hallu_${variant}.ico`);
+  if (!source.isEmpty()) {
+    const size = TASKBAR_ICON_SIZE_PX;
+    const radius = (iconConfig.cornerRadiusPx * size) / iconConfig.baseSizePx;
+    const resized = source.resize({ width: size, height: size, quality: 'best' });
+    icon = nativeImage.createFromBitmap(roundIconCorners(resized.toBitmap(), size, radius), { width: size, height: size });
+  }
+  roundedIconCache.set(variant, icon);
+  return icon;
+}
+
+function getWindowIcon() {
+  return getRoundedIcon(isNightTime() ? 'night' : 'day');
+}
+
+// Re-checks the clock periodically so the taskbar icon flips at 7am/7pm
+// while the app is running (and after the PC wakes from sleep).
+function startIconScheduler() {
+  let currentIcon = getWindowIcon();
+  setInterval(() => {
+    const nextIcon = getWindowIcon();
+    if (nextIcon === currentIcon) return;
+    currentIcon = nextIcon;
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.setIcon(nextIcon);
+    }
+  }, ICON_CHECK_INTERVAL_MS);
+}
 const MAXIMIZE_DELAY_MS = 1;
 const IS_DEVELOPMENT = process.env.ELECTRON_DEV === 'true';
 // Temporarily default-on for diagnosis; set DRAG_DIAG=false to silence.
@@ -106,7 +152,7 @@ class WindowManager {
       frame: false,
       thickFrame: false,
       skipTaskbar: false,
-      icon: WIN_ICON,
+      icon: getWindowIcon(),
       opacity,
       webPreferences: WEB_PREFERENCES,
     });
@@ -155,7 +201,7 @@ class WindowManager {
       skipTaskbar: false,
       transparent: false, //making this true kills the fps
       backgroundColor: '#00000000',
-      icon: WIN_ICON,
+      icon: getWindowIcon(),
       show: true,
       parent: this.appWindow,   // Locks Z-order: child always on top of parent
       focusable: false,          // Prevents overlay from stealing keyboard focus
@@ -195,7 +241,7 @@ class WindowManager {
       frame: false,
       skipTaskbar: false,
       opacity: 1,
-      icon: WIN_ICON,
+      icon: getWindowIcon(),
       webPreferences: WEB_PREFERENCES,
     });
     this.loadWindow(this.appWindow, '', APP_ENTRY);
@@ -656,4 +702,5 @@ app.whenReady().then(async () => {
   console.log('main.cjs invoked');
   const manager = new WindowManager();
   await manager.init();
+  startIconScheduler();
 });

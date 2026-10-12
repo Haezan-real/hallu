@@ -1,6 +1,5 @@
 //src/App.tsx
 import { useState, useCallback, useEffect, useRef } from 'react';
-import halluDayIcon from './assets/icons/app/hallu_day.png';
 import MediaPool from './components/MediaPool';
 
 import Viewer from './components/Viewer';
@@ -21,6 +20,8 @@ import {
 import { HistoryProvider, useHistory, type AppSnapshot } from './state/history';
 import { SETTINGS_CHANGED_EVENT, getSettingsChangedDetail } from './state/settingsEvents';
 import { useLayoutSettings } from './hooks/useLayoutSettings';
+import { useDayNightIcon } from './hooks/useDayNightIcon';
+import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from './utils/appIcon';
 import { DEFAULT_SETTINGS } from './state/settingsDefaults';
 import { useExportJob } from './hooks/useExportJob';
 import { useTimelineEditor } from './hooks/useTimelineEditor';
@@ -677,6 +678,7 @@ function AppContent() {
   } = useTimelineEditor({ clips, mediaItems, setClips, setSelectedIds, history, snapshot });
 
   const { exportVideo: handleExport } = useExportJob({ clips, mediaItems, totalFrames });
+  const appIcon = useDayNightIcon();
 
   const rollClip = rollClipId ? clips.find(c => c.id === rollClipId) ?? null : null;
   const rollMedia = rollClip ? mediaItems.get(rollClip.mediaId) ?? null : null;
@@ -718,7 +720,7 @@ function AppContent() {
       )}
       <header className="app-header" onPointerDown={handleWindowDragStart}>
         <div className="app-logo">
-          <img src={halluDayIcon} alt="Hallu" style={{ width: 22, height: 22, transform: 'translateY(0px)', }} />
+          <img src={appIcon} alt="Hallu" style={{ width: ICON_BASE_SIZE_PX, height: ICON_BASE_SIZE_PX, borderRadius: ICON_CORNER_RADIUS_PX, transform: 'translateY(0px)', }} />
         
 
           {/*Hallu title*/}
