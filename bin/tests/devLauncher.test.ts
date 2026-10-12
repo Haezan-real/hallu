@@ -3,14 +3,14 @@ import { spawnSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-describe('hallu_editor_dev.bat launcher', () => {
+describe('hallu_editor_dev launcher', () => {
   const rootDir = path.resolve(__dirname, '../..');
   const batPath = path.join(rootDir, 'bin', 'hallu_editor_dev.bat');
-  const lnkPath = path.join(rootDir, 'hallu_editor_dev.lnk');
+  const exePath = path.join(rootDir, 'hallu_editor_dev.exe');
 
-  it('exists in the bin folder and has a shortcut at root', () => {
+  it('exists in the bin folder and has a compiled .exe launcher at root', () => {
     expect(fs.existsSync(batPath)).toBe(true);
-    expect(fs.existsSync(lnkPath)).toBe(true);
+    expect(fs.existsSync(exePath)).toBe(true);
   });
 
   it('fails with an actionable error message when launched without the Vite server', async () => {
