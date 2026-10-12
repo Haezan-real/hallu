@@ -44,16 +44,16 @@
   },
   "build": {
     "appId": "com.hallu.editor",
-    "icon": "src/assets/icons/app/hallu_day.ico",
+    "icon": "../assets/icons/app/hallu_day.ico",
     "win": {
-      "icon": "src/assets/icons/app/hallu_day.ico",
+      "icon": "../assets/icons/app/hallu_day.ico",
       "target": "nsis"
     },
     "mac": {
-      "icon": "src/assets/icons/app/hallu_day.ico"
+      "icon": "../assets/icons/app/hallu_day.ico"
     },
     "linux": {
-      "icon": "src/assets/icons/app/hallu_day.ico"
+      "icon": "../assets/icons/app/hallu_day.ico"
     }
   }
 }

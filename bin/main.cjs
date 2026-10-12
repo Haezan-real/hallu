@@ -12,7 +12,7 @@ const LOWEST_POSSIBLE_OPACITY = 0.004;
 const APP_TITLE = 'Hallu';
 const WINDOW_DEFAULTS = { width: 1280, height: 800 };
 const WIN_PRELOAD = path.join(__dirname, 'preload.cjs');
-const ICON_DIR = path.join(__dirname, 'src', 'assets', 'icons', 'app');
+const ICON_DIR = path.join(__dirname, '..', 'assets', 'icons', 'app');
 const DAY_START_HOUR = 7;
 const NIGHT_START_HOUR = 19;
 const ICON_CHECK_INTERVAL_MS = 60 * 1000;
@@ -62,8 +62,8 @@ const IS_DEVELOPMENT = process.env.ELECTRON_DEV === 'true';
 // Temporarily default-on for diagnosis; set DRAG_DIAG=false to silence.
 const DIAG = process.env.DRAG_DIAG !== 'false';
 const DEV_SERVER_URL = 'http://localhost:5173';
-const APP_ENTRY = path.join(__dirname, 'dist/index.html');
-const SHADER_ENTRY = path.join(__dirname, 'dist/shader_window.html');
+const APP_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
+const SHADER_ENTRY = path.join(__dirname, '..', 'dist', 'shader_window.html');
 
 // ─── Config validation with defaults ─────────────────────────────────────────
 function loadConfig() {

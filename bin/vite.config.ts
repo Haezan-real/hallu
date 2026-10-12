@@ -6,10 +6,22 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  resolve: {
+    alias: {
+      '@assets': resolve(__dirname, '../assets'),
+    },
+  },
+  server: {
+    fs: {
+      allow: ['..'],
+    },
+  },
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
   build: {
+    outDir: resolve(__dirname, '../dist'),
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),

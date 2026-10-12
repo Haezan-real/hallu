@@ -20,6 +20,8 @@ dist-ssr
 *.aider
 .continue
 .*
+!.gitkeep
+!.gitignore
 
 .vscode/*
 !.vscode/extensions.json

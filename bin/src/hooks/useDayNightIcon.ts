@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import dayIcon from '../assets/icons/app/hallu_day.png';
-import nightIcon from '../assets/icons/app/hallu_night.png';
+import dayIcon from '@assets/icons/app/hallu_day.png';
+import nightIcon from '@assets/icons/app/hallu_night.png';
 import { renderRoundedIcon } from '../utils/appIcon';
 
 const DAY_START_HOUR = 7;
