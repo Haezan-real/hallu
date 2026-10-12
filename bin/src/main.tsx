@@ -4,29 +4,36 @@ import App from './App.tsx';
 import './index.css';
 import { DEFAULT_SETTINGS } from './state/settingsDefaults';
 import { migrateLegacyStorage } from './state/storageMigration';
+import { initUserSettingsSync } from './state/userSettingsSync';
 
 //src/main.tsx
 
 migrateLegacyStorage();
 
-if (window.electronAPI?.isCustomCursorEnabled()) {
-  document.documentElement.style.cursor = 'none';
+async function start() {
+  await initUserSettingsSync();
+
+  if (window.electronAPI?.isCustomCursorEnabled()) {
+    document.documentElement.style.cursor = 'none';
+  }
+
+  // Initialize theme transition settings from localStorage before the app renders
+  try {
+    const saved = window.localStorage.getItem('hallu.settings.colorTransitionDuration');
+    if (saved !== null) {
+      const duration = Number(saved);
+      document.documentElement.style.setProperty('--theme-transition-duration', `${duration}ms`);
+    } else {
+      document.documentElement.style.setProperty('--theme-transition-duration', `${DEFAULT_SETTINGS.colorTransitionDuration}ms`);
+    }
+    document.documentElement.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.4, 0, 0.2, 1)');
+  } catch {}
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
 }
 
-// Initialize theme transition settings from localStorage before the app renders
-try {
-  const saved = window.localStorage.getItem('hallu.settings.colorTransitionDuration');
-  if (saved !== null) {
-    const duration = Number(saved);
-    document.documentElement.style.setProperty('--theme-transition-duration', `${duration}ms`);
-  } else {
-    document.documentElement.style.setProperty('--theme-transition-duration', `${DEFAULT_SETTINGS.colorTransitionDuration}ms`);
-  }
-  document.documentElement.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.4, 0, 0.2, 1)');
-} catch {}
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+start();

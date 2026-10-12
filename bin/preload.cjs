@@ -115,4 +115,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWindowSourceId: () => ipcRenderer.invoke('get-window-source-id'),
   getWindowSourceDesktopId: () => ipcRenderer.invoke('get-window-source-desktop-id'),
   notifyShaderWindowReady: () => ipcRenderer.send('shader-window-ready'),
+  loadUserSettings: () => ipcRenderer.invoke('load-user-settings'),
+  saveUserSettings: (data) => ipcRenderer.send('save-user-settings', data),
+  saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
 });

@@ -1,0 +1,55 @@
+{
+  "hallu.settings.torusDuration": 300,
+  "hallu.settings.torusHoverScale": 1.08,
+  "hallu.settings.executeHeaderButtonsOnDrag": true,
+  "hallu.settings.colorTransitionDuration": 0,
+  "hallu.settings.torusScrollingDisabled": "whole torus menu",
+  "hallu.settings.elevatedPanelDarkenAmount": 50,
+  "hallu.settings.zoomEpicenter": "playneedle",
+  "hallu.layout.leftWidthPct": 42.7706147134653,
+  "hallu.settings.elevatedPanelBlurAmount": 0,
+  "hallu.settings.playneedle_j": 0.049,
+  "hallu.settings.playneedle_h_r": 1,
+  "hallu.modal.styles.pageState": {
+    "stylePage": "vynelox-built-in-folder",
+    "activeTheme": "cyberpunk"
+  },
+  "hallu.settings.scrollAmount": 100,
+  "hallu.layout.timelineHeightPct": 42.797078566381664,
+  "hallu.settings.playneedle_t": 0.092,
+  "hallu.layout.leftCollapsed": false,
+  "hallu.settings.includeResizeInUndo": true,
+  "hallu.settings.playheadTopPercent": 0,
+  "hallu.styles.activeTheme": "cyberpunk",
+  "hallu.settings.allowEditsWhenMenuOpen": true,
+  "hallu.settings.scrollZoomAmount": 25,
+  "hallu.settings.scrollZoomSmoothness": 70,
+  "hallu.settings.viewerControlsType": "compact",
+  "hallu.settings.allowMultipleMenus": true,
+  "hallu.settings.playneedle_k": 103,
+  "hallu.settings.playneedle_width": 24.7,
+  "hallu.settings.playneedle_s": 16.4,
+  "hallu.settings.scrollSmooth": 50,
+  "hallu.settings.torusSizeGraph": [
+    {
+      "time": 0,
+      "size": 0
+    },
+    {
+      "time": 1,
+      "size": 1
+    }
+  ],
+  "hallu.settings.playneedleIconHorizontalStretch": 0.4,
+  "hallu.settings.torusSegmentHandleValues": [
+    0.8
+  ],
+  "hallu.settings.torusDelay": 81,
+  "hallu.settings.timecodePanel": "both",
+  "hallu.settings.guiScale": 100,
+  "hallu.shaders.active": "haezans_shader",
+  "hallu.settings.playneedle_v_o": 0.4,
+  "hallu.settings.draggableHeaderButtons": true,
+  "hallu.modal.settings.pageState": "components",
+  "hallu.settings.playneedle_h_b": 0.8
+}

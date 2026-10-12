@@ -4,6 +4,7 @@ const { app, BrowserWindow, ipcMain, desktopCapturer, session, nativeImage } = r
 const config = require('./config.json');
 const iconConfig = require('./src/config/appIcon.json');
 const { roundIconCorners } = require('./iconRounding.cjs');
+const { registerSettingsStorageHandlers } = require('./settingsStorage.cjs');
 
 
 
@@ -635,6 +636,8 @@ class WindowManager {
       // This is a stub — implement if needed for getUserMedia capture
       return null;
     });
+
+    registerSettingsStorageHandlers();
 
     console.log('✅ IPC handlers registered');
   }

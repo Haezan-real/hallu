@@ -23,6 +23,7 @@ hallu/
 │       └── SFX/              # Sound effects
 ├── dist/                     # Compiled frontend output (from Vite build)
 ├── user/                     # User-customizable content
+│   ├── settings.json         # Human-readable settings, themes, and keybinds
 │   ├── shaders/              # Custom user shaders
 │   ├── projects/             # Saved project files
 │   └── talismans/            # Custom talismans

@@ -27,6 +27,9 @@ export interface ElectronAPI {
   onApplyShader: (callback: (shaderName: string) => void) => () => void;
   onShaderColorsUpdate: (callback: (colors: number[]) => void) => () => void;
   onAppDragState: (callback: (dragging: boolean) => void) => () => void;
+  loadUserSettings: () => Promise<Record<string, unknown> | null>;
+  saveUserSettings: (data: Record<string, unknown>) => void;
+  saveUserSettingsSync: (data: Record<string, unknown>) => void;
 }
 
 declare global {
