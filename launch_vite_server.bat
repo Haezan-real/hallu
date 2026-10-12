@@ -14,7 +14,7 @@ if %errorlevel% equ 0 (
     echo  is using port 5173.
     echo ======================================================================
     echo.
-    choice /C YN /M "Do you want to continue and run a duplicate server"
+    choice /C YN /N /M "Do you want to continue and run a duplicate server? [Y/N] "
     if errorlevel 2 (
         echo.
         echo Launch cancelled.

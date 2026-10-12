@@ -62,6 +62,7 @@ describe('launch_vite_server.bat launcher', () => {
       const output = (result.stdout || '') + (result.stderr || '');
       expect(output).toContain('Port 5173 is already in use');
       expect(output).toContain('duplicate server');
+      expect(output).toContain('[Y/N]');
       expect(output).toContain('Launch cancelled');
     } finally {
       await new Promise<void>((resolve) => mockServer.close(() => resolve()));
