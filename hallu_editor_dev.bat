@@ -3,42 +3,26 @@ setlocal
 title Hallu Dev Launcher
 cd /d "%~dp0bin"
 
-echo ========================================================
-echo  Launching Hallu (Developer Mode)
-echo ========================================================
-echo.
-
-if not exist "node_modules\" (
-    echo [INFO] node_modules not found in bin. Installing dependencies...
-    call npm.cmd install
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to install dependencies.
-        pause
-        exit /b %errorlevel%
-    )
-)
-
-echo [1/3] Building frontend assets...
-call npm.cmd run build
+:: Check if the Vite dev server is running on port 5173
+node -e "const net=require('net');const s=net.createConnection(5173,'127.0.0.1',()=>{s.end();process.exit(0);});s.on('error',()=>process.exit(1));s.setTimeout(1000,()=>{s.destroy();process.exit(1);});" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Build failed! Check the errors above.
-    pause
-    exit /b %errorlevel%
+    echo.
+    echo ======================================================================
+    echo  [ERROR] Vite development server is not running!
+    echo.
+    echo  hallu_editor_dev requires the Vite dev server to be running before
+    echo  launching Electron in developer mode.
+    echo.
+    echo  ACTIONABLE NEXT STEP:
+    echo    1. Run 'launch_vite_server.bat' to start the Vite dev server.
+    echo    2. Wait until the Vite server displays "Local: http://localhost:5173/".
+    echo    3. Run 'hallu_editor_dev.bat' again to open Hallu editor.
+    echo ======================================================================
+    echo.
+    if "%HALLU_NO_PAUSE%"=="" pause
+    exit /b 1
 )
 
-echo.
-echo [2/3] Starting Vite dev server in background...
-start /min "Hallu_Vite_Server" cmd.exe /c "npm.cmd run dev -- --host 0.0.0.0"
-
-:: Wait 2 seconds for Vite to initialize
-timeout /t 2 /nobreak >nul
-
-echo.
-echo [3/3] Launching Hallu Electron...
 set ELECTRON_DEV=true
 call npx.cmd electron main.cjs
 
-echo.
-echo Closing Vite dev server...
-taskkill /fi "WINDOWTITLE eq Hallu_Vite_Server*" /t /f >nul 2>&1
-echo Done.

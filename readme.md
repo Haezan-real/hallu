@@ -2,8 +2,8 @@
 
 ## Quick Start (Batch Scripts)
 
-- **`hallu_editor_dev.bat`**: One-click developer launcher. Builds assets, starts the Vite server on `0.0.0.0:5173`, and opens the Electron app with live dev server reload.
-- **`build_vite_server.bat`**: Builds frontend assets into `dist/` and runs the Vite server (`npm run dev -- --host 0.0.0.0`).
+- **`launch_vite_server.bat`**: Starts the Vite dev server on `0.0.0.0:5173` (`npm run dev -- --host 0.0.0.0`). Run this first.
+- **`hallu_editor_dev.bat`**: Launches Electron in dev mode (`npx electron main.cjs`). Checks that the Vite server is running first, and shows an error with next steps if not.
 - **`npm_install.bat`**: Installs dependencies inside `bin/`.
 
 ---
@@ -12,8 +12,8 @@
 
 ```text
 hallu/
-├── hallu_editor_dev.bat      # One-click dev launcher
-├── build_vite_server.bat     # Build + run Vite dev server
+├── launch_vite_server.bat    # Starts Vite dev server (run this first)
+├── hallu_editor_dev.bat      # Launches Electron dev mode (npx electron main.cjs)
 ├── npm_install.bat           # Run npm install inside bin/
 ├── readme.md                 # Project documentation
 ├── assets/                   # Shared media assets (icons, sounds)
@@ -40,16 +40,6 @@ hallu/
     └── config.json           # Runtime app configuration
 ```
 
----
 
-## IMPORTANT NOTES
-
-### Shaders
-- The editor will not work if `base_window_transparency` is less than `0.004` in `bin/config.json`.
-- When coding a shader, make sure to swap the blue and red channels in the output color (WebGL uses BGRA, GLSL uses RGBA).
-
-### Enshittify & Downscale
-- `downscale_factor` won't downscale if `enshittify` is disabled.
-- Enabling `enshittify` makes the whole image look shit, even with no downscale.
 
 
