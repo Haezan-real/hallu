@@ -5,10 +5,12 @@ import fs from 'fs';
 
 describe('hallu_editor_dev.bat launcher', () => {
   const rootDir = path.resolve(__dirname, '../..');
-  const batPath = path.join(rootDir, 'hallu_editor_dev.bat');
+  const batPath = path.join(rootDir, 'bin', 'hallu_editor_dev.bat');
+  const lnkPath = path.join(rootDir, 'hallu_editor_dev.lnk');
 
-  it('exists at the project root', () => {
+  it('exists in the bin folder and has a shortcut at root', () => {
     expect(fs.existsSync(batPath)).toBe(true);
+    expect(fs.existsSync(lnkPath)).toBe(true);
   });
 
   it('fails with an actionable error message when launched without the Vite server', async () => {
@@ -35,7 +37,7 @@ describe('hallu_editor_dev.bat launcher', () => {
     }
 
     const result = spawnSync('cmd.exe', ['/c', 'hallu_editor_dev.bat'], {
-      cwd: rootDir,
+      cwd: path.join(rootDir, 'bin'),
       env: {
         ...process.env,
         HALLU_NO_PAUSE: '1',

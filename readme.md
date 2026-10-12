@@ -3,7 +3,8 @@
 ## Quick Start (Batch Scripts)
 
 - **`launch_vite_server.bat`**: Starts the Vite dev server on `0.0.0.0:5173` (`npm run dev -- --host 0.0.0.0`). Run this first.
-- **`hallu_editor_dev.bat`**: Launches Electron in dev mode (`npx electron main.cjs`). Checks that the Vite server is running first, and shows an error with next steps if not.
+- **`hallu_editor_dev.lnk`**: One-click desktop shortcut with custom icon launching `bin/hallu_editor_dev.bat`.
+- **`bin/hallu_editor_dev.bat`**: Launches Electron in dev mode (`npx electron main.cjs`). Checks that the Vite server is running first, and shows an error with next steps if not.
 - **`npm_install.bat`**: Installs dependencies inside `bin/`.
 
 ---
@@ -12,8 +13,8 @@
 
 ```text
 hallu/
+├── hallu_editor_dev.lnk      # One-click shortcut with Hallu Night icon
 ├── launch_vite_server.bat    # Starts Vite dev server (run this first)
-├── hallu_editor_dev.bat      # Launches Electron dev mode (npx electron main.cjs)
 ├── npm_install.bat           # Run npm install inside bin/
 ├── readme.md                 # Project documentation
 ├── assets/                   # Shared media assets (icons, sounds)
@@ -28,6 +29,7 @@ hallu/
 │   ├── projects/             # Saved project files
 │   └── talismans/            # Custom talismans
 └── bin/                      # Engine source, tests, and build tooling
+    ├── hallu_editor_dev.bat  # Dev launcher batch script
     ├── node_modules/         # Dependencies
     ├── src/                  # React + TypeScript source code
     ├── tests/                # Vitest test suite

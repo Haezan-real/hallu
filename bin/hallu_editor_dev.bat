@@ -1,7 +1,7 @@
 @echo off
 setlocal
 title Hallu Dev Launcher
-cd /d "%~dp0bin"
+cd /d "%~dp0"
 
 :: Check if the Vite dev server is running on port 5173
 node -e "const net=require('net');const s=net.createConnection(5173,'127.0.0.1',()=>{s.end();process.exit(0);});s.on('error',()=>process.exit(1));s.setTimeout(1000,()=>{s.destroy();process.exit(1);});" >nul 2>&1
