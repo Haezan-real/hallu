@@ -532,7 +532,7 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
   };
 
   const getGuiScale = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.guiScale'); return v ? Number(v) / 100 : 1; } catch { return 1; }
+    try { const v = window.localStorage.getItem('hallu.settings.guiScale'); return v ? Number(v) / 100 : 1; } catch { return 1; }
   };
 
   const onDragPointerDown = (e: React.PointerEvent) => {

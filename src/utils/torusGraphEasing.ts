@@ -15,7 +15,7 @@ export function evaluateGraphWithHandles(
 
 export function getSavedSegmentHandleValues(): number[] {
   try {
-    const raw = window.localStorage.getItem('juicecut.settings.torusSegmentHandleValues');
+    const raw = window.localStorage.getItem('hallu.settings.torusSegmentHandleValues');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -28,6 +28,6 @@ export function getSavedSegmentHandleValues(): number[] {
 
 export function saveSegmentHandleValues(values: number[]): void {
   try {
-    window.localStorage.setItem('juicecut.settings.torusSegmentHandleValues', JSON.stringify(values));
+    window.localStorage.setItem('hallu.settings.torusSegmentHandleValues', JSON.stringify(values));
   } catch {}
 }

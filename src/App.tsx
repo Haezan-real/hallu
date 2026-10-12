@@ -196,7 +196,7 @@ function AppContent() {
   const [stylePage, setStylePage] = useState<string | null>(null);
   const [allowEditsWhenMenuOpen, setAllowEditsWhenMenuOpen] = useState(() => {
     try {
-      const value = window.localStorage.getItem('juicecut.settings.allowEditsWhenMenuOpen');
+      const value = window.localStorage.getItem('hallu.settings.allowEditsWhenMenuOpen');
       return value === null ? DEFAULT_SETTINGS.allowEditsWhenMenuOpen : value === 'true';
     } catch {
       return DEFAULT_SETTINGS.allowEditsWhenMenuOpen;
@@ -235,8 +235,8 @@ function AppContent() {
         window.electronAPI?.requestShaderChange(detail.shaderName);
       }
     };
-    window.addEventListener('juicecut-shader-change', handler);
-    return () => window.removeEventListener('juicecut-shader-change', handler);
+    window.addEventListener('hallu-shader-change', handler);
+    return () => window.removeEventListener('hallu-shader-change', handler);
   }, []);
 
   useEffect(() => {
@@ -263,8 +263,8 @@ function AppContent() {
   // Apply saved theme on mount
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem('juicecut.styles.activeTheme');
-      if (!saved) window.localStorage.setItem('juicecut.styles.activeTheme', 'og-dark');
+      const saved = window.localStorage.getItem('hallu.styles.activeTheme');
+      if (!saved) window.localStorage.setItem('hallu.styles.activeTheme', 'og-dark');
       applyThemeToDocument(saved || 'og-dark');
     } catch {}
   }, []);
@@ -272,7 +272,7 @@ function AppContent() {
   // Apply GUI scale on mount
   useEffect(() => {
     try {
-      const v = window.localStorage.getItem('juicecut.settings.guiScale');
+      const v = window.localStorage.getItem('hallu.settings.guiScale');
       const scale = v ? Number(v) / 100 : DEFAULT_SETTINGS.guiScale / 100;
       document.documentElement.style.setProperty('--gui-scale', scale.toString());
     } catch {}
@@ -353,18 +353,18 @@ function AppContent() {
       setTimeout(sendThemeColorsToShader, 50);
     };
     window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
-    window.addEventListener('juicecut.theme-changed', handler);
+    window.addEventListener('hallu.theme-changed', handler);
 
     return () => {
       window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
-      window.removeEventListener('juicecut.theme-changed', handler);
+      window.removeEventListener('hallu.theme-changed', handler);
     };
   }, []);
 
   // Apply saved elevatedPanelDarkenAmount on mount
   useEffect(() => {
     try {
-      const v = window.localStorage.getItem('juicecut.settings.elevatedPanelDarkenAmount');
+      const v = window.localStorage.getItem('hallu.settings.elevatedPanelDarkenAmount');
       if (v) {
         const pct = Number(v);
         if (!Number.isNaN(pct) && pct >= 0 && pct <= 100) {
@@ -386,7 +386,7 @@ function AppContent() {
   // Apply saved elevatedPanelBlurAmount on mount
   useEffect(() => {
     try {
-      const v = window.localStorage.getItem('juicecut.settings.elevatedPanelBlurAmount');
+      const v = window.localStorage.getItem('hallu.settings.elevatedPanelBlurAmount');
       if (v) {
         const pct = Number(v);
         if (!Number.isNaN(pct) && pct >= 0 && pct <= 100) {
@@ -472,7 +472,7 @@ function AppContent() {
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
   }, []);
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.includeResizeInUndo', includeResizeInUndo ? 'true' : 'false'); } catch {}
+    try { window.localStorage.setItem('hallu.settings.includeResizeInUndo', includeResizeInUndo ? 'true' : 'false'); } catch {}
   }, [includeResizeInUndo]);
 
   useEffect(() => {
@@ -615,7 +615,7 @@ function AppContent() {
         // Skip if TorusMenuEditor is open — it handles the shortcut itself
         if (modalManager.isOpen('torusMenuEditor')) return;
         // Dispatch event to toggle torus menu
-        window.dispatchEvent(new CustomEvent('juicecut-torus-toggle'));
+        window.dispatchEvent(new CustomEvent('hallu-torus-toggle'));
       }
     };
     window.addEventListener('keydown', handler, true);
@@ -718,10 +718,10 @@ function AppContent() {
       )}
       <header className="app-header" onPointerDown={handleWindowDragStart}>
         <div className="app-logo">
-          <img src={halluDayIcon} alt="67 editing software" style={{ width: 22, height: 22, transform: 'translateY(0px)', }} />
+          <img src={halluDayIcon} alt="Hallu" style={{ width: 22, height: 22, transform: 'translateY(0px)', }} />
         
 
-          {/*67 editing software title*/}
+          {/*Hallu title*/}
           <span style={{
             fontSize: HEADER_FONT_SIZE,
             color: 'var(--text-secondary)',
@@ -730,7 +730,7 @@ function AppContent() {
             transform: 'translateY(1px)',
             position: 'relative',
             minWidth: '200px',      // 🔥 Reserve space for "fps: 999"
-            }}>67 editing software | fps: {shaderFps ?? '--'}</span>
+            }}>Hallu | fps: {shaderFps ?? '--'}</span>
           {/* fps counter title */}
         </div>
 

@@ -5,4 +5,4 @@ export {
 	MAX_PLAYNEEDLE_WIDTH,
 } from '../state/settingsDefaults';
 
-export const PLAYNEEDLE_WIDTH_STORAGE_KEY = 'juicecut.settings.playneedle_width';
+export const PLAYNEEDLE_WIDTH_STORAGE_KEY = 'hallu.settings.playneedle_width';

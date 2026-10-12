@@ -45,7 +45,7 @@ function getInitialSettingsTab(initialPageData: unknown): SettingsTab {
   if (isSettingsTab(requestedTab)) return requestedTab;
 
   try {
-    const savedTab = window.localStorage.getItem('juicecut.modal.settings.pageState');
+    const savedTab = window.localStorage.getItem('hallu.modal.settings.pageState');
     const parsedTab: unknown = savedTab ? JSON.parse(savedTab) : null;
     if (isSettingsTab(parsedTab)) return parsedTab;
   } catch {}
@@ -386,7 +386,7 @@ function SettingsShell({ onClose, initialPageData, initialScroll }: Props) {
 
 export function OpenSettings(pageData?: any, scroll?: number | null) {
   if (document.documentElement && !document.documentElement.style.getPropertyValue('--theme-transition-duration')) {
-    const duration = (window as any).juicecut?.settings?.colorTransitionDuration || 0;
+    const duration = (window as any).hallu?.settings?.colorTransitionDuration || 0;
     document.documentElement.style.setProperty('--theme-transition-duration', `${duration}ms`);
     document.documentElement.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.4, 0, 0.2, 1)');
   }

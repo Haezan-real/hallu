@@ -1,4 +1,4 @@
-export const SETTINGS_CHANGED_EVENT = 'juicecut.settings-changed';
+export const SETTINGS_CHANGED_EVENT = 'hallu.settings-changed';
 
 //src/state/settingsEvents.ts
 

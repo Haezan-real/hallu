@@ -32,7 +32,7 @@ const DEFAULT_VALUES = {
 
 function getSavedPnT(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_t');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_t');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 0.5) return n; }
   } catch {}
   return DEFAULT_VALUES.pnT;
@@ -40,7 +40,7 @@ function getSavedPnT(): number {
 
 function getSavedPnJ(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_j');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_j');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= -0.05 && n <= 0.25) return n; }
   } catch {}
   return DEFAULT_VALUES.pnJ;
@@ -48,7 +48,7 @@ function getSavedPnJ(): number {
 
 function getSavedPnK(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_k');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_k');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 10 && n <= 1000) return n; }
   } catch {}
   return DEFAULT_VALUES.pnK;
@@ -56,7 +56,7 @@ function getSavedPnK(): number {
 
 function getSavedPnS(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_s');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_s');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 10 && n <= 50) return n; }
   } catch {}
   return DEFAULT_VALUES.pnS;
@@ -64,7 +64,7 @@ function getSavedPnS(): number {
 
 function getSavedPnVo(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_v_o');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_v_o');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 1) return n; }
   } catch {}
   return DEFAULT_VALUES.pnVo;
@@ -72,7 +72,7 @@ function getSavedPnVo(): number {
 
 function getSavedPnHb(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_h_b');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_h_b');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0.5 && n <= 1) return n; }
   } catch {}
   return DEFAULT_VALUES.pnHb;
@@ -80,7 +80,7 @@ function getSavedPnHb(): number {
 
 function getSavedPnHr(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.playneedle_h_r');
+    const v = window.localStorage.getItem('hallu.settings.playneedle_h_r');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 1) return n; }
   } catch {}
   return DEFAULT_VALUES.pnHr;
@@ -142,31 +142,31 @@ export default function PlayneedleEditorModal({ onClose, onBack }: PlayneedleEdi
   const [pnWidth, setPnWidth] = useState<number>(getSavedPnWidth);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_t', String(pnT)); dispatchSettingsChanged('playneedle_t', pnT); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_t', String(pnT)); dispatchSettingsChanged('playneedle_t', pnT); } catch {}
   }, [pnT]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_j', String(pnJ)); dispatchSettingsChanged('playneedle_j', pnJ); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_j', String(pnJ)); dispatchSettingsChanged('playneedle_j', pnJ); } catch {}
   }, [pnJ]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_k', String(pnK)); dispatchSettingsChanged('playneedle_k', pnK); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_k', String(pnK)); dispatchSettingsChanged('playneedle_k', pnK); } catch {}
   }, [pnK]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_s', String(pnS)); dispatchSettingsChanged('playneedle_s', pnS); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_s', String(pnS)); dispatchSettingsChanged('playneedle_s', pnS); } catch {}
   }, [pnS]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_v_o', String(pnVo)); dispatchSettingsChanged('playneedle_v_o', pnVo); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_v_o', String(pnVo)); dispatchSettingsChanged('playneedle_v_o', pnVo); } catch {}
   }, [pnVo]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_h_b', String(pnHb)); dispatchSettingsChanged('playneedle_h_b', pnHb); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_h_b', String(pnHb)); dispatchSettingsChanged('playneedle_h_b', pnHb); } catch {}
   }, [pnHb]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playneedle_h_r', String(pnHr)); dispatchSettingsChanged('playneedle_h_r', pnHr); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playneedle_h_r', String(pnHr)); dispatchSettingsChanged('playneedle_h_r', pnHr); } catch {}
   }, [pnHr]);
 
   // Persist width changes

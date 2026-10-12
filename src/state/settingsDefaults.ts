@@ -79,4 +79,4 @@ export const DEFAULT_TORUS_SETTINGS = {
 export const DEFAULT_PLAYNEEDLE_WIDTH = 20;
 export const MIN_PLAYNEEDLE_WIDTH = 0;
 export const MAX_PLAYNEEDLE_WIDTH = 100;
-export const PLAYNEEDLE_WIDTH_STORAGE_KEY = 'juicecut.settings.playneedle_width';
+export const PLAYNEEDLE_WIDTH_STORAGE_KEY = 'hallu.settings.playneedle_width';

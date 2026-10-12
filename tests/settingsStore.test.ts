@@ -4,8 +4,8 @@ import { SETTINGS_SCHEMA, useSettings } from '../src/state/settingsStore';
 
 describe('settings schema', () => {
   it('falls back to defaults and clamps invalid persisted numbers', () => {
-    window.localStorage.setItem('juicecut.settings.guiScale', '999');
-    window.localStorage.setItem('juicecut.settings.scrollAmount', 'not-a-number');
+    window.localStorage.setItem('hallu.settings.guiScale', '999');
+    window.localStorage.setItem('hallu.settings.scrollAmount', 'not-a-number');
     const { result } = renderHook(() => useSettings());
     expect(result.current.guiScale).toBe(200);
     expect(result.current.scrollAmount).toBe(100);

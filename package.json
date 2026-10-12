@@ -1,5 +1,5 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "hallu",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -43,7 +43,7 @@
     "vitest": "^2.1.9"
   },
   "build": {
-    "appId": "com.yourname.myapp",
+    "appId": "com.hallu.editor",
     "icon": "src/assets/icons/app/hallu_day.ico",
     "win": {
       "icon": "src/assets/icons/app/hallu_day.ico",

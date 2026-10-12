@@ -49,7 +49,7 @@ export const DEFAULT_TORUS_SIZE_GRAPH: SizeGraphPoint[] = [
 
 export function getSavedSizeGraph(): SizeGraphPoint[] {
   try {
-    const raw = window.localStorage.getItem('juicecut.settings.torusSizeGraph');
+    const raw = window.localStorage.getItem('hallu.settings.torusSizeGraph');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {

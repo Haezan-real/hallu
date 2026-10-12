@@ -18,7 +18,7 @@ const SMALL_WOOSH_VOLUME = 0.7;
 
 function getSavedHoverScale(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusHoverScale');
+    const v = window.localStorage.getItem('hallu.settings.torusHoverScale');
     if (v !== null) {
       const n = parseFloat(v);
       if (!isNaN(n) && n >= 1 && n <= 1.5) return n;
@@ -112,7 +112,7 @@ function annularSectorPath(
 
 function getSavedDuration(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusDuration');
+    const v = window.localStorage.getItem('hallu.settings.torusDuration');
     if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= 0 && n <= 2000) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.duration;
@@ -120,7 +120,7 @@ function getSavedDuration(): number {
 
 function getSavedDelay(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusDelay');
+    const v = window.localStorage.getItem('hallu.settings.torusDelay');
     if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= -1000 && n <= 1000) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.delay;

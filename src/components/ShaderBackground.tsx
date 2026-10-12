@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const DEFAULT_SHADER = 'haezans_shader';
-const ACTIVE_SHADER_KEY = 'juicecut.shaders.active';
+const ACTIVE_SHADER_KEY = 'hallu.shaders.active';
 
 function getSelectedShader(): string {
   try {
@@ -157,14 +157,14 @@ export default function ShaderBackground() {
       cleanupGL = null;
       setup(shaderName);
     };
-    window.addEventListener('juicecut-shader-change', onShaderChange);
+    window.addEventListener('hallu-shader-change', onShaderChange);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(rafId);
       ro?.disconnect();
       cleanupGL?.();
-      window.removeEventListener('juicecut-shader-change', onShaderChange);
+      window.removeEventListener('hallu-shader-change', onShaderChange);
     };
   }, [reloadNonce]);
 

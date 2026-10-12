@@ -93,7 +93,7 @@ export function applyThemeToDocument(themeName: string) {
   const themeColors = getThemeColors(themeName);
   colorFields.forEach(c => { document.documentElement.style.setProperty(c.varName, themeColors[c.varName]); });
   // Dispatch event so App.tsx can re-send updated colors to the shader window
-  window.dispatchEvent(new CustomEvent('juicecut.theme-changed', { detail: { themeName } }));
+  window.dispatchEvent(new CustomEvent('hallu.theme-changed', { detail: { themeName } }));
 }
 
 export function StylesContent({ themeName, setShowStyle, setStylePage }: {
@@ -122,7 +122,7 @@ export function StylesContent({ themeName, setShowStyle, setStylePage }: {
     document.documentElement.style.setProperty(varName, hex);
     setColors(prev => ({ ...prev, [varName]: hex }));
     // Dispatch event so App.tsx can re-send updated colors to the shader window
-    window.dispatchEvent(new CustomEvent('juicecut.theme-changed', { detail: { varName, hex } }));
+    window.dispatchEvent(new CustomEvent('hallu.theme-changed', { detail: { varName, hex } }));
   }
 
   function resetColor(varName: ColorVarName) {
@@ -130,7 +130,7 @@ export function StylesContent({ themeName, setShowStyle, setStylePage }: {
     document.documentElement.style.setProperty(varName, defaultColor);
     setColors(prev => ({ ...prev, [varName]: defaultColor }));
     // Dispatch event so App.tsx can re-send updated colors to the shader window
-    window.dispatchEvent(new CustomEvent('juicecut.theme-changed', { detail: { varName, hex: defaultColor } }));
+    window.dispatchEvent(new CustomEvent('hallu.theme-changed', { detail: { varName, hex: defaultColor } }));
   }
 
   function handleColorClick(varName: string, currentValue: string) {
@@ -178,9 +178,9 @@ export function StylesModal({ showStyle, setShowStyle, stylePage, setStylePage }
   setStylePage: (v: string | null) => void;
 }) {
   const [activeTheme, setActiveTheme] = useState<string>(() => {
-    try { return window.localStorage.getItem('juicecut.styles.activeTheme') || 'og-dark'; } catch { return 'og-dark'; }
+    try { return window.localStorage.getItem('hallu.styles.activeTheme') || 'og-dark'; } catch { return 'og-dark'; }
   });
-  useEffect(() => { try { window.localStorage.setItem('juicecut.styles.activeTheme', activeTheme); } catch {} }, [activeTheme]);
+  useEffect(() => { try { window.localStorage.setItem('hallu.styles.activeTheme', activeTheme); } catch {} }, [activeTheme]);
 
   if (!showStyle) return null;
 

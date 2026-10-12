@@ -53,7 +53,7 @@ class ModalManager {
     // Initialize settings from localStorage so the manager reflects
     // persisted user preferences on app startup.
     try {
-      const v = window.localStorage.getItem('juicecut.settings.allowMultipleMenus');
+      const v = window.localStorage.getItem('hallu.settings.allowMultipleMenus');
       if (v !== null) {
         this.state.settings.allowMultipleMenus = v === 'true';
       }

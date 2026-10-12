@@ -25,7 +25,7 @@ const DEFAULT_SHORTCUTS: Record<ShortcutAction, string[][]> = {
   toggleTorusMenu: [["q"]],
 };
 
-const STORAGE_KEY = "juicecut.settings.keyboardShortcuts";
+const STORAGE_KEY = "hallu.settings.keyboardShortcuts";
 let cache: Record<ShortcutAction, string[][]> | null = null;
 
 // Track globally pressed keys (for wheel-event shortcut matching with non-modifier keys)

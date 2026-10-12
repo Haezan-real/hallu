@@ -45,7 +45,7 @@ export default function Splitter({ orientation, onChange, onDragEnd, thickness =
     draggingRef.current = true;
     // Signal any open torus menu to close
     try {
-      window.dispatchEvent(new CustomEvent('juicecut-torus-close'));
+      window.dispatchEvent(new CustomEvent('hallu-torus-close'));
     } catch {}
     startRef.current = orientation === 'vertical' ? e.clientX : e.clientY;
     document.body.style.cursor = orientation === 'vertical' ? 'col-resize' : 'row-resize';

@@ -79,7 +79,7 @@ export function OpenShaderSelector(onCloseCallback?: () => void) {
 export default function ShaderSelectorModal({ onClose }: { onClose: () => void }) {
   const [activeShader, setActiveShader] = useState<string>(() => {
     try {
-      const stored = window.localStorage.getItem('juicecut.shaders.active');
+      const stored = window.localStorage.getItem('hallu.shaders.active');
       // Old default no longer exists; migrate to the single remaining shader
       if (!stored || stored === 'default_shader' || stored === 'glitch' || stored === 'plasma') {
         return 'haezans_shader';
@@ -103,7 +103,7 @@ export default function ShaderSelectorModal({ onClose }: { onClose: () => void }
           const fallbackShader = shaderList[0];
           console.log(`[ShaderSelector] Active shader "${activeShader}" not found, falling back to "${fallbackShader}"`);
           setActiveShader(fallbackShader);
-          window.dispatchEvent(new CustomEvent('juicecut-shader-change', { detail: { shaderName: fallbackShader } }));
+          window.dispatchEvent(new CustomEvent('hallu-shader-change', { detail: { shaderName: fallbackShader } }));
         }
       }
     });
@@ -119,21 +119,21 @@ export default function ShaderSelectorModal({ onClose }: { onClose: () => void }
             const fallbackShader = shaderList[0];
             console.log(`[ShaderSelector] Active shader "${activeShader}" not found, falling back to "${fallbackShader}"`);
             setActiveShader(fallbackShader);
-            window.dispatchEvent(new CustomEvent('juicecut-shader-change', { detail: { shaderName: fallbackShader } }));
+            window.dispatchEvent(new CustomEvent('hallu-shader-change', { detail: { shaderName: fallbackShader } }));
           }
         }
       });
     };
-    window.addEventListener('juicecut-shaders-updated', handler);
+    window.addEventListener('hallu-shaders-updated', handler);
     return () => {
       cancelled = true;
-      window.removeEventListener('juicecut-shaders-updated', handler);
+      window.removeEventListener('hallu-shaders-updated', handler);
     };
   }, [activeShader]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem('juicecut.shaders.active', activeShader);
+      window.localStorage.setItem('hallu.shaders.active', activeShader);
     } catch {}
   }, [activeShader]);
 

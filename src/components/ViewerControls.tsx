@@ -24,15 +24,15 @@ export default function ViewerControls({
   onPlayPause, onSeek, style
 }: Props) {
   const [controlsType, setControlsType] = useState<string>(() => {
-    try { return window.localStorage.getItem('juicecut.settings.viewerControlsType') || DEFAULT_SETTINGS.viewerControlsType; } catch { return DEFAULT_SETTINGS.viewerControlsType; }
+    try { return window.localStorage.getItem('hallu.settings.viewerControlsType') || DEFAULT_SETTINGS.viewerControlsType; } catch { return DEFAULT_SETTINGS.viewerControlsType; }
   });
   const [timecodePanel, setTimecodePanel] = useState<string>(() => {
-    try { return window.localStorage.getItem('juicecut.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel; } catch { return DEFAULT_SETTINGS.timecodePanel; }
+    try { return window.localStorage.getItem('hallu.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel; } catch { return DEFAULT_SETTINGS.timecodePanel; }
   });
 
   useEffect(() => {
     const handler = () => {
-      try { setControlsType(window.localStorage.getItem('juicecut.settings.viewerControlsType') || DEFAULT_SETTINGS.viewerControlsType); } catch { setControlsType(DEFAULT_SETTINGS.viewerControlsType); }
+      try { setControlsType(window.localStorage.getItem('hallu.settings.viewerControlsType') || DEFAULT_SETTINGS.viewerControlsType); } catch { setControlsType(DEFAULT_SETTINGS.viewerControlsType); }
     };
     window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
@@ -40,7 +40,7 @@ export default function ViewerControls({
 
   useEffect(() => {
     const handler = () => {
-      try { setTimecodePanel(window.localStorage.getItem('juicecut.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel); } catch { setTimecodePanel(DEFAULT_SETTINGS.timecodePanel); }
+      try { setTimecodePanel(window.localStorage.getItem('hallu.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel); } catch { setTimecodePanel(DEFAULT_SETTINGS.timecodePanel); }
     };
     window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);

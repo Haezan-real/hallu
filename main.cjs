@@ -7,7 +7,7 @@ const config = require('./config.json');
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const LOWEST_POSSIBLE_OPACITY = 0.004;
-const APP_TITLE = '67-editing-software-main';
+const APP_TITLE = 'Hallu';
 const WINDOW_DEFAULTS = { width: 1280, height: 800 };
 const WIN_PRELOAD = path.join(__dirname, 'preload.cjs');
 const WIN_ICON = path.join(__dirname, 'src', 'assets', 'icons', 'app', 'hallu_day.ico');
@@ -393,16 +393,14 @@ class WindowManager {
 
           // Always search for the app window by name — never fall back to
           // sources[0] (which would grab whatever window is currently focused)
-          const target = sources.find(s => s.name && (
-            s.name.includes('67 editing software') ||
-            s.name.includes(APP_TITLE) ||
-            s.name.includes('67-editing-software')
-          ));
+          const target = sources.find(s => s.name &&
+            s.name.toLowerCase().includes(APP_TITLE.toLowerCase())
+          );
           if (target) {
             console.log('✅ Providing window for capture:', target.id, '| Name:', target.name);
             callback({ video: target });
           } else {
-            console.error('❌ No "67 editing software" window found for capture');
+            console.error('❌ No "Hallu" window found for capture');
             callback({});
           }
         })

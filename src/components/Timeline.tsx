@@ -48,7 +48,7 @@ function getSavedPnWidth(): number {
 
 function getSavedHoverScale(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusHoverScale');
+    const v = window.localStorage.getItem('hallu.settings.torusHoverScale');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 1 && n <= 1.5) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.hoverScale;
@@ -78,7 +78,7 @@ interface PlayneedleFormulaParams {
 
 function getPlayneedleParams(): PlayneedleFormulaParams {
   const get = (key: string, fallback: number) => {
-    try { const v = window.localStorage.getItem(`juicecut.settings.playneedle_${key}`); return v !== null ? Number(v) : fallback; } catch { return fallback; }
+    try { const v = window.localStorage.getItem(`hallu.settings.playneedle_${key}`); return v !== null ? Number(v) : fallback; } catch { return fallback; }
   };
   return {
     t:   get('t',   DEFAULT_SETTINGS.playneedle_t),
@@ -115,25 +115,25 @@ export default function Timeline({
   useEffect(() => { playheadRef.current = playhead; }, [playhead]);
 
   const getScrollSmoothFactor = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.scrollSmooth'); return v ? Number(v) : DEFAULT_SETTINGS.scrollSmooth; } catch { return DEFAULT_SETTINGS.scrollSmooth; }
+    try { const v = window.localStorage.getItem('hallu.settings.scrollSmooth'); return v ? Number(v) : DEFAULT_SETTINGS.scrollSmooth; } catch { return DEFAULT_SETTINGS.scrollSmooth; }
   };
   const getScrollAmount = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.scrollAmount'); return v ? Number(v) : DEFAULT_SETTINGS.scrollAmount; } catch { return DEFAULT_SETTINGS.scrollAmount; }
+    try { const v = window.localStorage.getItem('hallu.settings.scrollAmount'); return v ? Number(v) : DEFAULT_SETTINGS.scrollAmount; } catch { return DEFAULT_SETTINGS.scrollAmount; }
   };
   const getScrollZoomAmount = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.scrollZoomAmount'); return v ? Number(v) : DEFAULT_SETTINGS.scrollZoomAmount; } catch { return DEFAULT_SETTINGS.scrollZoomAmount; }
+    try { const v = window.localStorage.getItem('hallu.settings.scrollZoomAmount'); return v ? Number(v) : DEFAULT_SETTINGS.scrollZoomAmount; } catch { return DEFAULT_SETTINGS.scrollZoomAmount; }
   };
   const getScrollZoomSmoothness = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.scrollZoomSmoothness'); return v ? Number(v) : DEFAULT_SETTINGS.scrollZoomSmoothness; } catch { return DEFAULT_SETTINGS.scrollZoomSmoothness; }
+    try { const v = window.localStorage.getItem('hallu.settings.scrollZoomSmoothness'); return v ? Number(v) : DEFAULT_SETTINGS.scrollZoomSmoothness; } catch { return DEFAULT_SETTINGS.scrollZoomSmoothness; }
   };
   const getCancelZoomOnScroll = () => {
-    try { const v = window.localStorage.getItem('juicecut.settings.cancelZoomOnScroll'); return v === null ? true : v === 'true'; } catch { return true; }
+    try { const v = window.localStorage.getItem('hallu.settings.cancelZoomOnScroll'); return v === null ? true : v === 'true'; } catch { return true; }
   };
   const getTorusScrollingDisabled = (): 'whole torus menu' | 'annular sectors only' | 'none' => {
-    try { return (window.localStorage.getItem('juicecut.settings.torusScrollingDisabled') as 'whole torus menu' | 'annular sectors only' | 'none') || DEFAULT_SETTINGS.torusScrollingDisabled; } catch { return DEFAULT_SETTINGS.torusScrollingDisabled; }
+    try { return (window.localStorage.getItem('hallu.settings.torusScrollingDisabled') as 'whole torus menu' | 'annular sectors only' | 'none') || DEFAULT_SETTINGS.torusScrollingDisabled; } catch { return DEFAULT_SETTINGS.torusScrollingDisabled; }
   };
   const [timecodePanel, setTimecodePanel] = useState<string>(() => {
-    try { return window.localStorage.getItem('juicecut.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel; } catch { return DEFAULT_SETTINGS.timecodePanel; }
+    try { return window.localStorage.getItem('hallu.settings.timecodePanel') || DEFAULT_SETTINGS.timecodePanel; } catch { return DEFAULT_SETTINGS.timecodePanel; }
   });
   const [playneedleParams, setPlayneedleParams] = useState<PlayneedleFormulaParams>(getPlayneedleParams);
   // Reactive playneedle width (re-reads when the setting changes)
@@ -238,7 +238,7 @@ export default function Timeline({
 
       if (zoomScrollElRef.current) {
         const el = zoomScrollElRef.current;
-        const zoomEpicenter = (() => { try { return window.localStorage.getItem('juicecut.settings.zoomEpicenter') || 'playneedle'; } catch { return 'playneedle'; } })();
+        const zoomEpicenter = (() => { try { return window.localStorage.getItem('hallu.settings.zoomEpicenter') || 'playneedle'; } catch { return 'playneedle'; } })();
 
         let targetScrollLeft: number;
         if (zoomEpicenter === 'playneedle') {
@@ -374,8 +374,8 @@ export default function Timeline({
         }
       }
     };
-    window.addEventListener('juicecut-torus-toggle', handler);
-    return () => window.removeEventListener('juicecut-torus-toggle', handler);
+    window.addEventListener('hallu-torus-toggle', handler);
+    return () => window.removeEventListener('hallu-torus-toggle', handler);
   }, [getPlayheadContext, playheadX, playneedleParams]);
 
   const getJoinPairs = useCallback(() => {
@@ -542,7 +542,7 @@ export default function Timeline({
         const scale = e.deltaY < 0 ? zoomScale : 1 / zoomScale;
         const targetZoom = Math.max(0.25, Math.min(4, zoomTargetRef.current * scale));
 
-        const zoomEpicenter = (() => { try { return window.localStorage.getItem('juicecut.settings.zoomEpicenter') || 'playneedle'; } catch { return 'playneedle'; } })();
+        const zoomEpicenter = (() => { try { return window.localStorage.getItem('hallu.settings.zoomEpicenter') || 'playneedle'; } catch { return 'playneedle'; } })();
 
         if (zoomEpicenter === 'playneedle') {
           zoomBeforeFrameRef.current = playheadRef.current;

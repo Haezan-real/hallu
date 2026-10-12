@@ -35,7 +35,7 @@ type HistoryStack<T> = {
 
 function readIncludeResize(): boolean {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.includeResizeInUndo');
+    const v = window.localStorage.getItem('hallu.settings.includeResizeInUndo');
     return v === null ? DEFAULT_SETTINGS.includeResizeInUndo : v === 'true';
   } catch {
     return DEFAULT_SETTINGS.includeResizeInUndo;

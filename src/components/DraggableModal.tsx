@@ -58,7 +58,7 @@ export default function DraggableModal({
   const [isMinimized, setIsMinimized] = useState(false);
   const [allowEditsWhenMenuOpen, setAllowEditsWhenMenuOpen] = useState(() => {
     try {
-      const value = window.localStorage.getItem('juicecut.settings.allowEditsWhenMenuOpen');
+      const value = window.localStorage.getItem('hallu.settings.allowEditsWhenMenuOpen');
       return value === null ? DEFAULT_SETTINGS.allowEditsWhenMenuOpen : value === 'true';
     } catch {
       return DEFAULT_SETTINGS.allowEditsWhenMenuOpen;
@@ -80,7 +80,7 @@ export default function DraggableModal({
   useEffect(() => {
     if (persistenceKey && onRestorePageStateRef.current) {
       try {
-        const saved = window.localStorage.getItem(`juicecut.modal.${persistenceKey}.pageState`);
+        const saved = window.localStorage.getItem(`hallu.modal.${persistenceKey}.pageState`);
         if (saved) {
           const parsed = JSON.parse(saved);
           onRestorePageStateRef.current(parsed);
@@ -95,7 +95,7 @@ export default function DraggableModal({
   useEffect(() => {
     if (persistenceKey && pageState !== undefined && onSavePageStateRef.current) {
       try {
-        window.localStorage.setItem(`juicecut.modal.${persistenceKey}.pageState`, JSON.stringify(pageState));
+        window.localStorage.setItem(`hallu.modal.${persistenceKey}.pageState`, JSON.stringify(pageState));
         onSavePageStateRef.current(pageState);
       } catch (e) {
         console.warn(`Failed to save page state for ${persistenceKey}:`, e);
@@ -119,9 +119,9 @@ export default function DraggableModal({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     // Check if we should allow dragging on header buttons
-    const allowDraggableButtons = window.localStorage.getItem('juicecut.settings.draggableHeaderButtons') !== 'false';
+    const allowDraggableButtons = window.localStorage.getItem('hallu.settings.draggableHeaderButtons') !== 'false';
     // Check if execute on drag is enabled
-    const executeOnDrag = window.localStorage.getItem('juicecut.settings.executeHeaderButtonsOnDrag') !== 'false';
+    const executeOnDrag = window.localStorage.getItem('hallu.settings.executeHeaderButtonsOnDrag') !== 'false';
     
     // Check if clicking on a header button
     const minimizeBtn = target.closest('.modal-minimize-btn') as HTMLButtonElement | null;
@@ -242,7 +242,7 @@ const handleMouseUp = () => {
       // If we moused down on a header button and execute on drag is enabled, execute it
       // This executes on mouseup regardless of where the mouse is or how far we dragged
       if (draggedButtonRef.current) {
-        const shouldExecute = (window as any).juicecut?.settings?.executeHeaderButtonsOnDrag ?? true;
+        const shouldExecute = (window as any).hallu?.settings?.executeHeaderButtonsOnDrag ?? true;
         if (shouldExecute) {
           draggedButtonRef.current.action();
           buttonExecutedRef.current = true; // Mark as handled so onClick won't also fire
@@ -302,7 +302,7 @@ const handleMouseUp = () => {
              <button
                 className="icon-btn modal-minimize-btn"
                 onClick={() => { 
-                  const shouldExecute = (window as any).juicecut?.settings?.executeHeaderButtonsOnDrag ?? true; 
+                  const shouldExecute = (window as any).hallu?.settings?.executeHeaderButtonsOnDrag ?? true;
                   // If execute on drag is enabled and we already executed via mouseup, skip this click
                   if (shouldExecute && buttonExecutedRef.current) {
                     buttonExecutedRef.current = false;
@@ -320,7 +320,7 @@ const handleMouseUp = () => {
               </button>
             )}
             <button className="icon-btn" onClick={() => { 
-                const shouldExecute = (window as any).juicecut?.settings?.executeHeaderButtonsOnDrag ?? true; 
+                const shouldExecute = (window as any).hallu?.settings?.executeHeaderButtonsOnDrag ?? true;
                 // If execute on drag is enabled and we already executed via mouseup, skip this click
                 if (shouldExecute && buttonExecutedRef.current) {
                   buttonExecutedRef.current = false;
@@ -329,7 +329,7 @@ const handleMouseUp = () => {
                 // Save page state before closing
                 if (persistenceKey && pageState !== undefined && onSavePageStateRef.current) {
                   try {
-                    window.localStorage.setItem(`juicecut.modal.${persistenceKey}.pageState`, JSON.stringify(pageState));
+                    window.localStorage.setItem(`hallu.modal.${persistenceKey}.pageState`, JSON.stringify(pageState));
                     onSavePageStateRef.current(pageState);
                   } catch (e) {
                     console.warn(`Failed to save page state for ${persistenceKey}:`, e);

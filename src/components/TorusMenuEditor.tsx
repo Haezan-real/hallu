@@ -65,7 +65,7 @@ function segmentHandleValuesToOffsets(
 
 function getSavedDuration(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusDuration');
+    const v = window.localStorage.getItem('hallu.settings.torusDuration');
     if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= 0 && n <= 2000) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.duration;
@@ -73,7 +73,7 @@ function getSavedDuration(): number {
 
 function getSavedDelay(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusDelay');
+    const v = window.localStorage.getItem('hallu.settings.torusDelay');
     if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= -1000 && n <= 1000) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.delay;
@@ -81,7 +81,7 @@ function getSavedDelay(): number {
 
 function getSavedHoverScale(): number {
   try {
-    const v = window.localStorage.getItem('juicecut.settings.torusHoverScale');
+    const v = window.localStorage.getItem('hallu.settings.torusHoverScale');
     if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 1 && n <= 1.5) return n; }
   } catch {}
   return DEFAULT_TORUS_SETTINGS.hoverScale;
@@ -155,7 +155,7 @@ export default function TorusMenuEditorModal({ onClose, onBack }: TorusMenuEdito
   // Initialize torusOpen from localStorage to support toggling
   const [torusOpen, setTorusOpen] = useState<boolean>(() => {
     try {
-      const v = window.localStorage.getItem('juicecut.settings.torusOpen');
+      const v = window.localStorage.getItem('hallu.settings.torusOpen');
       return v === 'true';
     } catch {
       return false;
@@ -181,11 +181,11 @@ export default function TorusMenuEditorModal({ onClose, onBack }: TorusMenuEdito
   const sortedSizeGraph = useMemo(() => sizeGraph.slice().sort((a, b) => a.time - b.time), [sizeGraph]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.torusDuration', String(duration)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.torusDuration', String(duration)); } catch {}
   }, [duration]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.torusSizeGraph', JSON.stringify(sortedSizeGraph)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.torusSizeGraph', JSON.stringify(sortedSizeGraph)); } catch {}
   }, [sortedSizeGraph]);
 
   useEffect(() => {
@@ -193,11 +193,11 @@ export default function TorusMenuEditorModal({ onClose, onBack }: TorusMenuEdito
   }, [segmentHandleValues]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.torusDelay', String(delay)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.torusDelay', String(delay)); } catch {}
   }, [delay]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.torusHoverScale', String(hoverScale)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.torusHoverScale', String(hoverScale)); } catch {}
   }, [hoverScale]);
 
   const handleCloseTorus = useCallback(() => {

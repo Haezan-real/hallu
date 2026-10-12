@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { DEFAULT_SETTINGS } from './state/settingsDefaults';
+import { migrateLegacyStorage } from './state/storageMigration';
 
 //src/main.tsx
+
+migrateLegacyStorage();
 
 if (window.electronAPI?.isCustomCursorEnabled()) {
   document.documentElement.style.cursor = 'none';
@@ -12,7 +15,7 @@ if (window.electronAPI?.isCustomCursorEnabled()) {
 
 // Initialize theme transition settings from localStorage before the app renders
 try {
-  const saved = window.localStorage.getItem('juicecut.settings.colorTransitionDuration');
+  const saved = window.localStorage.getItem('hallu.settings.colorTransitionDuration');
   if (saved !== null) {
     const duration = Number(saved);
     document.documentElement.style.setProperty('--theme-transition-duration', `${duration}ms`);

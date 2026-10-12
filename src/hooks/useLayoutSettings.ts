@@ -27,42 +27,42 @@ function readBoolean(key: string, fallback: boolean): boolean {
 
 export function useLayoutSettings() {
   const [playheadTop, setPlayheadTop] = useState(() => {
-    const stored = readNumber('juicecut.settings.playheadTopPercent', DEFAULT_LAYOUT.playheadTop, 0, 100);
+    const stored = readNumber('hallu.settings.playheadTopPercent', DEFAULT_LAYOUT.playheadTop, 0, 100);
     if (stored !== DEFAULT_LAYOUT.playheadTop) return stored;
-    return readNumber('juicecut.settings.playheadTop', DEFAULT_LAYOUT.playheadTop, 0, 100);
+    return readNumber('hallu.settings.playheadTop', DEFAULT_LAYOUT.playheadTop, 0, 100);
   });
   const [includeResizeInUndo, setIncludeResizeInUndo] = useState(() =>
-    readBoolean('juicecut.settings.includeResizeInUndo', DEFAULT_SETTINGS.includeResizeInUndo),
+    readBoolean('hallu.settings.includeResizeInUndo', DEFAULT_SETTINGS.includeResizeInUndo),
   );
   const [leftWidthPct, setLeftWidthPct] = useState(() =>
-    readNumber('juicecut.layout.leftWidthPct', DEFAULT_LAYOUT.leftWidthPct, 5, 50),
+    readNumber('hallu.layout.leftWidthPct', DEFAULT_LAYOUT.leftWidthPct, 5, 50),
   );
   const [leftCollapsed] = useState(() =>
-    readBoolean('juicecut.layout.leftCollapsed', DEFAULT_LAYOUT.leftCollapsed),
+    readBoolean('hallu.layout.leftCollapsed', DEFAULT_LAYOUT.leftCollapsed),
   );
   const [timelineHeightPct, setTimelineHeightPct] = useState(() =>
-    readNumber('juicecut.layout.timelineHeightPct', DEFAULT_LAYOUT.timelineHeightPct, 15, 60),
+    readNumber('hallu.layout.timelineHeightPct', DEFAULT_LAYOUT.timelineHeightPct, 15, 60),
   );
-  const [, setGuiScale] = useState(() => readNumber('juicecut.settings.guiScale', DEFAULT_SETTINGS.guiScale, 50, 200));
+  const [, setGuiScale] = useState(() => readNumber('hallu.settings.guiScale', DEFAULT_SETTINGS.guiScale, 50, 200));
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.layout.leftCollapsed', String(leftCollapsed)); } catch {}
+    try { window.localStorage.setItem('hallu.layout.leftCollapsed', String(leftCollapsed)); } catch {}
   }, [leftCollapsed]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.layout.leftWidthPct', String(leftWidthPct)); } catch {}
+    try { window.localStorage.setItem('hallu.layout.leftWidthPct', String(leftWidthPct)); } catch {}
   }, [leftWidthPct]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.layout.timelineHeightPct', String(timelineHeightPct)); } catch {}
+    try { window.localStorage.setItem('hallu.layout.timelineHeightPct', String(timelineHeightPct)); } catch {}
   }, [timelineHeightPct]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.playheadTopPercent', String(playheadTop)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.playheadTopPercent', String(playheadTop)); } catch {}
   }, [playheadTop]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('juicecut.settings.includeResizeInUndo', String(includeResizeInUndo)); } catch {}
+    try { window.localStorage.setItem('hallu.settings.includeResizeInUndo', String(includeResizeInUndo)); } catch {}
   }, [includeResizeInUndo]);
 
   useEffect(() => {
