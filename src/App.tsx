@@ -1,5 +1,6 @@
 //src/App.tsx
 import { useState, useCallback, useEffect, useRef } from 'react';
+import halluDayIcon from './assets/icons/app/hallu_day.png';
 import MediaPool from './components/MediaPool';
 
 import Viewer from './components/Viewer';
@@ -717,7 +718,7 @@ function AppContent() {
       )}
       <header className="app-header" onPointerDown={handleWindowDragStart}>
         <div className="app-logo">
-          <img src="/src/67_editing_software.ico" alt="67 editing software" style={{ width: 22, height: 22, transform: 'translateY(0px)', }} />
+          <img src={halluDayIcon} alt="67 editing software" style={{ width: 22, height: 22, transform: 'translateY(0px)', }} />
         
 
           {/*67 editing software title*/}

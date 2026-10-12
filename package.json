@@ -44,16 +44,16 @@
   },
   "build": {
     "appId": "com.yourname.myapp",
-    "icon": "src/67_editing_software.ico",
+    "icon": "src/assets/icons/app/hallu_day.ico",
     "win": {
-      "icon": "src/67_editing_software.ico",
+      "icon": "src/assets/icons/app/hallu_day.ico",
       "target": "nsis"
     },
     "mac": {
-      "icon": "src/67_editing_software.ico"
+      "icon": "src/assets/icons/app/hallu_day.ico"
     },
     "linux": {
-      "icon": "src/67_editing_software.ico"
+      "icon": "src/assets/icons/app/hallu_day.ico"
     }
   }
 }

@@ -1,6 +1,6 @@
-import bigWoosh from '../sounds/SFX/big_woosh.wav';
-import smallWoosh from '../sounds/SFX/small_woosh.wav';
-import thock from '../sounds/sfx/thock.wav';
+import bigWoosh from '../assets/sounds/SFX/big_woosh.wav';
+import smallWoosh from '../assets/sounds/SFX/small_woosh.wav';
+import thock from '../assets/sounds/SFX/thock.wav';
 
 //src/services/audioService.ts
 

@@ -10,7 +10,7 @@ const LOWEST_POSSIBLE_OPACITY = 0.004;
 const APP_TITLE = '67-editing-software-main';
 const WINDOW_DEFAULTS = { width: 1280, height: 800 };
 const WIN_PRELOAD = path.join(__dirname, 'preload.cjs');
-const WIN_ICON = path.join(__dirname, 'src/67_editing_software.ico');
+const WIN_ICON = path.join(__dirname, 'src', 'assets', 'icons', 'app', 'hallu_day.ico');
 const MAXIMIZE_DELAY_MS = 1;
 const IS_DEVELOPMENT = process.env.ELECTRON_DEV === 'true';
 // Temporarily default-on for diagnosis; set DRAG_DIAG=false to silence.
