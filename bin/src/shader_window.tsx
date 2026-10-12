@@ -51,12 +51,12 @@ interface ShaderRenderer {
 // 😎🕶️🕶️ DYNAMIC SHADER LOADER
 async function loadShaderRenderer(shaderName: string) {
   try {
-    // Vite will automatically bundle all matching index.ts files in the shaders folder
-    const module = await import(`./shaders/${shaderName}/index.ts`);
+    // Vite will automatically bundle all matching index.ts files in the user/shaders folder
+    const module = await import(`../../user/shaders/${shaderName}/index.ts`);
     return module.createShaderRenderer;
   } catch (e) {
     console.error(`[ShaderWindow] Failed to load shader "${shaderName}", falling back to haezans_shader`, e);
-    const module = await import(`./shaders/haezans_shader/index.ts`);
+    const module = await import(`../../user/shaders/haezans_shader/index.ts`);
     return module.createShaderRenderer;
   }
 }

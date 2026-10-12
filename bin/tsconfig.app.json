@@ -24,8 +24,9 @@
     /* Paths */
     "baseUrl": ".",
     "paths": {
-      "@assets/*": ["../assets/*"]
+      "@assets/*": ["../assets/*"],
+      "@shaders/*": ["../user/shaders/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../user/shaders"]
 }

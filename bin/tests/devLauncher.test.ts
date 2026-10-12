@@ -11,8 +11,26 @@ describe('hallu_editor_dev.bat launcher', () => {
     expect(fs.existsSync(batPath)).toBe(true);
   });
 
-  it('fails with an actionable error message when launched without the Vite server', () => {
+  it('fails with an actionable error message when launched without the Vite server', async () => {
     if (process.platform !== 'win32') {
+      return;
+    }
+
+    const net = await import('net');
+    const isServerRunning = await new Promise<boolean>((resolve) => {
+      const socket = net.createConnection(5173, '127.0.0.1', () => {
+        socket.end();
+        resolve(true);
+      });
+      socket.on('error', () => resolve(false));
+      socket.setTimeout(500, () => {
+        socket.destroy();
+        resolve(false);
+      });
+    });
+
+    if (isServerRunning) {
+      // If a dev server is currently running, skip testing the "server offline" branch
       return;
     }
 

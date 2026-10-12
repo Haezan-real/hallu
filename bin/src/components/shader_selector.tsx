@@ -9,7 +9,7 @@ import DraggableModal from './DraggableModal';
 // Shader icon - star/reflective glass vibes
 const shaderIcon: string = 'M12 2L9.19 8.63 2 9.24l5.46 4.73L6.82 21 12 17.27 17.18 21l-.64-7.26L22 9.24l-7.19-.61z';
 
-// Scan src/shaders folder for available shaders
+// Scan user/shaders folder for available shaders
 async function getAvailableShaders(): Promise<string[]> {
   try {
     // Try to get shader list from window globals (set by main process)
@@ -19,14 +19,14 @@ async function getAvailableShaders(): Promise<string[]> {
       return availableShaders;
     }
     
-    // Use Vite's import.meta.glob to dynamically scan the src/shaders directory
+    // Use Vite's import.meta.glob to dynamically scan the user/shaders directory
     // This finds all folders that have an index.ts file
     try {
-      const shaderModules = import.meta.glob('/src/shaders/*/index.ts', { eager: false });
+      const shaderModules = import.meta.glob('../../../user/shaders/*/index.ts', { eager: false });
       const shaderNames = Object.keys(shaderModules)
         .map(path => {
-          // Extract shader name from path like "/src/shaders/default_shader/index.ts"
-          const match = path.match(/\/src\/shaders\/([^/]+)\/index\.ts/);
+          // Extract shader name from path like "../../../user/shaders/default_shader/index.ts"
+          const match = path.match(/user\/shaders\/([^/]+)\/index\.ts/);
           return match ? match[1] : null;
         })
         .filter((name): name is string => name !== null);

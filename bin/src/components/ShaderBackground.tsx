@@ -20,10 +20,10 @@ interface ShaderSources {
 // graph. Editing a shader's index.ts or .frag/.vert re-executes this module
 // with the fresh sources, and import.meta.hot.accept fires AFTER the update —
 // unlike a runtime dynamic import, which resolves through a cached module map.
-const shaderModules = import.meta.glob('../shaders/*/index.ts', { eager: true }) as Record<string, Record<string, unknown>>;
+const shaderModules = import.meta.glob('../../../user/shaders/*/index.ts', { eager: true }) as Record<string, Record<string, unknown>>;
 
 function loadShaderSources(shaderName: string): ShaderSources | null {
-  const mod = shaderModules[`../shaders/${shaderName}/index.ts`];
+  const mod = shaderModules[`../../../user/shaders/${shaderName}/index.ts`];
   if (!mod) {
     console.error(`ShaderBackground: no shader module for "${shaderName}"`);
     return null;
