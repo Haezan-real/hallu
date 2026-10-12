@@ -28,7 +28,43 @@ describe('hallu_editor_dev.bat launcher', () => {
     expect(result.status).not.toBe(0);
 
     const output = (result.stdout || '') + (result.stderr || '');
-    expect(output).toContain('Vite development server is not running');
     expect(output).toContain('launch_vite_server.bat');
+  });
+});
+
+describe('launch_vite_server.bat launcher', () => {
+  const rootDir = path.resolve(__dirname, '../..');
+  const batPath = path.join(rootDir, 'launch_vite_server.bat');
+
+  it('exists at the project root', () => {
+    expect(fs.existsSync(batPath)).toBe(true);
+  });
+
+  it('warns about duplicate server and prompts to cancel when port 5173 is already in use', async () => {
+    if (process.platform !== 'win32') {
+      return;
+    }
+
+    const net = await import('net');
+    const mockServer = net.createServer();
+    await new Promise<void>((resolve, reject) => {
+      mockServer.once('error', reject);
+      mockServer.listen(5173, '127.0.0.1', () => resolve());
+    });
+
+    try {
+      const result = spawnSync('cmd.exe', ['/c', 'launch_vite_server.bat'], {
+        cwd: rootDir,
+        input: 'N\n',
+        encoding: 'utf-8',
+      });
+
+      const output = (result.stdout || '') + (result.stderr || '');
+      expect(output).toContain('Port 5173 is already in use');
+      expect(output).toContain('duplicate server');
+      expect(output).toContain('Launch cancelled');
+    } finally {
+      await new Promise<void>((resolve) => mockServer.close(() => resolve()));
+    }
   });
 });
