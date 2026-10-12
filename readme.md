@@ -37,6 +37,7 @@ hallu/
     ├── main.cjs              # Electron main process
     ├── preload.cjs           # Electron preload script
     ├── iconRounding.cjs      # Icon corner-rounding utility
+    ├── generateRoundedIcons.cjs # Generates rounded .ico files from source PNGs
     ├── package.json          # Manifest & scripts
     ├── vite.config.ts        # Vite configuration
     ├── vitest.config.ts      # Vitest configuration

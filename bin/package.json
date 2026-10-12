@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "build:launcher": "powershell -NoProfile -Command \"& 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe' /nologo /target:exe /win32icon:../assets/icons/app/hallu_day.ico /out:../hallu_editor_dev.exe hallu_editor_dev.cs\"",
+    "build:icons": "electron generateRoundedIcons.cjs",
+    "build:launcher": "npm run build:icons && powershell -NoProfile -Command \"& 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe' /nologo /target:exe /win32icon:../assets/icons/app/hallu_day.ico /out:../hallu_editor_dev.exe hallu_editor_dev.cs\"",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "start": "electron --no-sandbox ."
   },
