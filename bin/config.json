@@ -2,15 +2,5 @@
     "DOWNSCALE_FACTOR": 1,
     "enshittify": false,
     "slideshow": false,
-    "shader_window": false,
-    "open_shader_window_inspector": false,
-    "base_window_transparency": 0.004,
-    "shader_window_clickthrough": true,
-    "app_window_clickthrough": false,
-    "sync_windows": true,
-    "electron_window_border_radius": 8,
-    "IPC_compression_quality": 90,
-    "capture_method": "mediaSourceId",
-    "custom_cursor": false,
-    "sync_overlay_position": true
+    "electron_window_border_radius": 8
 }

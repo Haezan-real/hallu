@@ -39,12 +39,6 @@
   --gui-scale: 1;
 }
 
-/* Global cursor hiding for custom_cursor mode */
-body.cursor-hidden,
-body.cursor-hidden * {
-  cursor: none !important;
-}
-
 body.graph-dragging,
 body.graph-dragging * {
   cursor: none !important;

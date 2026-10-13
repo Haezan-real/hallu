@@ -130,8 +130,7 @@ function AppContent() {
   const [rollClipId, setRollClipId] = useState<string | null>(null);
   const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [hasModalOpen, setHasModalOpen] = useState(false);
-  const [shaderFps, setShaderFps] = useState<number | null>(null);
-  const [shaderEnabled, setShaderEnabled] = useState(false);
+  const [fps, setFps] = useState<number | null>(null);
   const isMountedRef = useRef(true);
   const windowDragActiveRef = useRef(false);
   const mediaItemsRef = useRef(mediaItems);
@@ -143,26 +142,9 @@ function AppContent() {
       revokeMediaResources(mediaItemsRef.current.values());
     };
   }, []);
-  
-  // Check if shader window is enabled from config
-  useEffect(() => {
-    fetch('/config.json')
-      .then(r => r.json())
-      .then(cfg => setShaderEnabled(!!cfg?.shader_window))
-      .catch(() => setShaderEnabled(false));
-  }, []);
 
-  // Listen for FPS updates from the shader window (forwarded via main process)
+  // Measure the app window's FPS for the header counter
   useEffect(() => {
-    const unsubscribe = window.electronAPI?.onShaderFps((fps: number) => {
-      setShaderFps(fps);
-    });
-    return unsubscribe;
-  }, []);
-
-  // When shader window is disabled, measure the app window's own FPS
-  useEffect(() => {
-    if (shaderEnabled) return; // Only measure app FPS when shader is disabled
     let rafId = 0;
     let frameCount = 0;
     let fpsStartTime = performance.now();
@@ -172,7 +154,7 @@ function AppContent() {
       const now = performance.now();
       const elapsed = now - fpsStartTime;
       if (elapsed >= 1000) {
-        setShaderFps(Math.round((frameCount * 1000) / elapsed));
+        setFps(Math.round((frameCount * 1000) / elapsed));
         frameCount = 0;
         fpsStartTime = now;
       }
@@ -180,7 +162,7 @@ function AppContent() {
     };
     rafId = requestAnimationFrame(measureFps);
     return () => cancelAnimationFrame(rafId);
-  }, [shaderEnabled]);
+  }, []);
 
   const {
     playheadTop,
@@ -228,18 +210,6 @@ function AppContent() {
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
   }, []);
 
-  // Listen for shader changes from the shader selector
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ shaderName?: string }>).detail;
-      if (detail?.shaderName) {
-        window.electronAPI?.requestShaderChange(detail.shaderName);
-      }
-    };
-    window.addEventListener('hallu-shader-change', handler);
-    return () => window.removeEventListener('hallu-shader-change', handler);
-  }, []);
-
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
@@ -277,89 +247,6 @@ function AppContent() {
       const scale = v ? Number(v) / 100 : DEFAULT_SETTINGS.guiScale / 100;
       document.documentElement.style.setProperty('--gui-scale', scale.toString());
     } catch {}
-  }, []);
-
-  // Send theme colors to shader window for dynamic effects and UI masking
-  useEffect(() => {
-    const api = window.electronAPI;
-    if (!api) return;
-
-    const sendThemeColorsToShader = () => {
-      const styles = getComputedStyle(document.documentElement);
-      // Must match the exact order of colorFields in GlobalStyleSettings.tsx
-      const varNames = [
-        '--bg-panel', '--bg-base', '--bg-viewer', '--video-bg', '--bg-elevated',
-        '--bg-hover', '--border', '--border-mid', '--splitter', '--text-primary',
-        '--text-secondary', '--text-muted', '--input-field', '--input-field-bg',
-        '--playneedle', '--highlight-color', '--automation-line'
-      ];
-
-      const hexToRgb = (hex: string): [number, number, number] => {
-        const clean = hex.replace('#', '');
-        const r = parseInt(clean.substring(0, 2), 16) / 255;
-        const g = parseInt(clean.substring(2, 4), 16) / 255;
-        const b = parseInt(clean.substring(4, 6), 16) / 255;
-        return [r, g, b];
-      };
-
-      const colorArray: number[] = [];
-      const rgbColors: [number, number, number][] = [];
-      varNames.forEach(varName => {
-        const hex = styles.getPropertyValue(varName).trim();
-        const [r, g, b] = hex.startsWith('#') ? hexToRgb(hex) : [0, 0, 0];
-        colorArray.push(r, g, b);
-        rgbColors.push([r, g, b]);
-      });
-
-      // ── Calculate median hue and median saturation ────────────────────────
-      // Convert each theme color to HSL, extract hue and saturation, sort, pick middle
-      const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
-        const max = Math.max(r, g, b);
-        const min = Math.min(r, g, b);
-        const d = max - min;
-        const l = (max + min) / 2;
-        if (d === 0) return [0, 0, l]; // achromatic (gray) → hue 0, saturation 0
-        const s = d / (1 - Math.abs(2 * l - 1));
-        let h = 0;
-        if (max === r) h = ((g - b) / d) % 6;
-        else if (max === g) h = (b - r) / d + 2;
-        else h = (r - g) / d + 4;
-        h = h * 60;
-        if (h < 0) h += 360;
-        return [h, s, l];
-      };
-
-      const hslValues = rgbColors.map(([r, g, b]) => rgbToHsl(r, g, b));
-      const hues = hslValues.map(([h]) => h).sort((a, b) => a - b);
-      const sats = hslValues.map(([, s]) => s).sort((a, b) => a - b);
-      const brights = hslValues.map(([, , l]) => l).sort((a, b) => a - b);
-      const medianHue = hues[Math.floor(hues.length / 2)] / 360.0; // normalize to 0.0–1.0
-      const medianSat = sats[Math.floor(sats.length / 2)]; // already 0.0–1.0
-      const medianBright = brights[Math.floor(brights.length / 2)]; // already 0.0–1.0
-
-      // Append median hue, median saturation, and median brightness (total: 54 floats)
-      colorArray.push(medianHue);
-      colorArray.push(medianSat);
-      colorArray.push(medianBright);
-
-      api.sendShaderColors(colorArray);
-    };
-
-    // Send on mount
-    sendThemeColorsToShader();
-
-    // Listen for theme/color changes
-    const handler = () => {
-      // Trigger update on any style change
-      setTimeout(sendThemeColorsToShader, 50);
-    };
-    window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
-    window.addEventListener('hallu.theme-changed', handler);
-
-    return () => {
-      window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
-      window.removeEventListener('hallu.theme-changed', handler);
-    };
   }, []);
 
   // Apply saved elevatedPanelDarkenAmount on mount
@@ -568,19 +455,6 @@ function AppContent() {
     };
   }, [endWindowDrag]);
 
-  // Track mouse position for custom cursor overlay (sent to main process → forwarded to shader_window)
-  useEffect(() => {
-    const api = window.electronAPI;
-    if (!api) return;
-    const mouseHandler = (e: MouseEvent) => {
-      api.sendCursorPosition({ x: e.clientX, y: e.clientY });
-    };
-    document.addEventListener('mousemove', mouseHandler);
-    return () => {
-      document.removeEventListener('mousemove', mouseHandler);
-    };
-  }, []);
-
   // Styles back/close: goes back one level if inside a sub-page, otherwise closes
   const handleStyleBackOrClose = useCallback(() => {
     if (stylePage) {
@@ -683,18 +557,6 @@ function AppContent() {
   const rollClip = rollClipId ? clips.find(c => c.id === rollClipId) ?? null : null;
   const rollMedia = rollClip ? mediaItems.get(rollClip.mediaId) ?? null : null;
 
-  // Toggle cursor visibility based on config.custom_cursor
-  useEffect(() => {
-    const customCursorEnabled = window.electronAPI?.isCustomCursorEnabled() ?? false;
-    document.body.classList.toggle('cursor-hidden', customCursorEnabled);
-
-    return () => {
-      document.body.classList.remove('cursor-hidden');
-    };
-  }, []);
-
-  //add cursor: 'none' in the style=({}) section in the
-  //<div id="editor-container"> 
   return (
     <div id="editor-container" style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
     <div className="app-shell">
@@ -732,7 +594,7 @@ function AppContent() {
             transform: 'translateY(1px)',
             position: 'relative',
             minWidth: '200px',      // 🔥 Reserve space for "fps: 999"
-            }}>Hallu | fps: {shaderFps ?? '--'}</span>
+            }}>Hallu | fps: {fps ?? '--'}</span>
           {/* fps counter title */}
         </div>
 

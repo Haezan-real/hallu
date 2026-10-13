@@ -140,15 +140,7 @@ export default function ShaderSelectorModal({ onClose }: { onClose: () => void }
   const handleShaderSelect = (shaderName: string) => {
     console.log(`[ShaderSelector] Selected shader: ${shaderName}`);
     setActiveShader(shaderName);
-    
-    // 🔥 CRITICAL: Send IPC message to the main process
-    const api = window.electronAPI;
-    if (api) {
-      api.requestShaderChange(shaderName);
-      console.log(`[ShaderSelector] ✅ Sent IPC 'change-shader' for: ${shaderName}`);
-    } else {
-      console.error('[ShaderSelector] ❌ electronAPI.requestShaderChange not found!');
-    }
+    window.dispatchEvent(new CustomEvent('hallu-shader-change', { detail: { shaderName } }));
   };
 
   return (

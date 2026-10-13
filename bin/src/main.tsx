@@ -13,10 +13,6 @@ migrateLegacyStorage();
 async function start() {
   await initUserSettingsSync();
 
-  if (window.electronAPI?.isCustomCursorEnabled()) {
-    document.documentElement.style.cursor = 'none';
-  }
-
   // Initialize theme transition settings from localStorage before the app renders
   try {
     const saved = window.localStorage.getItem('hallu.settings.colorTransitionDuration');

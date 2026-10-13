@@ -8,7 +8,6 @@ console.log('🔧 Preload script loaded');
 // 1. Read config.json safely
 const configPath = path.join(__dirname, 'config.json');
 let borderRadius = '0px'; // Default fallback
-let customCursorEnabled = false;
 try {
   const configData = fs.readFileSync(configPath, 'utf8');
   const config = JSON.parse(configData);
@@ -19,7 +18,6 @@ try {
     : 0;
     
   borderRadius = `${radiusVal}px`;
-  customCursorEnabled = config.custom_cursor === true;
 } catch (err) {
   console.error('🔧 Failed to read config.json in preload:', err);
 }
@@ -39,19 +37,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function subscribe(channel, callback) {
-  const listener = (_event, value) => callback(value);
-  ipcRenderer.on(channel, listener);
-  return () => ipcRenderer.removeListener(channel, listener);
-}
-
 // 3. Expose an explicit, allowlisted IPC API
 contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window-minimize'),
   toggleMaximizeWindow: () => ipcRenderer.send('window-maximize'),
   toggleFullscreen: () => ipcRenderer.send('window-fullscreen'),
   closeWindow: () => ipcRenderer.send('window-close'),
-  toggleAppClickthrough: () => ipcRenderer.send('toggle-app-clickthrough'),
   beginWindowDrag: (position) => {
     if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
       ipcRenderer.send('window-drag-start', { x: position.x, y: position.y });
@@ -63,58 +54,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   endWindowDrag: () => ipcRenderer.send('window-drag-end'),
-  requestShaderChange: (shaderName) => {
-    if (typeof shaderName === 'string' && shaderName.length > 0) {
-      ipcRenderer.send('change-shader', shaderName);
-    }
-  },
-  sendCursorPosition: (() => {
-    // High-poll mice fire mousemove at 500+/s; cap cursor-move IPC at 60/s
-    // (latest-position trailing) — plenty for a cursor overlay, and keeps the
-    // main process + shader renderer from being flooded during fast movement.
-    const CURSOR_INTERVAL_MS = 1000 / 60;
-    let lastSentAt = 0;
-    let pendingTimer = null;
-    let pendingPos = null;
-    return (position) => {
-      if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) return;
-      const elapsed = Date.now() - lastSentAt;
-      if (elapsed >= CURSOR_INTERVAL_MS) {
-        if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; pendingPos = null; }
-        lastSentAt = Date.now();
-        ipcRenderer.send('cursor-move', { x: position.x, y: position.y });
-      } else {
-        pendingPos = position;
-        if (!pendingTimer) {
-          pendingTimer = setTimeout(() => {
-            pendingTimer = null;
-            if (pendingPos) {
-              lastSentAt = Date.now();
-              ipcRenderer.send('cursor-move', { x: pendingPos.x, y: pendingPos.y });
-              pendingPos = null;
-            }
-          }, CURSOR_INTERVAL_MS - elapsed);
-        }
-      }
-    };
-  })(),
-  sendShaderFps: (fps) => {
-    if (Number.isFinite(fps)) ipcRenderer.send('shader-fps', fps);
-  },
-  sendShaderColors: (colors) => {
-    if (Array.isArray(colors) && colors.every(color => Number.isFinite(color))) {
-      ipcRenderer.send('update-shader-colors', colors);
-    }
-  },
-  isCustomCursorEnabled: () => customCursorEnabled,
-  onShaderFps: callback => subscribe('shader-fps', callback),
-  onCursorMove: callback => subscribe('cursor-move', callback),
-  onApplyShader: callback => subscribe('apply-shader', callback),
-  onShaderColorsUpdate: callback => subscribe('shader-colors-update', callback),
-  onAppDragState: callback => subscribe('app-drag-state', callback),
-  getWindowSourceId: () => ipcRenderer.invoke('get-window-source-id'),
-  getWindowSourceDesktopId: () => ipcRenderer.invoke('get-window-source-desktop-id'),
-  notifyShaderWindowReady: () => ipcRenderer.send('shader-window-ready'),
   loadUserSettings: () => ipcRenderer.invoke('load-user-settings'),
   saveUserSettings: (data) => ipcRenderer.send('save-user-settings', data),
   saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
