@@ -1,0 +1,59 @@
+import { useEffect } from 'react';
+import { isShortcutMatch } from './shortcuts';
+import { modalManager } from '../modals';
+
+//src/core/settings/useGlobalShortcuts.ts
+
+interface GlobalShortcutHandlers {
+  undo: () => void;
+  redo: () => void;
+  togglePlaying: () => void;
+  clearSelection: () => void;
+  // Closes a modal that lives in App state (not in modalManager); returns false if none was open
+  closeStateModal: () => boolean;
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
+  return !!element && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.isContentEditable);
+}
+
+export function useGlobalShortcuts({ undo, redo, togglePlaying, clearSelection, closeStateModal }: GlobalShortcutHandlers) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      const key = e.key.toLowerCase();
+      if (e.ctrlKey && key === 'a') { e.preventDefault(); return; }
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && key === 'z') { e.preventDefault(); undo(); }
+      if (e.ctrlKey && ((e.shiftKey && key === 'z') || (e.altKey && key === 'z') || (key === 'y' && !e.altKey && !e.shiftKey))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
+
+  // Capture phase so these run before any focused panel sees the key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'd') { e.preventDefault(); clearSelection(); }
+      if (e.key === ' ') { e.preventDefault(); togglePlaying(); }
+      if (isShortcutMatch('exitModal', e)) {
+        if (isTypingTarget(e.target)) return;
+        if (modalManager.closeTop()) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        if (closeStateModal()) { e.preventDefault(); return; }
+      }
+      if (isShortcutMatch('toggleTorusMenu', e)) {
+        if (isTypingTarget(e.target)) return;
+        e.preventDefault();
+        // TorusMenuEditor handles this shortcut itself while it's open
+        if (modalManager.isOpen('torusMenuEditor')) return;
+        window.dispatchEvent(new CustomEvent('hallu-torus-toggle'));
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [togglePlaying, clearSelection, closeStateModal]);
+}

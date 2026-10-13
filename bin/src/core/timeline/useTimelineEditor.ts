@@ -17,7 +17,7 @@ interface TimelineEditorOptions {
   snapshot: () => AppSnapshot;
 }
 
-const TRACKS: Track[] = [
+export const TRACKS: Track[] = [
   { id: 'v1', type: 'video', label: 'V1' },
   { id: 'a1', type: 'audio', label: 'A1' },
 ];

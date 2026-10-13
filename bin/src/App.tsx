@@ -1,171 +1,50 @@
 //src/App.tsx
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import MediaPool from './panels/MediaPool';
-
 import Viewer from './panels/Viewer';
+import ViewerControls from './panels/ViewerControls';
 import Timeline from './panels/Timeline';
 import RollDialog from './modals/RollDialog';
-import ViewerControls from './panels/ViewerControls';
-import { OpenSettings } from './modals/Settings';
-import { OpenShaderSelector } from './modals/ShaderSelector';
-import { isShortcutMatch, useShortcutLifecycle } from './core/settings/shortcuts';
-import { parentMap, StylesModal, applyThemeToDocument } from './modals/Styles';
+import ExportModal from './modals/ExportModal';
+import { parentMap, StylesModal } from './modals/Styles';
+import TitleBar from './window/TitleBar';
 import Splitter from './ui/Splitter';
-import DraggableModal from './ui/DraggableModal';
-
-import {
-  type MediaItem, type TimelineClip, type Track,
-  FPS, generateId, secondsToFrames
-} from './types';
+import type { MediaItem, TimelineClip } from './types';
 import { HistoryProvider, useHistory, type AppSnapshot } from './core/history';
-import { SETTINGS_CHANGED_EVENT, getSettingsChangedDetail } from './core/settings/settingsEvents';
+import { useShortcutLifecycle } from './core/settings/shortcuts';
+import { useGlobalShortcuts } from './core/settings/useGlobalShortcuts';
 import { useLayoutSettings } from './core/settings/useLayoutSettings';
-import { useDayNightIcon } from './platform/useDayNightIcon';
-import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from './platform/appIcon';
-import halluTextImage from '@assets/icons/app/hallu_text.webp';
-import { DEFAULT_SETTINGS } from './core/settings/settingsDefaults';
+import { useAppearance } from './core/themes/useAppearance';
 import { useExportJob } from './core/media/useExportJob';
-import { useTimelineEditor } from './core/timeline/useTimelineEditor';
-import { getMediaType } from './core/media/mediaIngestion';
-import { modalManager, registerModalPermissions } from './core/modals';
-import Toast from './overlays/Toast';
-// Toast is a class, not a React component - no need to render it
+import { useMediaLibrary } from './core/media/useMediaLibrary';
+import { usePlaybackClock } from './core/media/usePlaybackClock';
+import { TRACKS, useTimelineEditor } from './core/timeline/useTimelineEditor';
+import { modalManager, registerModalPermissions, showToast } from './core/modals';
+import { useBackgroundLock } from './core/modals/useBackgroundLock';
+import { useSuppressContextMenu } from './platform/useSuppressContextMenu';
 
-const DEFAULT_IMAGE_DURATION = 5 * FPS;
-const WINDOW_BUTTONS_SPACING = 10; //px
-const WINDOW_BUTTONS_SIZE = 15; //px
-const TOP_BAR_MENU_BUTTONS_SPACING = 0; //px
-const HEADER_FONT_SIZE = 15;
-const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
-const HALLU_TEXT_MARGIN_LEFT = -5; //px between the webp's left edge and the app icon; negative overlaps
-const HALLU_TEXT_MARGIN_RIGHT = -4; //px between the webp's right edge and the fps counter; negative overlaps
+const MULTIPLE_MENUS_MESSAGE = 'opening multiple <br/> menus is disabled!';
 
-
-// Initialize modal manager permissions
 registerModalPermissions();
 
-const TRACKS: Track[] = [
-  { id: 'v1', type: 'video', label: 'V1' },
-  { id: 'a1', type: 'audio', label: 'A1' },
-];
-
-function loadMediaDuration(file: File, type: MediaItem['type']): Promise<number> {
-  return new Promise(resolve => {
-    if (type === 'image') { resolve(DEFAULT_IMAGE_DURATION); return; }
-    const el = type === 'video'
-      ? document.createElement('video')
-      : document.createElement('audio');
-    const tempUrl = URL.createObjectURL(file);
-    let cleanedUp = false;
-    const cleanup = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      el.removeAttribute('src');
-      el.load();
-      URL.revokeObjectURL(tempUrl);
-    };
-    el.preload = 'metadata';
-    el.src = tempUrl;
-    el.onloadedmetadata = () => {
-      resolve(secondsToFrames(el.duration));
-      cleanup();
-    };
-    el.onerror = () => {
-      resolve(5 * FPS);
-      cleanup();
-    };
-  });
-}
-
-function generateThumbnail(file: File, type: MediaItem['type']): Promise<string | undefined> {
-  return new Promise(resolve => {
-    if (type === 'audio') { resolve(undefined); return; }
-    if (type === 'image') {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target?.result as string);
-      reader.onerror = () => resolve(undefined);
-      reader.readAsDataURL(file);
-      return;
-    }
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.muted = true;
-    const tempUrl = URL.createObjectURL(file);
-    let cleanedUp = false;
-    const cleanup = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      video.removeAttribute('src');
-      video.load();
-      URL.revokeObjectURL(tempUrl);
-    };
-    video.src = tempUrl;
-    video.onloadeddata = () => { video.currentTime = 0.5; };
-    video.onseeked = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 120; canvas.height = 68;
-      const ctx = canvas.getContext('2d');
-      if (ctx) ctx.drawImage(video, 0, 0, 120, 68);
-      resolve(canvas.toDataURL('image/jpeg', 0.6));
-      cleanup();
-    };
-    video.onerror = () => {
-      resolve(undefined);
-      cleanup();
-    };
-  });
-}
-
-function revokeMediaResources(items: Iterable<Pick<MediaItem, 'src'>>): void {
-  for (const item of items) {
-    URL.revokeObjectURL(item.src);
-  }
-}
 function AppContent() {
   useShortcutLifecycle();
+  useAppearance();
+  useSuppressContextMenu();
   const history = useHistory();
-  const multipleMenusToast = new Toast('opening multiple <br/> menus is disabled!');
+  const blockBackground = useBackgroundLock();
+
   const [mediaItems, setMediaItems] = useState<Map<string, MediaItem>>(new Map());
   const [clips, setClips] = useState<TimelineClip[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
-  const [playhead, setPlayhead] = useState(0);
-  const [playing, setPlaying] = useState(false);
   const [rollClipId, setRollClipId] = useState<string | null>(null);
-  const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [hasModalOpen, setHasModalOpen] = useState(false);
-  const [fps, setFps] = useState<number | null>(null);
-  const isMountedRef = useRef(true);
-  const mediaItemsRef = useRef(mediaItems);
-  mediaItemsRef.current = mediaItems;
+  const [showExport, setShowExport] = useState(false);
+  const [showStyle, setShowStyle] = useState(false);
+  const [stylePage, setStylePage] = useState<string | null>(null);
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      revokeMediaResources(mediaItemsRef.current.values());
-    };
-  }, []);
-
-  // Measure the app window's FPS for the header counter
-  useEffect(() => {
-    let rafId = 0;
-    let frameCount = 0;
-    let fpsStartTime = performance.now();
-    
-    const measureFps = () => {
-      frameCount++;
-      const now = performance.now();
-      const elapsed = now - fpsStartTime;
-      if (elapsed >= 1000) {
-        setFps(Math.round((frameCount * 1000) / elapsed));
-        frameCount = 0;
-        fpsStartTime = now;
-      }
-      rafId = requestAnimationFrame(measureFps);
-    };
-    rafId = requestAnimationFrame(measureFps);
-    return () => cancelAnimationFrame(rafId);
-  }, []);
+  const totalFrames = clips.reduce((max, c) => Math.max(max, c.endFrame), 0);
+  const { playhead, setPlayhead, playing, setPlaying } = usePlaybackClock(totalFrames);
 
   const {
     playheadTop,
@@ -178,123 +57,6 @@ function AppContent() {
     timelineHeightPct,
     setTimelineHeightPct,
   } = useLayoutSettings();
-  const [showStyle, setShowStyle] = useState(false);
-  const [stylePage, setStylePage] = useState<string | null>(null);
-  const [allowEditsWhenMenuOpen, setAllowEditsWhenMenuOpen] = useState(() => {
-    try {
-      const value = window.localStorage.getItem('hallu.settings.allowEditsWhenMenuOpen');
-      return value === null ? DEFAULT_SETTINGS.allowEditsWhenMenuOpen : value === 'true';
-    } catch {
-      return DEFAULT_SETTINGS.allowEditsWhenMenuOpen;
-    }
-  });
-
-  // Watch for modal overlays in DOM to toggle hasModalOpen
-  useEffect(() => {
-    const checkModals = () => {
-      const open = !!document.querySelector('.modal-overlay, .torus-overlay');
-      setHasModalOpen(open);
-    };
-    checkModals();
-    const observer = new MutationObserver(() => checkModals());
-    observer.observe(document.body, { childList: true, subtree: false });
-    return () => observer.disconnect();
-  }, []);
-
-  // Listen for settings changes to update allowEditsWhenMenuOpen reactively
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = getSettingsChangedDetail(e);
-      if (detail?.key === 'allowEditsWhenMenuOpen') {
-        if (typeof detail.value === 'boolean') setAllowEditsWhenMenuOpen(detail.value);
-      }
-    };
-    window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
-    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
-  }, []);
-
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    const handleMouseDown = (e: MouseEvent) => {
-      if (e.button === 2) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu, true);
-    document.addEventListener('mousedown', handleMouseDown, true);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu, true);
-      document.removeEventListener('mousedown', handleMouseDown, true);
-    };
-  }, []);
-
-  // Apply saved theme on mount
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('hallu.styles.activeTheme');
-      if (!saved) window.localStorage.setItem('hallu.styles.activeTheme', 'og-dark');
-      applyThemeToDocument(saved || 'og-dark');
-    } catch {}
-  }, []);
-  
-  // Apply GUI scale on mount
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem('hallu.settings.guiScale');
-      const scale = v ? Number(v) / 100 : DEFAULT_SETTINGS.guiScale / 100;
-      document.documentElement.style.setProperty('--gui-scale', scale.toString());
-    } catch {}
-  }, []);
-
-  // Apply saved elevatedPanelDarkenAmount on mount
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem('hallu.settings.elevatedPanelDarkenAmount');
-      if (v) {
-        const pct = Number(v);
-        if (!Number.isNaN(pct) && pct >= 0 && pct <= 100) {
-          let overlayColor: string;
-          if (pct <= 50) {
-            const factor = pct / 50;
-            const a = 1 - factor;
-            overlayColor = `rgba(255,255,255,${a.toFixed(3)})`;
-          } else {
-            const factor = (pct - 50) / 50;
-            overlayColor = `rgba(0,0,0,${factor.toFixed(3)})`;
-          }
-          document.documentElement.style.setProperty('--modal-overlay-bg', overlayColor);
-        }
-      }
-    } catch {}
-  }, []);
-
-  // Apply saved elevatedPanelBlurAmount on mount
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem('hallu.settings.elevatedPanelBlurAmount');
-      if (v) {
-        const pct = Number(v);
-        if (!Number.isNaN(pct) && pct >= 0 && pct <= 100) {
-          const blurPx = (pct / 100) * 50;
-          document.documentElement.style.setProperty('--modal-overlay-blur', `${blurPx}px`);
-        }
-      }
-    } catch {}
-  }, []);
-
-
-
-  // Determine if background should be locked
-  const blockBackground = !allowEditsWhenMenuOpen && hasModalOpen;
-
-  const [showExport, setShowExport] = useState(false);
-  const totalFrames = clips.reduce((max, c) => Math.max(max, c.endFrame), 0);
 
   const snapshot = useCallback(() => ({
     clips: JSON.parse(JSON.stringify(clips)),
@@ -332,159 +94,36 @@ function AppContent() {
     }
   }, [setClips, setMediaItems, setSelectedIds, setPlayhead, playheadTop, includeResizeInUndo, leftWidthPct, timelineHeightPct]);
 
-  // Listen for settings changes from the Settings modal
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = getSettingsChangedDetail(e);
-      if (detail?.key === 'elevatedPanelDarkenAmount' && typeof detail.value === 'number') {
-        const pct = detail.value;
-        let overlayColor: string;
-        if (pct <= 50) {
-          const factor = pct / 50;
-          const a = 1 - factor;
-          overlayColor = `rgba(255,255,255,${a.toFixed(3)})`;
-        } else {
-          const factor = (pct - 50) / 50;
-          overlayColor = `rgba(0,0,0,${factor.toFixed(3)})`;
-        }
-        document.documentElement.style.setProperty('--modal-overlay-bg', overlayColor);
-      }
-      if (detail?.key === 'elevatedPanelBlurAmount' && typeof detail.value === 'number') {
-        const pct = detail.value;
-        const blurPx = (pct / 100) * 50;
-        document.documentElement.style.setProperty('--modal-overlay-blur', `${blurPx}px`);
-      }
-      // Force re-render when allowEditsWhenMenuOpen changes
-      if (detail?.key === 'allowEditsWhenMenuOpen') {
-        setHasModalOpen(prev => prev); // trigger re-render
-      }
-    };
-    window.addEventListener(SETTINGS_CHANGED_EVENT, handler);
-    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handler);
-  }, []);
-  useEffect(() => {
-    try { window.localStorage.setItem('hallu.settings.includeResizeInUndo', includeResizeInUndo ? 'true' : 'false'); } catch {}
-  }, [includeResizeInUndo]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      if (e.ctrlKey && e.key.toLowerCase() === 'a') { e.preventDefault(); return; }
-      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); history.undo(snapshot(), restore); }
-      if (e.ctrlKey && ((e.shiftKey && e.key.toLowerCase() === 'z') || (e.altKey && e.key.toLowerCase() === 'z') || (e.key.toLowerCase() === 'y' && !e.altKey && !e.shiftKey))) { e.preventDefault(); history.redo(snapshot(), restore); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [history, snapshot, restore]);
-
-  useEffect(() => {
-    if (playing) {
-      playIntervalRef.current = setInterval(() => {
-        setPlayhead(p => { if (p >= totalFrames) { setPlaying(false); return p; } return p + 1; });
-      }, 1000 / FPS);
-    } else {
-      if (playIntervalRef.current) clearInterval(playIntervalRef.current);
+  // Opens a modal whose visibility lives in App state, if the modal manager allows it
+  const openStateModal = useCallback((type: 'styles' | 'export', setOpen: (open: boolean) => void) => {
+    const result = modalManager.requestOpen(type);
+    if (!result.allowed) {
+      showToast(MULTIPLE_MENUS_MESSAGE);
+      return;
     }
-    return () => { if (playIntervalRef.current) clearInterval(playIntervalRef.current); };
-  }, [playing, totalFrames]);
-
-  // Window controls (Electron only)
-  const sendWindowCommand = useCallback((command: 'minimize' | 'maximize' | 'close') => {
-    const api = window.electronAPI;
-    if (command === 'minimize') api?.minimizeWindow();
-    if (command === 'maximize') api?.toggleMaximizeWindow();
-    if (command === 'close') api?.closeWindow();
+    modalManager.registerClose(result.id!, () => setOpen(false));
+    setOpen(true);
   }, []);
 
-  // Styles back/close: goes back one level if inside a sub-page, otherwise closes
-  const handleStyleBackOrClose = useCallback(() => {
-    if (stylePage) {
-      const parentId = parentMap[stylePage] || null;
-      setStylePage(parentId);
-    } else {
-      setShowStyle(false);
+  // Styles goes back one level if inside a sub-page, otherwise closes
+  const closeStateModal = useCallback(() => {
+    if (showExport) { setShowExport(false); return true; }
+    if (showStyle) {
+      if (stylePage) setStylePage(parentMap[stylePage] || null);
+      else setShowStyle(false);
+      return true;
     }
-  }, [stylePage]);
+    return false;
+  }, [showExport, showStyle, stylePage]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === 'd') { e.preventDefault(); setSelectedIds([]); }
-      if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p); }
-      if (isShortcutMatch('exitModal', e)) {
-        // Don't intercept when typing in inputs
-        const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-        if (modalManager.closeTop()) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        // React-state modals
-        if (showExport) { e.preventDefault(); setShowExport(false); return; }
-        if (showStyle) { e.preventDefault(); handleStyleBackOrClose(); return; }
-      }
-      // Toggle torus menu shortcut
-      if (isShortcutMatch('toggleTorusMenu', e)) {
-        const target = e.target as HTMLElement | null;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-        e.preventDefault();
-        // Skip if TorusMenuEditor is open — it handles the shortcut itself
-        if (modalManager.isOpen('torusMenuEditor')) return;
-        // Dispatch event to toggle torus menu
-        window.dispatchEvent(new CustomEvent('hallu-torus-toggle'));
-      }
-    };
-    window.addEventListener('keydown', handler, true);
-    return () => window.removeEventListener('keydown', handler, true);
-  }, [showExport, showStyle, handleStyleBackOrClose]);
+  const undo = useCallback(() => history.undo(snapshot(), restore), [history, snapshot, restore]);
+  const redo = useCallback(() => history.redo(snapshot(), restore), [history, snapshot, restore]);
+  const togglePlaying = useCallback(() => setPlaying(p => !p), [setPlaying]);
+  const clearSelection = useCallback(() => setSelectedIds([]), []);
+  useGlobalShortcuts({ undo, redo, togglePlaying, clearSelection, closeStateModal });
 
-  const handleAddMedia = useCallback(async (files: FileList) => {
-    history.push(snapshot());
-    const supportedFiles = Array.from(files).filter(file => {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-      return ['mp4', 'mkv', 'mov', 'webm', 'mp3', 'ogg', 'wav', 'aac', 'png', 'jpg', 'jpeg', 'avif', 'gif', 'webp'].includes(ext);
-    });
-
-    for (const file of supportedFiles) {
-      if (!isMountedRef.current) return;
-      const type = getMediaType(file.name);
-      if (!type) continue;
-      const src = URL.createObjectURL(file);
-      const duration = await loadMediaDuration(file, type);
-      if (!isMountedRef.current) {
-        revokeMediaResources([{ src }]);
-        return;
-      }
-      const thumbnail = await generateThumbnail(file, type);
-      if (!isMountedRef.current) {
-        revokeMediaResources([{ src }]);
-        return;
-      }
-      const item: MediaItem = { id: generateId(), name: file.name, type, file, src, duration, thumbnail };
-      setMediaItems(previous => {
-        const next = new Map(previous);
-        next.set(item.id, item);
-        return next;
-      });
-    }
-  }, [history, snapshot]);
-
-  const handleDropMediaPool = useCallback((e: React.DragEvent) => { e.preventDefault(); if (e.dataTransfer.files.length) handleAddMedia(e.dataTransfer.files); }, [handleAddMedia]);
-  const handleDragOverMediaPool = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }, []);
-
-  const handleRemoveMedia = useCallback((id: string) => {
-    history.push(snapshot());
-    const item = mediaItems.get(id);
-    if (item) revokeMediaResources([item]);
-    setMediaItems(previous => {
-      if (!previous.has(id)) return previous;
-      const next = new Map(previous);
-      next.delete(id);
-      return next;
-    });
-    setClips(prev => prev.filter(c => c.mediaId !== id));
-  }, [mediaItems, history, snapshot]);
+  const { handleAddMedia, handleRemoveMedia, handleDropMediaPool, handleDragOverMediaPool } =
+    useMediaLibrary({ mediaItems, setMediaItems, setClips, history, snapshot });
 
   const {
     handleDropMedia, handleSelectClip, handleNudge, handleSplitClip,
@@ -494,7 +133,6 @@ function AppContent() {
   } = useTimelineEditor({ clips, mediaItems, setClips, setSelectedIds, history, snapshot });
 
   const { exportVideo: handleExport } = useExportJob({ clips, mediaItems, totalFrames });
-  const appIcon = useDayNightIcon();
 
   const rollClip = rollClipId ? clips.find(c => c.id === rollClipId) ?? null : null;
   const rollMedia = rollClip ? mediaItems.get(rollClip.mediaId) ?? null : null;
@@ -522,78 +160,7 @@ function AppContent() {
           <audio key={item.id} id={`aud-${item.id}`} src={item.src} style={{ display: 'none' }} preload="auto" />
         ) : null
       )}
-      <header className="app-header">
-        {/* gap is 0 so the hallu_text margins are the only spacing around it */}
-        <div className="app-logo" style={{ gap: 0 }}>
-          <img src={appIcon} alt="Hallu" style={{ width: ICON_BASE_SIZE_PX, height: ICON_BASE_SIZE_PX, borderRadius: ICON_CORNER_RADIUS_PX, transform: 'translateY(0px)', }} />
-
-          {/*Hallu title*/}
-          <img
-            src={halluTextImage}
-            alt="Hallu"
-            draggable={false}
-            style={{
-              width: HALLU_TEXT_SIZE,
-              height: HALLU_TEXT_SIZE,
-              marginLeft: HALLU_TEXT_MARGIN_LEFT,
-              marginRight: HALLU_TEXT_MARGIN_RIGHT,
-              flexShrink: 0,
-              alignSelf: 'center',
-              transformOrigin: 'center',
-              // The image is taller than the header; its transparent overflow must not block clicks below.
-              pointerEvents: 'none',
-            }}
-          />
-
-          <span style={{
-            fontSize: HEADER_FONT_SIZE,
-            color: 'var(--text-secondary)',
-            fontWeight: 500,
-            verticalAlign: 'bottom',
-            transform: 'translateY(1px)',
-            position: 'relative',
-            minWidth: '200px',      // 🔥 Reserve space for "fps: 999"
-            }}>| fps: {fps ?? '--'}</span>
-          {/* fps counter title */}
-        </div>
-
-        
-        <div style={{ display: 'flex', gap: TOP_BAR_MENU_BUTTONS_SPACING, alignItems: 'center', marginLeft: WINDOW_BUTTONS_SPACING }}>
-          <button className="icon-btn" onClick={() => {
-            const result = modalManager.requestOpen('styles');
-            if (!result.allowed) {
-              multipleMenusToast.show();
-              return;
-            }
-            modalManager.registerClose(result.id!, () => setShowStyle(false));
-            setShowStyle(true);
-          }} title="Style">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2C12 2 5 10 5 15c0 3.866 3.134 7 7 7s7-3.134 7-7c0-5-7-13-7-13z"/>
-            </svg>
-          </button>
-          <button className="icon-btn" onClick={() => {
-            OpenShaderSelector();
-          }} title="Shaders">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L6.82 21 12 17.27 17.18 21l-.64-7.26L22 9.24l-7.19-.61z"/>
-            </svg>
-          </button>
-          <button className="icon-btn" onClick={() => {
-            OpenSettings();
-          }} title="Settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: WINDOW_BUTTONS_SPACING, alignItems: 'center' }}>
-          <button className="status-dot" data-color="yellow" title="Minimize" onClick={() => sendWindowCommand('minimize')} style={{ width: WINDOW_BUTTONS_SIZE, height: WINDOW_BUTTONS_SIZE }} />
-          <button className="status-dot" data-color="green" title="Maximize" onClick={() => sendWindowCommand('maximize')} style={{ width: WINDOW_BUTTONS_SIZE, height: WINDOW_BUTTONS_SIZE }} />
-          <button className="status-dot" data-color="red" title="Close" onClick={() => sendWindowCommand('close')} style={{ width: WINDOW_BUTTONS_SIZE, height: WINDOW_BUTTONS_SIZE }} />
-        </div>
-      </header>
+      <TitleBar onOpenStyles={() => openStateModal('styles', setShowStyle)} />
       <div
         className="workspace"
         style={{
@@ -619,15 +186,7 @@ function AppContent() {
         )}
 
         <div className="workspace-panel-viewer">
-          <Viewer clips={clips} mediaItems={mediaItems} playhead={playhead} playing={playing} totalFrames={totalFrames} onExport={() => {
-            const result = modalManager.requestOpen('export');
-            if (!result.allowed) {
-              multipleMenusToast.show();
-              return;
-            }
-            modalManager.registerClose(result.id!, () => setShowExport(false));
-            setShowExport(true);
-          }} />
+          <Viewer clips={clips} mediaItems={mediaItems} playhead={playhead} playing={playing} totalFrames={totalFrames} onExport={() => openStateModal('export', setShowExport)} />
           <ViewerControls
             style={{ marginTop: 'auto' }}
             clips={clips}
@@ -635,7 +194,7 @@ function AppContent() {
             playhead={playhead}
             playing={playing}
             totalFrames={totalFrames}
-            onPlayPause={() => setPlaying(p => !p)}
+            onPlayPause={togglePlaying}
             onSeek={setPlayhead}
           />
         </div>
@@ -651,29 +210,12 @@ function AppContent() {
         <Timeline clips={clips} tracks={TRACKS} mediaItems={mediaItems} playhead={playhead} selectedIds={selectedIds} onSeek={setPlayhead} onDropMedia={handleDropMedia} onSelectClip={handleSelectClip} onSplitClip={handleSplitClip} onTrimLatter={handleTrimLatter} onTrimFormer={handleTrimFormer} onNudge={handleNudge} onJoin={handleJoin} onFadeChange={handleFadeChange} onFadeDragStart={handleFadeDragStart} onFadeDragEnd={handleFadeDragEnd} onRoll={setRollClipId} onStepEdge={handleStepEdge} totalFrames={totalFrames} />
       </div>
       {showExport && (
-        <DraggableModal
-          title="Export"
+        <ExportModal
           onClose={() => {
             modalManager.close('export');
             setShowExport(false);
           }}
-          style={{ width: 400 }}
-          body={
-            <div className="settings-panel-content">
-              <span style={{ color: 'var(--text-secondary)' }}>Export the video track as a WebM file.</span>
-              <button
-                className="btn-primary"
-                style={{ alignSelf: 'center', padding: '8px 32px', background: 'var(--input-field)' }}
-                onClick={() => {
-                  modalManager.close('export');
-                  setShowExport(false);
-                  void handleExport();
-                }}
-              >
-                Export video
-              </button>
-            </div>
-          }
+          onExport={() => void handleExport()}
         />
       )}
       <StylesModal showStyle={showStyle} setShowStyle={(v) => {
@@ -684,8 +226,6 @@ function AppContent() {
         <RollDialog clip={rollClip} media={rollMedia} onClose={() => setRollClipId(null)} onApply={handleRollApply} />
       )}
       </div>
-      
-
     </div>
   );
 }
