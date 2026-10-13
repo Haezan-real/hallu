@@ -50,6 +50,6 @@
   "hallu.shaders.active": "haezans_shader",
   "hallu.settings.playneedle_v_o": 0.4,
   "hallu.settings.draggableHeaderButtons": true,
-  "hallu.modal.settings.pageState": "components",
+  "hallu.modal.settings.pageState": "sliders",
   "hallu.settings.playneedle_h_b": 0.8
 }
