@@ -58,8 +58,6 @@ function startIconScheduler() {
 }
 const MAXIMIZE_DELAY_MS = 1;
 const IS_DEVELOPMENT = process.env.ELECTRON_DEV === 'true';
-// Temporarily default-on for diagnosis; set DRAG_DIAG=false to silence.
-const DIAG = process.env.DRAG_DIAG !== 'false';
 const DEV_SERVER_URL = 'http://localhost:5173';
 const APP_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
 
@@ -85,30 +83,7 @@ class WindowManager {
   constructor() {
     this.cfg = loadConfig();
     this.appWindow = null;
-    this.isDragging = false;
-    this.dragOffsetX = 0;
-    this.dragOffsetY = 0;
-    this.dragStartWidth = null;
-    this.dragStartHeight = null;
     this.ready = false;
-
-    // Drag diagnostics: per-second counters + a live timer while dragging
-    this.diag = {
-      dragMoveIpc: 0,   // window-drag-move IPCs received
-      setPosition: 0,   // native setPosition calls on appWindow
-      setPosMs: 0,      // total ms spent inside setPosition (blocking time)
-      setPosMaxMs: 0,   // worst single setPosition latency
-    };
-    this.diagTimer = null;
-  }
-
-  diagLogTick() {
-    const d = this.diag;
-    console.log(
-      `[DRAG-DIAG] dragIpc=${d.dragMoveIpc}/s setPos=${d.setPosition}/s ` +
-      `setPosTime=${d.setPosMs.toFixed(1)}ms/s max=${d.setPosMaxMs.toFixed(1)}ms`
-    );
-    for (const k of Object.keys(d)) d[k] = 0;
   }
 
   loadWindow(window, developmentPath, productionPath) {
@@ -132,6 +107,10 @@ class WindowManager {
     });
     this.loadWindow(this.appWindow, '', APP_ENTRY);
 
+    // The header is a native drag region; suppress the Windows system menu
+    // that right-clicking it would open, matching the app's no-context-menu UI.
+    this.appWindow.on('system-context-menu', (event) => event.preventDefault());
+
     // Maximize after the delay once the window finishes loading
     this.appWindow.webContents.once('did-finish-load', () => {
       setTimeout(() => {
@@ -149,9 +128,6 @@ class WindowManager {
   // ── IPC Handlers ─────────────────────────────────────────────────────────
 
   setupIPCHandlers() {
-    const isAppWindowSender = (event) => this.appWindow && !this.appWindow.isDestroyed() && event.sender === this.appWindow.webContents;
-    const isValidScreenPosition = (position) => position && Number.isFinite(position.x) && Number.isFinite(position.y);
-
     // Window controls
     ipcMain.on('window-minimize', () => this.appWindow.minimize());
     ipcMain.on('window-maximize', () => {
@@ -170,50 +146,6 @@ class WindowManager {
     });
     ipcMain.on('window-close', () => this.appWindow.close());
 
-    // Manual window dragging (bypasses OS cursor override bug)
-    ipcMain.on('window-drag-start', (event, position) => {
-      if (!isAppWindowSender(event) || !isValidScreenPosition(position) || this.appWindow.isMaximized()) return;
-      const bounds = this.appWindow.getBounds();
-      this.isDragging = true;
-      this.dragOffsetX = position.x - bounds.x;
-      this.dragOffsetY = position.y - bounds.y;
-      this.dragStartWidth = bounds.width;
-      this.dragStartHeight = bounds.height;
-      if (DIAG && !this.diagTimer) {
-        this.diagTimer = setInterval(() => this.diagLogTick(), 1000);
-      }
-    });
-
-    ipcMain.on('window-drag-move', (event, position) => {
-      if (!isAppWindowSender(event) || !this.isDragging || !isValidScreenPosition(position)) return;
-      if (DIAG) this.diag.dragMoveIpc++;
-      const t0 = DIAG ? performance.now() : 0;
-      // setBounds with the full rect (not bare setPosition) prevents the
-      // Windows frameless-window quirk where setPosition drifts the height
-      // and fires ~50 spurious resize events/sec mid-drag, each forcing a
-      // full Chromium re-layout of the renderer.
-      this.appWindow.setBounds({
-        x: Math.round(position.x - this.dragOffsetX),
-        y: Math.round(position.y - this.dragOffsetY),
-        width: this.dragStartWidth,
-        height: this.dragStartHeight,
-      });
-      if (DIAG) {
-        this.diag.setPosition++;
-        const dt = performance.now() - t0;
-        this.diag.setPosMs += dt;
-        if (dt > this.diag.setPosMaxMs) this.diag.setPosMaxMs = dt;
-      }
-    });
-
-    ipcMain.on('window-drag-end', (event) => {
-      if (!isAppWindowSender(event)) return;
-      this.isDragging = false;
-      this.dragStartWidth = null;
-      this.dragStartHeight = null;
-      if (this.diagTimer) { clearInterval(this.diagTimer); this.diagTimer = null; }
-    });
-
     registerSettingsStorageHandlers();
 
     console.log('✅ IPC handlers registered');
@@ -223,7 +155,6 @@ class WindowManager {
 
   setupLifecycleHandlers() {
     this.appWindow?.on('closed', () => {
-      this.isDragging = false;
       this.appWindow = null;
     });
   }
@@ -240,7 +171,7 @@ class WindowManager {
       console.log('🔧 Main window loaded');
     });
 
-    // 2. IPC handlers (window controls, dragging, settings storage)
+    // 2. IPC handlers (window controls, settings storage)
     this.setupIPCHandlers();
 
     // 3. Window lifecycle cleanup

@@ -132,7 +132,6 @@ function AppContent() {
   const [hasModalOpen, setHasModalOpen] = useState(false);
   const [fps, setFps] = useState<number | null>(null);
   const isMountedRef = useRef(true);
-  const windowDragActiveRef = useRef(false);
   const mediaItemsRef = useRef(mediaItems);
   mediaItemsRef.current = mediaItems;
 
@@ -394,67 +393,6 @@ function AppContent() {
     if (command === 'close') api?.closeWindow();
   }, []);
 
-  const endWindowDrag = useCallback(() => {
-    if (!windowDragActiveRef.current) return;
-    windowDragActiveRef.current = false;
-    window.electronAPI?.endWindowDrag();
-  }, []);
-
-  const handleWindowDragStart = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    if (event.button !== 0 || event.target instanceof Element && event.target.closest('button, input, select, textarea, a')) return;
-    const api = window.electronAPI;
-    if (!api) return;
-    windowDragActiveRef.current = true;
-    api.beginWindowDrag({ x: event.screenX, y: event.screenY });
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
-
-  useEffect(() => {
-    const DRAG_MOVE_INTERVAL_MS = 1000 / 20; // cap window-drag IPC to 20/sec
-    let lastSentAt = 0;
-    let pendingTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const sendDragMove = (position: { x: number; y: number }) => {
-      lastSentAt = Date.now();
-      window.electronAPI?.moveWindowDrag(position);
-    };
-
-    const moveWindowDrag = (event: PointerEvent) => {
-      if (!windowDragActiveRef.current) return;
-      const position = { x: event.screenX, y: event.screenY };
-      const elapsed = Date.now() - lastSentAt;
-      if (elapsed >= DRAG_MOVE_INTERVAL_MS) {
-        if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
-        sendDragMove(position);
-      } else if (!pendingTimer) {
-        pendingTimer = setTimeout(() => {
-          pendingTimer = null;
-          sendDragMove(position);
-        }, DRAG_MOVE_INTERVAL_MS - elapsed);
-      }
-    };
-    const cancelPendingDragMove = () => {
-      if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
-    };
-    const handleEndWindowDrag = () => {
-      cancelPendingDragMove();
-      endWindowDrag();
-    };
-
-    window.addEventListener('pointermove', moveWindowDrag);
-    window.addEventListener('pointerup', handleEndWindowDrag);
-    window.addEventListener('pointercancel', handleEndWindowDrag);
-    window.addEventListener('blur', handleEndWindowDrag);
-    return () => {
-      window.removeEventListener('pointermove', moveWindowDrag);
-      window.removeEventListener('pointerup', handleEndWindowDrag);
-      window.removeEventListener('pointercancel', handleEndWindowDrag);
-      window.removeEventListener('blur', handleEndWindowDrag);
-      cancelPendingDragMove();
-      endWindowDrag();
-    };
-  }, [endWindowDrag]);
-
   // Styles back/close: goes back one level if inside a sub-page, otherwise closes
   const handleStyleBackOrClose = useCallback(() => {
     if (stylePage) {
@@ -580,7 +518,7 @@ function AppContent() {
           <audio key={item.id} id={`aud-${item.id}`} src={item.src} style={{ display: 'none' }} preload="auto" />
         ) : null
       )}
-      <header className="app-header" onPointerDown={handleWindowDragStart}>
+      <header className="app-header">
         <div className="app-logo">
           <img src={appIcon} alt="Hallu" style={{ width: ICON_BASE_SIZE_PX, height: ICON_BASE_SIZE_PX, borderRadius: ICON_CORNER_RADIUS_PX, transform: 'translateY(0px)', }} />
         

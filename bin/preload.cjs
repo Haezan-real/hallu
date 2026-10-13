@@ -43,17 +43,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleMaximizeWindow: () => ipcRenderer.send('window-maximize'),
   toggleFullscreen: () => ipcRenderer.send('window-fullscreen'),
   closeWindow: () => ipcRenderer.send('window-close'),
-  beginWindowDrag: (position) => {
-    if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
-      ipcRenderer.send('window-drag-start', { x: position.x, y: position.y });
-    }
-  },
-  moveWindowDrag: (position) => {
-    if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
-      ipcRenderer.send('window-drag-move', { x: position.x, y: position.y });
-    }
-  },
-  endWindowDrag: () => ipcRenderer.send('window-drag-end'),
   loadUserSettings: () => ipcRenderer.invoke('load-user-settings'),
   saveUserSettings: (data) => ipcRenderer.send('save-user-settings', data),
   saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
