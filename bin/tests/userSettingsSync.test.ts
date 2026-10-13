@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   exportStorageToSettingsObject,
   importSettingsObjectToStorage,
-} from '../src/core/settings/userSettingsSync';
+} from '../src/modals/settings/userSettingsSync';
 
 describe('userSettingsSync', () => {
   beforeEach(() => {

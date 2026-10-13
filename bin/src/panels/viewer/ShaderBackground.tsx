@@ -1,15 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { SHADER_CHANGE_EVENT, getActiveShader, getShaderChangeName } from '../../modals/shaders/shaderRegistry';
 
-const DEFAULT_SHADER = 'haezans_shader';
-const ACTIVE_SHADER_KEY = 'hallu.shaders.active';
-
-function getSelectedShader(): string {
-  try {
-    return window.localStorage.getItem(ACTIVE_SHADER_KEY) || DEFAULT_SHADER;
-  } catch {
-    return DEFAULT_SHADER;
-  }
-}
+//src/panels/viewer/ShaderBackground.tsx
 
 interface ShaderSources {
   vert: string;
@@ -119,15 +111,10 @@ export default function ShaderBackground() {
       ro = new ResizeObserver(resize);
       ro.observe(canvas);
 
-      let loggedFirstFrame = false;
       const start = performance.now();
       const loop = () => {
         if (canvas.width === 0 || canvas.height === 0) resize();
         if (canvas.width > 0 && canvas.height > 0) {
-          if (!loggedFirstFrame) {
-            loggedFirstFrame = true;
-            console.log(`ShaderBackground: "${shaderName}" first frame at`, canvas.width, 'x', canvas.height);
-          }
           if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
           if (uResolution) gl.uniform2f(uResolution, canvas.width, canvas.height);
           gl.uniform1f(uTime, (performance.now() - start) / 1000);
@@ -145,11 +132,11 @@ export default function ShaderBackground() {
       };
     };
 
-    setup(getSelectedShader());
+    setup(getActiveShader());
 
     // Live-switch when the shader selector dispatches a change
     const onShaderChange = (e: Event) => {
-      const shaderName = (e as CustomEvent<{ shaderName?: string }>).detail?.shaderName;
+      const shaderName = getShaderChangeName(e);
       if (!shaderName) return;
       cancelAnimationFrame(rafId);
       ro?.disconnect();
@@ -157,14 +144,14 @@ export default function ShaderBackground() {
       cleanupGL = null;
       setup(shaderName);
     };
-    window.addEventListener('hallu-shader-change', onShaderChange);
+    window.addEventListener(SHADER_CHANGE_EVENT, onShaderChange);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(rafId);
       ro?.disconnect();
       cleanupGL?.();
-      window.removeEventListener('hallu-shader-change', onShaderChange);
+      window.removeEventListener(SHADER_CHANGE_EVENT, onShaderChange);
     };
   }, [reloadNonce]);
 

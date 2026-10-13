@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { modalManager } from '../src/core/modals/modalManager';
+import { modalManager } from '../src/shared/modals/modalManager';
 
 describe('modal manager lifecycle', () => {
   it('closes the most recently registered instance through its callback', () => {

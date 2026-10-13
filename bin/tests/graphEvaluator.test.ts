@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateGraph, evaluateSegment } from '../src/core/graph/graphEvaluator';
+import { evaluateGraph, evaluateSegment } from '../src/shared/lib/graph';
 
 describe('graph evaluator', () => {
   it('clamps segment progress and uses linear interpolation by default', () => {

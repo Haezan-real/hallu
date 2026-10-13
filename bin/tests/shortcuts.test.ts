@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isShortcutMatch, updateShortcuts } from '../src/core/settings/shortcuts';
+import { isShortcutMatch, updateShortcuts } from '../src/modals/settings/shortcuts';
 
 describe('shortcut matching', () => {
   it('matches configured modifier combinations', () => {

@@ -1,10 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import App from './app/App.tsx';
 import './index.css';
-import { DEFAULT_SETTINGS } from './core/settings/settingsDefaults';
-import { migrateLegacyStorage } from './core/settings/storageMigration';
-import { initUserSettingsSync } from './core/settings/userSettingsSync';
+import { migrateLegacyStorage } from './modals/settings/storageMigration';
+import { initUserSettingsSync } from './modals/settings/userSettingsSync';
+import { readSetting } from './modals/settings/settingsStore';
+import { applyTransitionDuration } from './app/useAppearance';
 
 //src/main.tsx
 
@@ -13,17 +14,8 @@ migrateLegacyStorage();
 async function start() {
   await initUserSettingsSync();
 
-  // Initialize theme transition settings from localStorage before the app renders
-  try {
-    const saved = window.localStorage.getItem('hallu.settings.colorTransitionDuration');
-    if (saved !== null) {
-      const duration = Number(saved);
-      document.documentElement.style.setProperty('--theme-transition-duration', `${duration}ms`);
-    } else {
-      document.documentElement.style.setProperty('--theme-transition-duration', `${DEFAULT_SETTINGS.colorTransitionDuration}ms`);
-    }
-    document.documentElement.style.setProperty('--theme-transition-timing', 'cubic-bezier(0.4, 0, 0.2, 1)');
-  } catch {}
+  // Initialize the theme transition before the app renders
+  applyTransitionDuration(readSetting('colorTransitionDuration'));
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>

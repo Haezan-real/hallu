@@ -2,7 +2,7 @@
 
 //src/vite-env.d.ts
 
-import './platform/electronApi';
+import './shared/platform/electronApi';
 
 declare module '*.vert?raw' {
   const content: string;
