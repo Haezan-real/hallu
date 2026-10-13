@@ -2,9 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { DEFAULT_SETTINGS } from './state/settingsDefaults';
-import { migrateLegacyStorage } from './state/storageMigration';
-import { initUserSettingsSync } from './state/userSettingsSync';
+import { DEFAULT_SETTINGS } from './core/settings/settingsDefaults';
+import { migrateLegacyStorage } from './core/settings/storageMigration';
+import { initUserSettingsSync } from './core/settings/userSettingsSync';
 
 //src/main.tsx
 

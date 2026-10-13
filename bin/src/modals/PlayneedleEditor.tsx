@@ -1,0 +1,336 @@
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import FormulaPlayneedle from '../panels/timeline/FormulaPlayneedle';
+import DraggableModal from '../ui/DraggableModal';
+import { showToast } from '../overlays/Toast';
+import { Slider } from '../ui/Adjustables';
+import { modalManager } from '../core/modals/modalManager';
+import { dispatchSettingsChanged } from '../core/settings/settingsEvents';
+import { DEFAULT_PLAYNEEDLE_WIDTH, MAX_PLAYNEEDLE_WIDTH, MIN_PLAYNEEDLE_WIDTH, PLAYNEEDLE_WIDTH_STORAGE_KEY } from '../core/settings/playneedleSettings';
+import { DEFAULT_SETTINGS } from '../core/settings/settingsDefaults';
+
+//src/modals/PlayneedleEditor.tsx
+
+// Playneedle Editor modal caps
+const EDITOR_MAX_WIDTH = '480px';
+const EDITOR_MAX_HEIGHT = '72vh'; //default 72vh
+// Left padding for the sliders column
+const PADDING_LEFT = 10;
+
+// Default values for all playneedle sliders
+const DEFAULT_VALUES = {
+  pnT: DEFAULT_SETTINGS.playneedle_t,
+  pnJ: DEFAULT_SETTINGS.playneedle_j,
+  pnK: DEFAULT_SETTINGS.playneedle_k,
+  pnS: DEFAULT_SETTINGS.playneedle_s,
+  pnVo: DEFAULT_SETTINGS.playneedle_v_o,
+  pnHb: DEFAULT_SETTINGS.playneedle_h_b,
+  pnHr: DEFAULT_SETTINGS.playneedle_h_r,
+  pnWidth: DEFAULT_PLAYNEEDLE_WIDTH,
+} as const;
+
+
+function getSavedPnT(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_t');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 0.5) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnT;
+}
+
+function getSavedPnJ(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_j');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= -0.05 && n <= 0.25) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnJ;
+}
+
+function getSavedPnK(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_k');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 10 && n <= 1000) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnK;
+}
+
+function getSavedPnS(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_s');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 10 && n <= 50) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnS;
+}
+
+function getSavedPnVo(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_v_o');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 1) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnVo;
+}
+
+function getSavedPnHb(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_h_b');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0.5 && n <= 1) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnHb;
+}
+
+function getSavedPnHr(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.playneedle_h_r');
+    if (v !== null) { const n = parseFloat(v); if (!isNaN(n) && n >= 0 && n <= 1) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnHr;
+}
+
+// Retrieve saved playneedle width (in pixels) for the editor UI
+function getSavedPnWidth(): number {
+  try {
+    const v = window.localStorage.getItem(PLAYNEEDLE_WIDTH_STORAGE_KEY);
+    if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= MIN_PLAYNEEDLE_WIDTH && n <= MAX_PLAYNEEDLE_WIDTH) return n; }
+  } catch {}
+  return DEFAULT_VALUES.pnWidth;
+}
+
+export function OpenPlayneedleEditor(onCloseCallback?: () => void) {
+  const result = modalManager.requestOpen('playneedleEditor');
+  if (!result.allowed) {
+    showToast(result.reason || '⚠ <br/>opening multiple menus is disabled');
+    return;
+  }
+  
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  const modalId = result.id!;
+  const closeAndReturnToSettings = () => {
+    try { root.unmount(); } catch (e) {}
+    if (container.parentNode) container.parentNode.removeChild(container);
+    modalManager.unregister(modalId);
+    if (onCloseCallback) onCloseCallback();
+  };
+  const closeDirectly = () => {
+    try { root.unmount(); } catch (e) {}
+    if (container.parentNode) container.parentNode.removeChild(container);
+    modalManager.unregister(modalId);
+  };
+  modalManager.registerClose(modalId, closeDirectly);
+  root.render(<PlayneedleEditorModal onClose={closeDirectly} onBack={closeAndReturnToSettings} />);
+  return closeDirectly;
+}
+
+export interface PlayneedleEditorModalProps {
+  onClose: () => void;
+  onBack: () => void;
+}
+
+export default function PlayneedleEditorModal({ onClose, onBack }: PlayneedleEditorModalProps) {
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewHeight, setPreviewHeight] = useState(260);
+  // Core playneedle parameters
+  const [pnT, setPnT] = useState<number>(getSavedPnT);
+  const [pnJ, setPnJ] = useState<number>(getSavedPnJ);
+  const [pnK, setPnK] = useState<number>(getSavedPnK);
+  const [pnS, setPnS] = useState<number>(getSavedPnS);
+  const [pnVo, setPnVo] = useState<number>(getSavedPnVo);
+  const [pnHb, setPnHb] = useState<number>(getSavedPnHb);
+  const [pnHr, setPnHr] = useState<number>(getSavedPnHr);
+  // UI width for the editor preview (also used by timeline)
+  const [pnWidth, setPnWidth] = useState<number>(getSavedPnWidth);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_t', String(pnT)); dispatchSettingsChanged('playneedle_t', pnT); } catch {}
+  }, [pnT]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_j', String(pnJ)); dispatchSettingsChanged('playneedle_j', pnJ); } catch {}
+  }, [pnJ]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_k', String(pnK)); dispatchSettingsChanged('playneedle_k', pnK); } catch {}
+  }, [pnK]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_s', String(pnS)); dispatchSettingsChanged('playneedle_s', pnS); } catch {}
+  }, [pnS]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_v_o', String(pnVo)); dispatchSettingsChanged('playneedle_v_o', pnVo); } catch {}
+  }, [pnVo]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_h_b', String(pnHb)); dispatchSettingsChanged('playneedle_h_b', pnHb); } catch {}
+  }, [pnHb]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem('hallu.settings.playneedle_h_r', String(pnHr)); dispatchSettingsChanged('playneedle_h_r', pnHr); } catch {}
+  }, [pnHr]);
+
+  // Persist width changes
+  useEffect(() => {
+    try { window.localStorage.setItem(PLAYNEEDLE_WIDTH_STORAGE_KEY, String(pnWidth)); dispatchSettingsChanged('playneedle_width', pnWidth); } catch {}
+  }, [pnWidth]);
+
+  const params = useMemo(() => ({
+    t: pnT,
+    j: pnJ,
+    k: pnK,
+    s: pnS,
+    v_o: pnVo,
+    h_b: pnHb,
+    h_r: pnHr,
+  }), [pnT, pnJ, pnK, pnS, pnVo, pnHb, pnHr]);
+
+  // Watch the preview container height to make the playneedle fill the modal
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el) return;
+    const updateHeight = () => setPreviewHeight(el.clientHeight);
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(el);
+    updateHeight();
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <DraggableModal
+      title="Playneedle Editor"
+      onClose={onClose}
+      headerLeft={
+        <button
+          className="icon-btn"
+          onClick={onBack} 
+          style={{
+            position: 'absolute', 
+            left: 8, 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            width: 26, 
+            height: 26, 
+            color: 'var(--text-secondary)',
+          }}
+          title="Back"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+      }
+      style={{ width: EDITOR_MAX_WIDTH, maxHeight: EDITOR_MAX_HEIGHT, minHeight: 0, overflow: 'hidden' }}
+      body={
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: 16, padding: `4px 0 12px ${PADDING_LEFT}px`, flex: 1, minHeight: 0, overflow: 'hidden', height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, width: 260, overflowY: 'scroll', overflowX: 'hidden', paddingRight: 4, flexShrink: 0, minHeight: 0, flex: 3 }}>
+            <Slider
+              label={<span>t ！ Total thickness of the needle part</span>}
+              value={pnT}
+              min={0}
+              max={0.5}
+              step={0.001}
+              onChange={setPnT}
+                onReset={() => setPnT(DEFAULT_VALUES.pnT)}
+              formatValue={v => v.toFixed(3)}
+            />
+            <Slider
+              label={<span>j ！ Length of the ribbon at the top</span>}
+              value={pnJ}
+              min={-0.05}
+              max={0.25}
+              step={0.001}
+              onChange={setPnJ}
+                onReset={() => setPnJ(DEFAULT_VALUES.pnJ)}
+              formatValue={v => v.toFixed(3)}
+            />
+            <Slider
+              label={<span>k ！ Falloff of the ribbon (log scale)</span>}
+              value={pnK}
+              min={10}
+              max={1000}
+              step={1}
+              onChange={setPnK}
+                onReset={() => setPnK(DEFAULT_VALUES.pnK)}
+              logScale
+              formatValue={v => v.toFixed(3)}
+            />
+            <Slider
+              label={<span>s ！ Vertical height of the playneedle button</span>}
+              value={pnS}
+              min={10}
+              max={50}
+              step={0.1}
+              onChange={setPnS}
+                onReset={() => setPnS(DEFAULT_VALUES.pnS)}
+              formatValue={v => v.toFixed(3)}
+            />
+            <Slider
+              label={<span>v<sub>o</sub> ！ Vertical offset of the playneedle button</span>}
+              value={pnVo}
+              min={0}
+              max={1}
+              step={0.001}
+              onChange={setPnVo}
+                onReset={() => setPnVo(DEFAULT_VALUES.pnVo)}
+              formatValue={v => v.toFixed(3)}
+            />
+            <Slider
+              label={<span>h<sub>b</sub> ！ Horizontal width of the playneedle button</span>}
+              value={pnHb}
+              min={0.5}
+              max={1}
+              step={0.001}
+              onChange={setPnHb}
+                onReset={() => setPnHb(DEFAULT_VALUES.pnHb)}
+              formatValue={v => v.toFixed(3)}
+            />
+             <Slider
+               label={<span>h<sub>r</sub> ！ Horizontal width of the ribbon</span>}
+               value={pnHr}
+               min={0}
+               max={1}
+               step={0.001}
+               onChange={setPnHr}
+                onReset={() => setPnHr(DEFAULT_VALUES.pnHr)}
+               formatValue={v => v.toFixed(3)}
+             />
+              <Slider
+                label={<span>Playneedle width (px)</span>}
+                value={pnWidth}
+                  min={0}
+                max={MAX_PLAYNEEDLE_WIDTH}
+                step={1}
+                onChange={setPnWidth}
+                 onReset={() => setPnWidth(DEFAULT_VALUES.pnWidth)}
+                formatValue={v => `${Math.round(v)}px`}
+              />
+          </div>
+
+          <div
+            ref={previewRef}
+            style={{
+              position: 'relative',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: 260,
+              flex: 1,
+              alignSelf: 'stretch',
+              minHeight: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <FormulaPlayneedle
+              height={previewHeight}
+              maxWidth={pnWidth}
+              color="var(--playneedle)"
+              glowColor="rgba(56, 189, 248, 0.4)"
+              params={params}
+            />
+          </div>
+        </div>
+      }
+    />
+  );
+}

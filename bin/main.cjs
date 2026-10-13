@@ -2,7 +2,7 @@
 const path = require('path');
 const { app, BrowserWindow, ipcMain, nativeImage } = require('electron');
 const config = require('./config.json');
-const iconConfig = require('./src/config/appIcon.json');
+const iconConfig = require('./appIcon.json');
 const { roundIconCorners } = require('./iconRounding.cjs');
 const { registerSettingsStorageHandlers } = require('./settingsStorage.cjs');
 
@@ -23,7 +23,7 @@ function isNightTime(date = new Date()) {
   return hour >= NIGHT_START_HOUR || hour < DAY_START_HOUR;
 }
 
-// Radius comes from src/config/appIcon.json and scales with the icon size.
+// Radius comes from bin/appIcon.json and scales with the icon size.
 function getRoundedIcon(variant) {
   if (roundedIconCache.has(variant)) return roundedIconCache.get(variant);
 

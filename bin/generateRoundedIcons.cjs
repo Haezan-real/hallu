@@ -2,7 +2,7 @@ const { app, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { roundIconCorners } = require('./iconRounding.cjs');
-const iconConfig = require('./src/config/appIcon.json');
+const iconConfig = require('./appIcon.json');
 
 const ICON_SIZES = [256, 128, 64, 48, 32, 16];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useLocalHistory } from '../src/state/history';
+import { useLocalHistory } from '../src/core/history';
 
 describe('local history', () => {
   it('restores undo and redo without side effects in state updaters', () => {

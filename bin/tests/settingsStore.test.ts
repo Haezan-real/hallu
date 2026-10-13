@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { SETTINGS_SCHEMA, useSettings } from '../src/state/settingsStore';
+import { SETTINGS_SCHEMA, useSettings } from '../src/core/settings/settingsStore';
 
 describe('settings schema', () => {
   it('falls back to defaults and clamps invalid persisted numbers', () => {

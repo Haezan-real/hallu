@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { migrateLegacyStorage } from '../src/state/storageMigration';
+import { migrateLegacyStorage } from '../src/core/settings/storageMigration';
 
 describe('legacy storage migration', () => {
   beforeEach(() => {

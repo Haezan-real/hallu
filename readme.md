@@ -42,7 +42,8 @@ hallu/
     ├── vite.config.ts        # Vite configuration
     ├── vitest.config.ts      # Vitest configuration
     ├── tsconfig.json         # TypeScript configuration
-    └── config.json           # Runtime app configuration
+    ├── config.json           # Runtime app configuration
+    └── appIcon.json          # Icon corner radius, shared by the editor and main.cjs
 ```
 
 

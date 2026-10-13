@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getMediaType } from '../src/domain/mediaIngestion';
+import { getMediaType } from '../src/core/media/mediaIngestion';
 
 describe('media ingestion classification', () => {
   it('classifies supported media case-insensitively', () => {

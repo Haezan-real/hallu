@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { joinClips, nudgeClips, splitClip, trimLatter } from '../src/domain/timelineEdits';
+import { joinClips, nudgeClips, splitClip, trimLatter } from '../src/core/timeline/timelineEdits';
 import type { TimelineClip } from '../src/types';
 
 const clip = (overrides: Partial<TimelineClip> = {}): TimelineClip => ({

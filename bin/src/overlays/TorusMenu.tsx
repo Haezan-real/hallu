@@ -1,0 +1,659 @@
+// Module-level singleton that persists across TorusMenu instances.
+// Prevents entrance animation from replaying when component remounts.
+let torusMenuHasAnimated = false;
+
+//src/overlays/TorusMenu.tsx
+
+import { useEffect, useState, useRef } from 'react';
+import { Scissors, ChevronLeft, ChevronRight, Move } from 'lucide-react';
+import { getSavedSizeGraph, SizeGraphPoint } from '../ui/GraphEditor';
+import { evaluateGraphWithHandles, getSavedSegmentHandleValues } from '../core/graph/torusGraphEasing';
+import { acquireAudioService } from '../platform/audioService';
+import { DEFAULT_TORUS_SETTINGS } from '../core/settings/settingsDefaults';
+
+const THOCK_VOLUME = 0.7;
+const BIG_WOOSH_VOLUME = 0.7;
+const SMALL_WOOSH_VOLUME = 0.7;
+
+
+function getSavedHoverScale(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.torusHoverScale');
+    if (v !== null) {
+      const n = parseFloat(v);
+      if (!isNaN(n) && n >= 1 && n <= 1.5) return n;
+    }
+  } catch {}
+  return DEFAULT_TORUS_SETTINGS.hoverScale;
+}
+
+type TorusTarget =
+  | { kind: 'inside'; clipId: string; frame: number }
+  | { kind: 'edge'; clipId: string; side: 'start' | 'end'; frame: number }
+  | { kind: 'cut'; clipAId: string; clipBId: string; frame: number };
+
+interface MenuItem {
+  label: string;
+  icon: React.ReactNode;
+  action: () => void;
+  color?: string;
+}
+
+interface Props {
+  // Mode
+  interactive?: boolean;
+
+  // Interactive-only
+  pos?: { x: number; y: number };
+  target?: TorusTarget;
+  onClose?: () => void;
+  onSplit?: () => void;
+  onTrimLatter?: (ripple: boolean) => void;
+  onTrimFormer?: (ripple: boolean) => void;
+  onStep?: (dir: number, ripple: boolean) => void;
+  onRoll?: () => void;
+  showCloseButton?: boolean;
+
+  // Preview-only
+  items?: MenuItem[];
+  cx?: number;
+  cy?: number;
+  innerR?: number;
+  outerR?: number;
+  rotationOffset?: number;
+  onSectorClick?: (label: string) => void;
+
+  // Animation
+  duration?: number;
+  easing?: number;
+  delay?: number;
+  sizeGraph?: SizeGraphPoint[];
+  segmentHandleValues?: number[];
+
+  // Shared
+  closeOnBackgroundClick?: boolean;
+
+  // Hover animation
+  hoverScale?: number;
+
+  // Scroll disabling
+  disableScrolling?: 'whole torus menu' | 'annular sectors only' | 'none';
+}
+
+function annularSectorPath(
+  cx: number, cy: number,
+  innerR: number, outerR: number,
+  startAngle: number, endAngle: number,
+  gap: number = 1.5
+): string {
+  const sa = startAngle + gap * 0.5 * (Math.PI / 180);
+  const ea = endAngle - gap * 0.5 * (Math.PI / 180);
+
+  const x1 = cx + innerR * Math.cos(sa);
+  const y1 = cy + innerR * Math.sin(sa);
+  const x2 = cx + outerR * Math.cos(sa);
+  const y2 = cy + outerR * Math.sin(sa);
+  const x3 = cx + outerR * Math.cos(ea);
+  const y3 = cy + outerR * Math.sin(ea);
+  const x4 = cx + innerR * Math.cos(ea);
+  const y4 = cy + innerR * Math.sin(ea);
+
+  const largeArc = (ea - sa) > Math.PI ? 1 : 0;
+
+  return [
+    `M ${x1} ${y1}`,
+    `L ${x2} ${y2}`,
+    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x3} ${y3}`,
+    `L ${x4} ${y4}`,
+    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${x1} ${y1}`,
+    'Z',
+  ].join(' ');
+}
+
+function getSavedDuration(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.torusDuration');
+    if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= 0 && n <= 2000) return n; }
+  } catch {}
+  return DEFAULT_TORUS_SETTINGS.duration;
+}
+
+function getSavedDelay(): number {
+  try {
+    const v = window.localStorage.getItem('hallu.settings.torusDelay');
+    if (v !== null) { const n = parseInt(v, 10); if (!isNaN(n) && n >= -1000 && n <= 1000) return n; }
+  } catch {}
+  return DEFAULT_TORUS_SETTINGS.delay;
+}
+
+export default function TorusMenu({
+  interactive = false,
+  pos = { x: 0, y: 0 },
+  target,
+  onClose = () => {},
+  onSplit = () => {},
+  onTrimLatter = () => {},
+  onTrimFormer = () => {},
+  onStep = () => {},
+  onRoll = () => {},
+  showCloseButton = false,
+  duration: durationProp,
+  delay: delayProp,
+  sizeGraph: sizeGraphProp,
+  segmentHandleValues: segmentHandleValuesProp,
+  items: propItems,
+  cx: propCx_temp,
+  innerR: propInnerR,
+  outerR: propOuterR,
+  rotationOffset: propRotationOffset,
+  onSectorClick,
+  closeOnBackgroundClick = true,
+  hoverScale: hoverScaleProp,
+  disableScrolling = 'none',
+}: Props) {
+  const duration = durationProp ?? getSavedDuration();
+  const delay = delayProp ?? getSavedDelay();
+
+  // Audio is shared across menu instances and released when the last menu closes.
+  const audioServiceRef = useRef<ReturnType<typeof acquireAudioService> | null>(null);
+  const [audioReady, setAudioReady] = useState(false);
+
+  useEffect(() => {
+    const service = acquireAudioService();
+    audioServiceRef.current = service;
+    service.ready.then(setAudioReady);
+    return () => {
+      service.release();
+      audioServiceRef.current = null;
+    };
+  }, []);
+
+  const playSound = (key: string, volume: number = 1.0) => {
+    if (key === 'bigWoosh' || key === 'smallWoosh' || key === 'thock') {
+      audioServiceRef.current?.playSound(key, volume);
+    }
+  };
+
+  
+
+
+  // 🔥 FIX: Use useState to calculate these EXACTLY ONCE per menu mount.
+  // This prevents JSON.parse from creating new array references on every render,
+  // which stops the useEffect from re-triggering and resetting the animation.
+  const [stableSizeGraph] = useState(() => sizeGraphProp ?? getSavedSizeGraph());
+  const [stableSegmentHandles] = useState(() => segmentHandleValuesProp ?? getSavedSegmentHandleValues());
+
+  const sizeGraph = sizeGraphProp ?? stableSizeGraph;
+  const segmentHandleValues = segmentHandleValuesProp ?? stableSegmentHandles;
+
+  const propCx = propCx_temp ?? 120;
+  const innerR = propInnerR ?? 52;
+  const outerR = propOuterR ?? 100;
+
+
+  // 🔥 FIX: Calculate the absolute maximum radius to prevent clipping
+  const maxPossibleScale = 1.5; // Matches the max value of the hover scale slider
+  const maxPossibleR = outerR * maxPossibleScale;
+  
+  // The center must be far enough from the edge to accommodate the max radius
+  const center = Math.max(propCx, maxPossibleR);
+  
+  // Override cx and cy to be the true center of the new, larger container
+  const cx = center;
+  const cy = center;
+  
+
+  const rotationOffset = propRotationOffset ?? (-Math.PI / 6);
+  const hoverScale = hoverScaleProp ?? getSavedHoverScale();
+    // 🔥 FIX: Calculate the outer radius based on hover state
+  const getOuterR = (index: number) => {
+    return hoveredIndex === index ? outerR * hoverScale : outerR;
+  };
+
+  const isEdgeOrCut = interactive && target ? (target.kind === 'edge' || target.kind === 'cut') : false;
+
+  const insideItems: MenuItem[] = interactive
+    ? [
+        { label: 'Split', icon: <Scissors size={14} />, action: onSplit, color: '#60a5fa' },
+        { label: 'Trim', icon: <ChevronRight size={14} />, action: () => onTrimLatter(false), color: '#34d399' },
+        { label: 'Trim', icon: <ChevronLeft size={14} />, action: () => onTrimFormer(false), color: '#34d399' },
+        { label: 'Ripple', icon: <ChevronRight size={14} />, action: () => onTrimLatter(true), color: '#fbbf24' },
+        { label: 'Ripple', icon: <ChevronLeft size={14} />, action: () => onTrimFormer(true), color: '#fbbf24' },
+        { label: 'Roll', icon: <Move size={14} />, action: onRoll, color: '#f472b6' },
+      ]
+    : (propItems ?? []);
+
+  const edgeItems: MenuItem[] = interactive
+    ? [
+        { label: '+1f', icon: <ChevronRight size={14} />, action: () => onStep(1, false), color: '#60a5fa' },
+        { label: '-1f', icon: <ChevronLeft size={14} />, action: () => onStep(-1, false), color: '#60a5fa' },
+        { label: 'Ripple +1f', icon: <ChevronRight size={14} />, action: () => onStep(1, true), color: '#fbbf24' },
+        { label: 'Ripple -1f', icon: <ChevronLeft size={14} />, action: () => onStep(-1, true), color: '#fbbf24' },
+      ]
+    : [];
+
+  const items = isEdgeOrCut ? edgeItems : insideItems;
+  const MAX_SECTORS = 6;
+  const sectorAngle = (Math.PI * 2) / MAX_SECTORS;
+  const visibleCount = items.length;
+
+  //---------🔊🔊🔊🔊🔊🔊🎤📻📻🎷🎷🎷🪗🪗🪗 PLAYING SOUND -------------...///
+  /*
+    //  simple play on mount (woosh plays once)
+  useEffect(() => {
+    bigWooshAudio.current.currentTime = 0;
+    bigWooshAudio.current.play().catch(() => {}); // Catch autoplay restrictions
+  }, []);
+  */
+
+    // advanced play on mount (several wooshes synced with the sectors animation using delay prop)
+    // 🪗 Play opening sound for each sector as it pops in
+  useEffect(() => {
+    if (!audioReady) return;
+    const timeouts: number[] = [];
+    
+    // Schedule a sound for each sector based on its delay
+    for (let i = 0; i < items.length; i++) {
+      const sectorDelay = getSectorDelay(i) * 1000; // Convert to milliseconds
+      const timeoutId = window.setTimeout(() => {
+        playSound('bigWoosh', BIG_WOOSH_VOLUME);
+      }, sectorDelay);
+      timeouts.push(timeoutId);
+    }
+    
+    // Cleanup: clear all timeouts if component unmounts
+    return () => {
+      timeouts.forEach(id => clearTimeout(id));
+    };
+  }, [items.length, delay, audioReady]);
+
+  // Interactive-only: scroll-to-close and background-click-to-close
+  const ref = useRef<HTMLDivElement>(null);
+  const sectorGroupRefs = useRef<(SVGGElement | null)[]>([]);
+  
+  // Track if the entrance animation has already played (persists across component instances)
+  const hasAnimatedRef = useRef(torusMenuHasAnimated);
+
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // When a sector is hovered, it scales by hoverScale. Grow the circular hitbox
+  // to match so the enlarged sector isn't clipped by the overlay boundary.
+
+  useEffect(() => {
+    // Allow the very first render to have the animation style.
+    // After one frame, lock it so subsequent re-renders/remounts 
+    // won't trigger the animation again.
+    const rafId = requestAnimationFrame(() => {
+      torusMenuHasAnimated = true;
+      hasAnimatedRef.current = true;
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  // Remove animation styles from sectors after entrance completes.
+  // This prevents CSS animation replay on re-mounts even if DOM nodes are recreated.
+  useEffect(() => {
+    if (!hasAnimatedRef.current) return;
+    const timer = setTimeout(() => {
+      sectorGroupRefs.current.forEach(group => {
+        if (group) {
+          group.style.animation = 'none';
+          group.style.opacity = '1';
+          group.style.transform = 'scale(1)';
+        }
+      });
+    }, duration + delay + 100);
+    return () => clearTimeout(timer);
+  }, [duration, delay]);
+
+  useEffect(() => {
+    if (!interactive) return;
+    let mousePosition: { x: number; y: number } | null = null;
+    const scrollHandler = (e: Event) => {
+      if (disableScrolling === 'none' || !ref.current) return;
+      const position = mousePosition;
+      if (!position) return onClose();
+      const el = document.elementFromPoint(position.x, position.y);
+      if (disableScrolling === 'annular sectors only' && el?.closest('.torus-sector')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      if (el && ref.current.contains(el)) {
+        if (disableScrolling === 'whole torus menu') {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+      onClose();
+    };
+    const mouseMoveHandler = (e: MouseEvent) => {
+      mousePosition = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('scroll', scrollHandler, true);
+    window.addEventListener('mousemove', mouseMoveHandler, true);
+
+    let clickHandler: ((e: MouseEvent) => void) | null = null;
+    let pointerDownHandler: ((e: PointerEvent) => void) | null = null;
+    const handleOutsidePointer = (e: MouseEvent | PointerEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.torus-toggle-btn') || target.closest('.torus-center-btn')) return;
+      if (disableScrolling === 'annular sectors only') {
+        if (!target.closest('.torus-sector')) onClose();
+        return;
+      }
+      const rect = ref.current?.getBoundingClientRect();
+      if (!rect) return;
+      const distance = Math.hypot(e.clientX - rect.left - cx, e.clientY - rect.top - cy);
+      if (distance > outerR) onClose();
+    };
+    if (closeOnBackgroundClick) {
+      clickHandler = handleOutsidePointer;
+      pointerDownHandler = handleOutsidePointer;
+      window.addEventListener('mousedown', clickHandler);
+      window.addEventListener('pointerdown', pointerDownHandler);
+    }
+
+    return () => {
+      window.removeEventListener('scroll', scrollHandler, true);
+      window.removeEventListener('mousemove', mouseMoveHandler, true);
+      if (clickHandler) window.removeEventListener('mousedown', clickHandler);
+      if (pointerDownHandler) window.removeEventListener('pointerdown', pointerDownHandler);
+    };
+  }, [onClose, interactive, closeOnBackgroundClick, disableScrolling, outerR, cx, cy]);
+
+  // Animation helpers
+  const hasSizeGraph = Array.isArray(sizeGraph) && sizeGraph.length >= 2;
+
+  // Compute per-sector delay based on delay prop and sector index
+  // delay = 0: all sectors animate at once (same as old pop)
+  // delay > 0: sectors pop in clockwise one by one
+  // delay < 0: sectors pop in anticlockwise one by one
+  const getSectorDelay = (index: number): number => {
+    if (delay === 0) return 0;
+    const count = items.length;
+    if (delay > 0) {
+      // Clockwise: index 0 first, then 1, 2, ...
+      return index * (delay / 1000);
+    } else {
+      // Anticlockwise: last index first
+      return (count - 1 - index) * (-delay / 1000);
+    }
+  };
+
+  const getSectorStyle = (index: number): React.CSSProperties => {
+    const isHovered = hoveredIndex === index;
+    const fill = isHovered ? 'var(--hover-background, var(--input-field-bg))' : 'var(--input-field-bg)';
+    
+    return {
+      cursor: 'pointer',
+      animation: 'none !important',
+      transition: '0.15s ease-out',
+      fill,
+    };
+  };
+
+  const getGroupStyle = (): React.CSSProperties | undefined => {
+    if (!hasSizeGraph) return undefined;
+    const initialSize = sizeGraph![0]?.size ?? 0;
+    return {
+      transformOrigin: `${cx}px ${cy}px`,
+      transformBox: 'view-box',
+      opacity: 0,
+      transform: `scale(${initialSize})`,
+    };
+  };
+
+  useEffect(() => {
+    if (!hasSizeGraph || !audioReady) return;
+
+    const sortedGraph = sizeGraph!.slice().sort((a, b) => a.time - b.time);
+    const initialSize = sortedGraph[0]?.size ?? 0;
+    const animDuration = Math.max(duration, 1);
+    let frameId = 0;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      let stillAnimating = false;
+
+      items.forEach((_, index) => {
+        const group = sectorGroupRefs.current[index];
+        if (!group) return;
+
+        const delayMs = getSectorDelay(index) * 1000;
+        const elapsed = now - startTime - delayMs;
+
+        if (elapsed < 0) {
+          group.style.opacity = '0';
+          group.style.transform = `scale(${initialSize})`;
+          stillAnimating = true;
+          return;
+        }
+
+        const linearProgress = Math.min(1, elapsed / animDuration);
+        const size = evaluateGraphWithHandles(
+          linearProgress,
+          sortedGraph,
+          segmentHandleValues,
+          index === 0,
+        );
+
+        group.style.opacity = '1';
+        group.style.transform = `scale(${size})`;
+
+        if (linearProgress < 1) stillAnimating = true;
+      });
+
+      if (stillAnimating) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [hasSizeGraph, audioReady, sizeGraph, segmentHandleValues, duration, delay, cx, cy]);
+
+  const handleSectorClick = (item: MenuItem) => {
+    // 🪗 Play click sound (Web Audio API)
+    playSound('thock', THOCK_VOLUME);
+    
+    if (interactive) {
+      item.action();
+      onClose();
+    } else {
+      onSectorClick?.(item.label);
+    }
+  };
+
+  const svgContent = (
+    <svg width={cx * 2} height={cy * 2} viewBox={`0 0 ${cx * 2} ${cy * 2}`}>
+      <defs>
+        <clipPath id="torus-clip">
+          <circle cx={cx} cy={cy} r={maxPossibleR} />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#torus-clip)">
+      {Array.from({ length: MAX_SECTORS }).map((_, i) => {
+        if (i >= visibleCount) {
+          return (
+            <g
+              key={i}
+              ref={el => { sectorGroupRefs.current[i] = el; }}
+              style={{ opacity: 0, pointerEvents: 'none' }}
+            >
+              <path
+                d={annularSectorPath(cx, cy, innerR, outerR, 0, 0)}
+                fill="none"
+                stroke="none"
+              />
+            </g>
+          );
+        }
+
+        const item = items[i];
+        const startAngle = i * sectorAngle - Math.PI / 2 + rotationOffset;
+        const endAngle = (i + 1) * sectorAngle - Math.PI / 2 + rotationOffset;
+        const midAngle = (startAngle + endAngle) / 2;
+
+        // 🔥 FIX: Calculate dynamic outer radius for this sector
+        const dynamicOuterR = getOuterR(i);
+        const labelR = (innerR + dynamicOuterR) / 2;
+        const labelX = cx + labelR * Math.cos(midAngle);
+        const labelY = cy + labelR * Math.sin(midAngle);
+
+        return (
+          <g
+            key={i}
+            ref={el => { sectorGroupRefs.current[i] = el; }}
+            style={getGroupStyle()}
+            onMouseEnter={() => {
+              setHoveredIndex(i);
+              // 🪗 Play hover sound (Web Audio API)
+              playSound('smallWoosh', SMALL_WOOSH_VOLUME);
+            }}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            <path
+              d={annularSectorPath(cx, cy, innerR, dynamicOuterR, startAngle, endAngle)}
+              fill="var(--input-field-bg)"
+              stroke="var(--border-mid)"
+              strokeWidth={0.5}
+              className="torus-sector"
+              style={getSectorStyle(i)}
+              onClick={(e) => { e.stopPropagation(); handleSectorClick(item); }}
+            />
+            <foreignObject
+              x={labelX - 36}
+              y={labelY - 16}
+              width={72}
+              height={32}
+              className="torus-sector"
+              style={{ 
+                cursor: 'pointer', 
+                overflow: 'visible',
+                // 🔥 FIX: Scale the content when hovered
+                transform: hoveredIndex === i ? `scale(${hoverScale})` : 'scale(1)',
+                transformOrigin: `${labelX}px ${labelY}px`,
+                transition: 'transform 0.15s ease-out',
+                ...getSectorStyle(i) 
+              }}
+              onClick={(e) => { e.stopPropagation(); handleSectorClick(item); }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  color: item.color,
+                  fontSize: 10,
+                  lineHeight: 1.1,
+                  textAlign: 'center',
+                  gap: 1,
+                }}
+              >
+                <span style={{ color: item.color, display: 'flex', alignItems: 'center' }}>{item.icon}</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
+              </div>
+            </foreignObject>
+          </g>
+        );
+      })}
+      </g>
+    </svg>
+  );
+
+return (
+    <>
+      <style>{`
+        @keyframes torus-sector-pop {
+          0% { opacity: 0; transform: scale(0); }
+          60% { opacity: 1; }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .torus-overlay.torus-overlay--no-scroll {
+          pointer-events: none;
+        }
+        .torus-overlay.torus-overlay--no-scroll > * {
+          pointer-events: auto;
+        }
+      `}</style>
+      {interactive ? (
+        <div
+          className={`torus-overlay${disableScrolling === 'none' ? ' torus-overlay--no-scroll' : ''}`}
+          ref={ref}
+          style={{
+            left: pos.x - cx,
+            top: pos.y - cy,
+            width: cx * 2,
+            height: cy * 2,
+            transformOrigin: `${cx}px ${cy}px`,
+            transformBox: 'view-box',
+            // 🔥 FIX: Remove borderRadius - clipPath handles the shape and makes it circular already
+            // borderRadius: '50%', 
+
+            // 🔥 FIX: Remove overflow: hidden so the visual can render beyond the hitbox
+            // overflow: 'hidden',
+            // 🔥 FIX: Use outerR for the hitbox (skintight), not maxPossibleR
+            //🔥 in fact just remove clipPath entirely
+            //clipPath: `circle(${outerR}px at ${cx}px ${cy}px)`
+          }}
+          onMouseDown={(e) => {
+            const targetEl = e.target as HTMLElement;
+            if (disableScrolling !== 'annular sectors only' || targetEl.closest('.torus-sector')) {
+              e.stopPropagation();
+            }
+          }}
+        >
+          {svgContent}
+          {showCloseButton && (
+            <button
+              type="button"
+              className="torus-center-btn"
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              title="Close"
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: '2px solid var(--highlight-color)',
+                background: 'rgba(56,189,248,0.2)',
+                color: 'var(--highlight-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 10,
+                fontSize: 16,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      ) : (
+        svgContent
+      )}
+    </>
+  );
+}
+export const insideMenuItems: MenuItem[] = [
+  { label: 'Split', icon: <Scissors size={14} />, action: () => {}, color: '#60a5fa' },
+  { label: 'Trim', icon: <ChevronRight size={14} />, action: () => {}, color: '#34d399' },
+  { label: 'Trim', icon: <ChevronLeft size={14} />, action: () => {}, color: '#34d399' },
+  { label: 'Ripple', icon: <ChevronRight size={14} />, action: () => {}, color: '#fbbf24' },
+  { label: 'Ripple', icon: <ChevronLeft size={14} />, action: () => {}, color: '#fbbf24' },
+  { label: 'Roll', icon: <Move size={14} />, action: () => {}, color: '#f472b6' },
+];
+

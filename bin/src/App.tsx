@@ -1,34 +1,34 @@
 //src/App.tsx
 import { useState, useCallback, useEffect, useRef } from 'react';
-import MediaPool from './components/MediaPool';
+import MediaPool from './panels/MediaPool';
 
-import Viewer from './components/Viewer';
-import Timeline from './components/Timeline';
-import RollDialog from './components/RollDialog';
-import ViewerControls from './components/ViewerControls';
-import { OpenSettings } from './components/Settings';
-import { OpenShaderSelector } from './components/shader_selector';
-import { isShortcutMatch, useShortcutLifecycle } from './components/shortcuts';
-import { parentMap, StylesModal, applyThemeToDocument } from './components/styles';
-import Splitter from './components/Splitter';
-import DraggableModal from './components/DraggableModal';
+import Viewer from './panels/Viewer';
+import Timeline from './panels/Timeline';
+import RollDialog from './modals/RollDialog';
+import ViewerControls from './panels/ViewerControls';
+import { OpenSettings } from './modals/Settings';
+import { OpenShaderSelector } from './modals/ShaderSelector';
+import { isShortcutMatch, useShortcutLifecycle } from './core/settings/shortcuts';
+import { parentMap, StylesModal, applyThemeToDocument } from './modals/Styles';
+import Splitter from './ui/Splitter';
+import DraggableModal from './ui/DraggableModal';
 
 import {
   type MediaItem, type TimelineClip, type Track,
   FPS, generateId, secondsToFrames
 } from './types';
-import { HistoryProvider, useHistory, type AppSnapshot } from './state/history';
-import { SETTINGS_CHANGED_EVENT, getSettingsChangedDetail } from './state/settingsEvents';
-import { useLayoutSettings } from './hooks/useLayoutSettings';
-import { useDayNightIcon } from './hooks/useDayNightIcon';
-import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from './utils/appIcon';
+import { HistoryProvider, useHistory, type AppSnapshot } from './core/history';
+import { SETTINGS_CHANGED_EVENT, getSettingsChangedDetail } from './core/settings/settingsEvents';
+import { useLayoutSettings } from './core/settings/useLayoutSettings';
+import { useDayNightIcon } from './platform/useDayNightIcon';
+import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from './platform/appIcon';
 import halluTextImage from '@assets/icons/app/hallu_text.webp';
-import { DEFAULT_SETTINGS } from './state/settingsDefaults';
-import { useExportJob } from './hooks/useExportJob';
-import { useTimelineEditor } from './hooks/useTimelineEditor';
-import { getMediaType } from './domain/mediaIngestion';
-import { modalManager, registerModalPermissions } from './state';
-import Toast from './components/Toast';
+import { DEFAULT_SETTINGS } from './core/settings/settingsDefaults';
+import { useExportJob } from './core/media/useExportJob';
+import { useTimelineEditor } from './core/timeline/useTimelineEditor';
+import { getMediaType } from './core/media/mediaIngestion';
+import { modalManager, registerModalPermissions } from './core/modals';
+import Toast from './overlays/Toast';
 // Toast is a class, not a React component - no need to render it
 
 const DEFAULT_IMAGE_DURATION = 5 * FPS;
