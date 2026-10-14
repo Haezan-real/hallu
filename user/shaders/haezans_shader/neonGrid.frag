@@ -1,14 +1,6 @@
-#version 300 es
-precision highp float;
-
-out vec4 outColor;
-
-uniform vec2 u_resolution;
-uniform float u_time;
-
 // Neon grid — synthwave-style perspective floor grid
-void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution;
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 uv = fragCoord / iResolution.xy;
 
   // Perspective: horizon at 60% height, floor below it
   float horizon = 0.6;
@@ -17,7 +9,7 @@ void main() {
   if (uv.y < horizon) {
     float depth = (horizon - uv.y) / horizon;          // 0 at horizon, 1 at bottom
     float pz = 1.0 / max(depth, 0.05);                  // perspective divide
-    vec2 gp = vec2((uv.x - 0.5) * pz * 4.0, pz + u_time * 2.0); // grid position, scrolling
+    vec2 gp = vec2((uv.x - 0.5) * pz * 4.0, pz + iTime * 2.0); // grid position, scrolling
 
     vec2 grid = abs(fract(gp) - 0.5);
     float line = smoothstep(0.48, 0.5, max(grid.x, grid.y));
@@ -30,8 +22,8 @@ void main() {
     // Sky: subtle vertical gradient + slow pulse
     float sky = (uv.y - horizon) / (1.0 - horizon);
     col += vec3(0.05, 0.0, 0.1) * sky;
-    col += vec3(0.08, 0.0, 0.15) * (0.5 + 0.5 * sin(u_time * 0.8)) * (1.0 - sky);
+    col += vec3(0.08, 0.0, 0.15) * (0.5 + 0.5 * sin(iTime * 0.8)) * (1.0 - sky);
   }
 
-  outColor = vec4(col, 1.0);
+  fragColor = vec4(col, 1.0);
 }

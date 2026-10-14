@@ -1,0 +1,7 @@
+{
+  "name": "Haezan's Shader",
+  "language": "glsl",
+  "surfaces": {
+    "background": "neonGrid.frag"
+  }
+}

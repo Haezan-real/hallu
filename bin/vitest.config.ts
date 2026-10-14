@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@assets': resolve(__dirname, '../assets'),
-      '@shaders': resolve(__dirname, '../user/shaders'),
     },
   },
   test: {

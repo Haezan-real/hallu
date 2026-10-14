@@ -1,4 +1,5 @@
-//src/modals/shaders/shaderRegistry.ts
+//src/features/shaders/shaderRegistry.ts
+import type { ShaderPackInfo } from '../../shared/platform/electronApi';
 
 export const SHADER_CHANGE_EVENT = 'hallu-shader-change';
 export const DEFAULT_SHADER = 'haezans_shader';
@@ -15,7 +16,7 @@ export function getActiveShader(): string {
   }
 }
 
-// Saves the choice and tells the viewer background to switch
+// Saves the choice and tells the shader background to switch
 export function setActiveShader(shaderName: string) {
   try { window.localStorage.setItem(ACTIVE_SHADER_KEY, shaderName); } catch {}
   window.dispatchEvent(new CustomEvent(SHADER_CHANGE_EVENT, { detail: { shaderName } }));
@@ -25,11 +26,7 @@ export function getShaderChangeName(event: Event): string | undefined {
   return (event as CustomEvent<{ shaderName?: string }>).detail?.shaderName;
 }
 
-/** Every folder in user/shaders that has an index.ts. */
-export function listShaders(): string[] {
-  const shaderModules = import.meta.glob('../../../../user/shaders/*/index.ts', { eager: false });
-  const names = Object.keys(shaderModules)
-    .map(path => path.match(/user\/shaders\/([^/]+)\/index\.ts/)?.[1])
-    .filter((name): name is string => !!name);
-  return names.length > 0 ? names : [DEFAULT_SHADER];
+/** Every folder in user/shaders with a valid manifest.json. */
+export async function listShaderPacks(): Promise<ShaderPackInfo[]> {
+  return (await window.electronAPI?.listShaderPacks()) ?? [];
 }

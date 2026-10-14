@@ -21,6 +21,7 @@ import { TRACKS, useTimelineEditor } from '../panels/timeline/useTimelineEditor'
 import { registerModalPermissions } from '../shared/modals';
 import { useBackgroundLock } from './useBackgroundLock';
 import { useSuppressContextMenu } from './useSuppressContextMenu';
+import ShaderBackground from '../features/shaders/ShaderBackground';
 
 registerModalPermissions();
 
@@ -115,6 +116,7 @@ function AppContent() {
 
   return (
     <div id="editor-container" style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
+    <ShaderBackground />
     <div className="app-shell">
       {/* Background blocking overlay: sits below modal/torus overlays (z-index 199 vs 200) */}
       {blockBackground && (

@@ -14,6 +14,7 @@
     "build:icons": "electron generateRoundedIcons.cjs",
     "build:launcher": "npm run build:icons && powershell -NoProfile -Command \"& 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe' /nologo /target:exe /win32icon:../assets/icons/app/hallu_day.ico /out:../hallu_editor_dev.exe hallu_editor_dev.cs\"",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "tools:shaders": "node scripts/fetchShaderTools.mjs",
     "start": "electron --no-sandbox ."
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "@webgpu/types": "^0.1.74",
     "autoprefixer": "^10.4.18",
     "electron": "^42.11.3",
     "eslint": "^9.9.1",

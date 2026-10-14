@@ -5,6 +5,7 @@ const config = require('./config.json');
 const iconConfig = require('./appIcon.json');
 const { roundIconCorners } = require('./iconRounding.cjs');
 const { registerSettingsStorageHandlers } = require('./settingsStorage.cjs');
+const { registerShaderPackHandlers } = require('./shaderPacks.cjs');
 
 
 
@@ -147,6 +148,7 @@ class WindowManager {
     ipcMain.on('window-close', () => this.appWindow.close());
 
     registerSettingsStorageHandlers();
+    registerShaderPackHandlers(ipcMain, () => this.appWindow);
 
     console.log('✅ IPC handlers registered');
   }

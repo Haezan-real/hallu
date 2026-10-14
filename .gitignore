@@ -4,6 +4,7 @@
 ~WRL*.tmp
 
 /user/settings.json
+/bin/tools/
 
 notes n shit
 logs

@@ -46,4 +46,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadUserSettings: () => ipcRenderer.invoke('load-user-settings'),
   saveUserSettings: (data) => ipcRenderer.send('save-user-settings', data),
   saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
+  listShaderPacks: () => ipcRenderer.invoke('shader-packs-list'),
+  compileShaderSurface: (packId, surface) => ipcRenderer.invoke('shader-packs-compile', packId, surface),
+  onShaderPacksChanged: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('shader-packs-changed', listener);
+    return () => ipcRenderer.removeListener('shader-packs-changed', listener);
+  },
 });
