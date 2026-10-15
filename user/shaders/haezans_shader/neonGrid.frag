@@ -1,10 +1,23 @@
-// Neon grid — synthwave-style perspective floor grid
+// Neon grid — synthwave-style perspective floor grid, coloured by the active theme:
+// sky = background, grid lines = border, floor glow = elevated panels, horizon pulse = hover.
+float luminance(vec3 color) {
+  return dot(color, vec3(0.2126, 0.7152, 0.0722));
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
 
+  vec3 sky = iTheme.bgBase.rgb;
+  vec3 lines = iTheme.border.rgb;
+
+  // Light themes: glow on a bright sky washes out, so the grid darkens instead,
+  // using the secondary text colour that themes already keep readable on their background
+  float light = smoothstep(0.35, 0.6, luminance(sky));
+  lines = mix(lines, iTheme.textSecondary.rgb, light);
+
   // Perspective: horizon at 60% height, floor below it
   float horizon = 0.6;
-  vec3 col = vec3(0.02, 0.0, 0.05); // deep purple sky
+  vec3 col;
 
   if (uv.y < horizon) {
     float depth = (horizon - uv.y) / horizon;          // 0 at horizon, 1 at bottom
@@ -15,14 +28,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float line = smoothstep(0.48, 0.5, max(grid.x, grid.y));
     float fade = exp(-depth * 4.0);                     // fade near horizon
 
-    vec3 gridCol = vec3(1.0, 0.1, 0.6);                 // hot pink lines
-    col += gridCol * line * fade * 0.7;
-    col += vec3(0.05, 0.0, 0.12) * (1.0 - depth);       // floor base glow
+    col = mix(sky, iTheme.bgElevated.rgb, (1.0 - depth) * 0.5); // floor base glow
+    col = mix(col, lines, line * fade * 0.7);
   } else {
-    // Sky: subtle vertical gradient + slow pulse
-    float sky = (uv.y - horizon) / (1.0 - horizon);
-    col += vec3(0.05, 0.0, 0.1) * sky;
-    col += vec3(0.08, 0.0, 0.15) * (0.5 + 0.5 * sin(iTime * 0.8)) * (1.0 - sky);
+    // Sky: subtle vertical gradient + slow pulse near the horizon
+    float height = (uv.y - horizon) / (1.0 - horizon);
+    col = mix(sky, iTheme.bgPanel.rgb, height);
+    float pulse = 0.5 + 0.5 * sin(iTime * 0.8);
+    col = mix(col, iTheme.bgHover.rgb, pulse * (1.0 - height) * 0.5);
   }
 
   fragColor = vec4(col, 1.0);

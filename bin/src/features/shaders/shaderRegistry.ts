@@ -18,7 +18,11 @@ export function getActiveShader(): string {
 
 // Saves the choice and tells the shader background to switch
 export function setActiveShader(shaderName: string) {
-  try { window.localStorage.setItem(ACTIVE_SHADER_KEY, shaderName); } catch {}
+  try {
+    window.localStorage.setItem(ACTIVE_SHADER_KEY, shaderName);
+  } catch {
+    // Storage can be unavailable; the switch still applies for this session
+  }
   window.dispatchEvent(new CustomEvent(SHADER_CHANGE_EVENT, { detail: { shaderName } }));
 }
 

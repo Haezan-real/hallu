@@ -2,15 +2,18 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
+  allowStorageWrites,
   cacheKey,
-  hasMainImage,
+  hasEntryPoint,
+  normalizeSurface,
   parseGlslangErrors,
   parseTintErrors,
+  parseWorkgroupSize,
   translateGlsl,
   validateManifest,
+  wgslPreludeLines,
   wrapGlsl,
   wrapWgsl,
-  WGSL_PRELUDE_LINES,
 } from '../shaderPacks.cjs';
 
 const MAIN_IMAGE = 'void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  fragColor = vec4(fragCoord / iResolution.xy, 0.5 + 0.5 * sin(iTime), 1.0);\n}\n';
@@ -21,19 +24,45 @@ describe('shader boilerplate', () => {
     const wrapped = wrapGlsl(MAIN_IMAGE);
     expect(wrapped.startsWith('#version 460')).toBe(true);
     expect(wrapped).toContain(`#line 1\n${MAIN_IMAGE}`);
-    expect(wrapped).toContain('mainImage(color, vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y))');
+  });
+
+  it('flips fragCoord only for the screen pass', () => {
+    expect(wrapGlsl(MAIN_IMAGE, 'image')).toContain('mainImage(color, vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y))');
+    expect(wrapGlsl(MAIN_IMAGE, 'buffer')).toContain('mainImage(color, gl_FragCoord.xy)');
+  });
+
+  it('gives compute passes an output image and no generated main', () => {
+    const wrapped = wrapGlsl('layout(local_size_x = 8) in;\nvoid main() {}\n', 'compute');
+    expect(wrapped).toContain('uniform writeonly image2D iOutput');
+    expect(wrapped).not.toContain('halluFragColor');
   });
 
   it('reports how many WGSL boilerplate lines precede the author\'s code', () => {
     const source = 'fn mainImage(fragCoord : vec2f) -> vec4f { return vec4f(1.0); }';
-    const lines = wrapWgsl(source).split('\n');
-    expect(lines[WGSL_PRELUDE_LINES]).toBe(source);
+    for (const kind of ['image', 'buffer', 'compute'] as const) {
+      expect(wrapWgsl(source, kind).split('\n')[wgslPreludeLines(kind)]).toBe(source);
+    }
   });
 
-  it('detects the mainImage entry point per language', () => {
-    expect(hasMainImage(MAIN_IMAGE, 'glsl')).toBe(true);
-    expect(hasMainImage('void main() {}', 'glsl')).toBe(false);
-    expect(hasMainImage('fn mainImage(fragCoord : vec2f) -> vec4f {}', 'wgsl')).toBe(true);
+  it('detects the entry point per language and pass kind', () => {
+    expect(hasEntryPoint(MAIN_IMAGE, 'glsl', 'image')).toBe(true);
+    expect(hasEntryPoint('void main() {}', 'glsl', 'image')).toBe(false);
+    expect(hasEntryPoint('void main() {}', 'glsl', 'compute')).toBe(true);
+    expect(hasEntryPoint('fn mainImage(fragCoord : vec2f) -> vec4f {}', 'wgsl', 'buffer')).toBe(true);
+    expect(hasEntryPoint('@compute @workgroup_size(8) fn main() {}', 'wgsl', 'compute')).toBe(true);
+  });
+
+  it('turns read-only storage declarations into the read-write binding Hallu provides', () => {
+    expect(allowStorageWrites('@group(0u) @binding(10u) var<storage, read> v : Stats;'))
+      .toBe('@group(0u) @binding(10u) var<storage, read_write> v : Stats;');
+    expect(allowStorageWrites('@group(0) @binding(10) var<storage, read_write> v : Stats;'))
+      .toBe('@group(0) @binding(10) var<storage, read_write> v : Stats;');
+  });
+
+  it('reads literal workgroup sizes from WGSL', () => {
+    expect(parseWorkgroupSize('@compute @workgroup_size(8u, 8u, 1u)\nfn main() {}')).toEqual([8, 8, 1]);
+    expect(parseWorkgroupSize('@compute @workgroup_size(64)\nfn main() {}')).toEqual([64, 1, 1]);
+    expect(parseWorkgroupSize('@compute @workgroup_size(SIZE)\nfn main() {}')).toBeNull();
   });
 });
 
@@ -72,23 +101,63 @@ describe('compiler error parsing', () => {
 });
 
 describe('shader cache key', () => {
-  it('changes when the source or the tool versions change', () => {
-    const base = cacheKey(MAIN_IMAGE, 'glsl', 'tools-a');
-    expect(cacheKey(MAIN_IMAGE, 'glsl', 'tools-a')).toBe(base);
-    expect(cacheKey(`${MAIN_IMAGE} `, 'glsl', 'tools-a')).not.toBe(base);
-    expect(cacheKey(MAIN_IMAGE, 'glsl', 'tools-b')).not.toBe(base);
+  it('changes when the source, pass kind or tool versions change', () => {
+    const base = cacheKey(MAIN_IMAGE, 'glsl', 'image', 'tools-a');
+    expect(cacheKey(MAIN_IMAGE, 'glsl', 'image', 'tools-a')).toBe(base);
+    expect(cacheKey(`${MAIN_IMAGE} `, 'glsl', 'image', 'tools-a')).not.toBe(base);
+    expect(cacheKey(MAIN_IMAGE, 'glsl', 'buffer', 'tools-a')).not.toBe(base);
+    expect(cacheKey(MAIN_IMAGE, 'glsl', 'image', 'tools-b')).not.toBe(base);
   });
 });
 
 describe('shader pack manifest', () => {
-  it('accepts a valid manifest', () => {
+  it('accepts the single-file shorthand', () => {
     expect(validateManifest({ name: 'Pack', language: 'glsl', surfaces: { background: 'bg.frag' } })).toBeNull();
+    expect(normalizeSurface('bg.frag')).toEqual({
+      passes: [{ name: null, kind: 'image', file: 'bg.frag', channels: [], dispatch: null }],
+      storage: 0,
+    });
+  });
+
+  it('expands passes, channels and storage', () => {
+    const surface = normalizeSurface({
+      storage: 1024,
+      passes: [
+        { name: 'sim', type: 'compute', file: 'sim.comp', dispatch: [4, 1, 1] },
+        { name: 'trail', file: 'trail.frag', channels: ['trail', 'sim'] },
+        { file: 'image.frag', channels: [{ source: 'trail', filter: 'nearest' }, null, { source: 'tex/noise.png', wrap: 'repeat' }] },
+      ],
+    });
+    expect(surface.storage).toBe(1024);
+    expect(surface.passes.map(pass => pass.kind)).toEqual(['compute', 'buffer', 'image']);
+    expect(surface.passes[0].dispatch).toEqual([4, 1, 1]);
+    expect(surface.passes[1].channels).toEqual([
+      { kind: 'pass', source: 'trail', filter: 'linear', wrap: 'clamp' },
+      { kind: 'pass', source: 'sim', filter: 'linear', wrap: 'clamp' },
+    ]);
+    expect(surface.passes[2].channels).toEqual([
+      { kind: 'pass', source: 'trail', filter: 'nearest', wrap: 'clamp' },
+      null,
+      { kind: 'image', source: 'tex/noise.png', filter: 'linear', wrap: 'repeat', flipY: true },
+    ]);
   });
 
   it('rejects unknown languages, surfaces and paths outside the pack', () => {
     expect(validateManifest({ language: 'hlsl', surfaces: {} })).toMatch(/language/);
     expect(validateManifest({ language: 'glsl', surfaces: { timeline: 'a.frag' } })).toMatch(/unknown surface/);
     expect(validateManifest({ language: 'glsl', surfaces: { background: '../../evil.frag' } })).toMatch(/inside the pack/);
+  });
+
+  it('rejects broken pass lists', () => {
+    const problem = (passes: unknown[], storage?: number) => validateManifest({ language: 'glsl', surfaces: { background: { passes, storage } } });
+    expect(problem([])).toMatch(/non-empty/);
+    expect(problem([{ file: 'a.frag' }, { file: 'b.frag' }])).toMatch(/needs a "name"/);
+    expect(problem([{ name: 'a', file: 'a.frag' }, { name: 'a', file: 'b.frag' }, { file: 'c.frag' }])).toMatch(/two passes/);
+    expect(problem([{ name: 'a', file: 'a.frag' }, { type: 'compute', file: 'b.comp' }])).toMatch(/last pass/);
+    expect(problem([{ file: 'a.frag', channels: ['missing'] }])).toMatch(/neither a pass name nor an image/);
+    expect(problem([{ file: 'a.frag', channels: ['a', 'b', 'c', 'd', 'e'] }])).toMatch(/up to 4/);
+    expect(problem([{ file: 'a.frag', dispatch: [1, 1, 1] }])).toMatch(/dispatch/);
+    expect(problem([{ file: 'a.frag' }], 3)).toMatch(/storage/);
   });
 });
 
@@ -105,5 +174,47 @@ describe.skipIf(!toolsInstalled)('glslang + tint translation', () => {
     expect(result.ok).toBe(false);
     expect(result.stage).toBe('glslang');
     expect(result.errors[0]).toMatchObject({ line: 2 });
+  });
+
+  it('splits iChannel samplers into the texture and sampler bindings the renderer expects', async () => {
+    const source = [
+      'vec4 tap(sampler2D s, vec2 uv) { return texture(s, uv); }',
+      'void mainImage(out vec4 fragColor, in vec2 fragCoord) {',
+      '  vec2 uv = fragCoord / iChannelResolution[3].xy;',
+      '  fragColor = tap(iChannel0, uv) + texelFetch(iChannel3, ivec2(fragCoord), 0);',
+      '}',
+    ].join('\n');
+    const result = await translateGlsl(source, 'buffer');
+    expect(result.ok).toBe(true);
+    expect(result.wgsl).toMatch(/@binding\(1u?\) var \w+ : texture_2d<f32>/);
+    expect(result.wgsl).toMatch(/@binding\(2u?\) var \w+ : sampler/);
+    expect(result.wgsl).toMatch(/@binding\(7u?\) var \w+ : texture_2d<f32>/);
+  });
+
+  it('exposes the theme colors as iTheme', async () => {
+    const source = 'void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  fragColor = mix(iTheme.bgBase, iTheme.automationLine, 0.5);\n}\n';
+    const result = await translateGlsl(source);
+    expect(result.ok).toBe(true);
+    expect(wrapWgsl('fn mainImage(fragCoord : vec2f) -> vec4f { return hallu.iTheme.highlightColor; }')).toContain('iTheme : HalluTheme');
+  });
+
+  it('translates compute passes with storage buffers, atomics and shared memory', async () => {
+    const source = [
+      'HALLU_STORAGE Counters { uint alive; float values[]; };',
+      'shared float tile[64];',
+      'layout(local_size_x = 8, local_size_y = 8) in;',
+      'void main() {',
+      '  ivec2 id = ivec2(gl_GlobalInvocationID.xy);',
+      '  tile[gl_LocalInvocationIndex] = texture(iChannel0, vec2(id) / iResolution.xy).r;',
+      '  barrier();',
+      '  atomicAdd(alive, 1u);',
+      '  imageStore(iOutput, id, vec4(tile[0], values[0], 0.0, 1.0));',
+      '}',
+    ].join('\n');
+    const result = await translateGlsl(source, 'compute');
+    expect(result.ok).toBe(true);
+    expect(parseWorkgroupSize(result.wgsl)).toEqual([8, 8, 1]);
+    expect(result.wgsl).toMatch(/@binding\(9u?\) var iOutput : texture_storage_2d<rgba32float, write>/);
+    expect(result.wgsl).toMatch(/@binding\(10u?\) var<storage, read_write>/);
   });
 });

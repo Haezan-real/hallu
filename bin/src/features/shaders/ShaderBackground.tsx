@@ -42,8 +42,8 @@ export default function ShaderBackground() {
         reportShaderErrors(result.file, result.errors);
         return;
       }
-      const errors = await renderer.setShader(result.wgsl, result.lineOffset);
-      if (errors && !disposed) reportShaderErrors(result.file, errors);
+      const failure = await renderer.setProgram(result, file => api.readShaderAsset(packId, file));
+      if (failure && !disposed) reportShaderErrors(failure.file, failure.errors);
     };
 
     const start = async () => {

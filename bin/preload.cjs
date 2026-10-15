@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
   listShaderPacks: () => ipcRenderer.invoke('shader-packs-list'),
   compileShaderSurface: (packId, surface) => ipcRenderer.invoke('shader-packs-compile', packId, surface),
+  readShaderAsset: (packId, file) => ipcRenderer.invoke('shader-packs-asset', packId, file),
   onShaderPacksChanged: (callback) => {
     const listener = () => callback();
     ipcRenderer.on('shader-packs-changed', listener);
