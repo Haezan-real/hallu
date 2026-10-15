@@ -1,6 +1,7 @@
 // shaderPacks.cjs
-// Shader packs live in user/shaders/<pack>/ with a manifest.json. Pack authors write
-// Shadertoy-style code; Hallu adds the boilerplate, then translates
+// A shader pack is a style folder in user/styles that has a manifest.json (see styleLibrary.cjs
+// for its theme.json and icon). Pack authors write Shadertoy-style code; Hallu adds the
+// boilerplate, then translates
 //   GLSL 4.60 --glslang--> SPIR-V --tint--> WGSL
 // and caches the WGSL by content hash so unchanged shaders skip translation.
 //
@@ -27,7 +28,7 @@ const os = require('os');
 const path = require('path');
 const { THEME_VARS } = require('./themeVars.cjs');
 
-const SHADERS_DIR = path.join(__dirname, '..', 'user', 'shaders');
+const STYLES_DIR = path.join(__dirname, '..', 'user', 'styles');
 const CACHE_DIR = path.join(__dirname, '..', 'user', '.cache', 'shaders');
 const TOOLS_DIR = path.join(__dirname, 'tools', 'shader');
 const GLSLANG = path.join(TOOLS_DIR, 'glslang.exe');
@@ -43,8 +44,6 @@ const MAX_CHANNELS = 4;
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
 const MAX_STORAGE_BYTES = 1024 ** 3;
 const TOOL_TIMEOUT_MS = 20000;
-const WATCH_DEBOUNCE_MS = 150;
-
 // The active theme's colors, in the order the renderer fills them in.
 // "--bg-base" becomes iTheme.bgBase, and so on.
 const THEME_FIELDS = THEME_VARS.map(varName => varName.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()));
@@ -336,26 +335,11 @@ function validateManifest(manifest) {
 }
 
 function readManifest(packId) {
-  const manifestPath = path.join(SHADERS_DIR, packId, 'manifest.json');
+  const manifestPath = path.join(STYLES_DIR, packId, 'manifest.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const problem = validateManifest(manifest);
   if (problem) throw new Error(`${packId}/manifest.json: ${problem}`);
   return manifest;
-}
-
-function listShaderPacks() {
-  if (!fs.existsSync(SHADERS_DIR)) return [];
-  const packs = [];
-  for (const entry of fs.readdirSync(SHADERS_DIR, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !fs.existsSync(path.join(SHADERS_DIR, entry.name, 'manifest.json'))) continue;
-    try {
-      const manifest = readManifest(entry.name);
-      packs.push({ id: entry.name, name: typeof manifest.name === 'string' ? manifest.name : entry.name, language: manifest.language });
-    } catch (err) {
-      console.error(`❌ Skipping shader pack "${entry.name}": ${err.message}`);
-    }
-  }
-  return packs;
 }
 
 function runTool(executable, args) {
@@ -399,7 +383,7 @@ async function compilePass(packId, language, pass) {
   const file = `${packId}/${pass.file}`;
   let source;
   try {
-    source = fs.readFileSync(path.join(SHADERS_DIR, packId, pass.file), 'utf8');
+    source = fs.readFileSync(path.join(STYLES_DIR, packId, pass.file), 'utf8');
   } catch {
     return { ok: false, file, stage: 'manifest', errors: [{ line: null, message: 'file not found' }] };
   }
@@ -462,32 +446,19 @@ async function compileSurface(packId, surface) {
 // Images used as channels, read on request so the renderer never touches the filesystem
 function readPackAsset(packId, file) {
   if (!isImagePath(file)) throw new Error(`"${file}" is not an image inside the pack`);
-  const packDir = path.join(SHADERS_DIR, packId);
+  const packDir = path.join(STYLES_DIR, packId);
   const fullPath = path.resolve(packDir, file);
   if (!fullPath.startsWith(packDir + path.sep)) throw new Error(`"${file}" is not inside the pack`);
   return fs.readFileSync(fullPath);
 }
 
-// Editing any file under user/shaders tells the renderer to recompile the active pack
-function watchShaderPacks(onChange) {
-  if (!fs.existsSync(SHADERS_DIR)) return () => {};
-  let timer = null;
-  const watcher = fs.watch(SHADERS_DIR, { recursive: true }, () => {
-    clearTimeout(timer);
-    timer = setTimeout(onChange, WATCH_DEBOUNCE_MS);
-  });
-  return () => {
-    clearTimeout(timer);
-    watcher.close();
-  };
-}
-
+// A pack id is the pack folder's path inside user/styles, like "cyberpunk" or "neon/cyberpunk"
 function isPackId(packId) {
-  return typeof packId === 'string' && /^[\w .-]+$/.test(packId) && packId !== '.' && packId !== '..';
+  return typeof packId === 'string' && packId.split('/').every(part => /^[\w .-]+$/.test(part) && part !== '.' && part !== '..');
 }
 
-function registerShaderPackHandlers(ipcMain, getWindow) {
-  ipcMain.handle('shader-packs-list', () => listShaderPacks());
+// Recompiling on file changes is driven by styleLibrary.cjs, which watches all of user/styles
+function registerShaderPackHandlers(ipcMain) {
   ipcMain.handle('shader-packs-compile', (_event, packId, surface) => {
     if (!isPackId(packId) || typeof surface !== 'string') {
       return { ok: false, file: String(packId), stage: 'manifest', errors: [{ line: null, message: 'invalid shader pack id' }] };
@@ -497,10 +468,6 @@ function registerShaderPackHandlers(ipcMain, getWindow) {
   ipcMain.handle('shader-packs-asset', (_event, packId, file) => {
     if (!isPackId(packId)) throw new Error('invalid shader pack id');
     return readPackAsset(packId, file);
-  });
-  return watchShaderPacks(() => {
-    const win = getWindow();
-    if (win && !win.isDestroyed()) win.webContents.send('shader-packs-changed');
   });
 }
 
@@ -518,7 +485,7 @@ module.exports = {
   validateManifest,
   translateGlsl,
   translateGlslCached,
-  listShaderPacks,
+  isPackId,
   compileSurface,
   registerShaderPackHandlers,
   THEME_FIELDS,

@@ -6,25 +6,44 @@ describe('renamed settings', () => {
     window.localStorage.clear();
   });
 
-  it('moves the Styles modal settings to their Themes names', () => {
-    window.localStorage.setItem('hallu.styles.activeTheme', 'default/cyberpunk');
-    window.localStorage.setItem('hallu.modal.styles.pageState', JSON.stringify({ stylePage: 'default', activeTheme: 'default/cyberpunk' }));
+  it('moves the Themes modal settings to the Styles modal', () => {
+    window.localStorage.setItem('hallu.themes.activeTheme', 'default/oak');
+    window.localStorage.setItem('hallu.modal.themes.pageState', JSON.stringify({ themePage: 'default', activeTheme: 'default/oak' }));
 
     migrateRenamedKeys();
 
-    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBe('default/cyberpunk');
-    expect(JSON.parse(window.localStorage.getItem('hallu.modal.themes.pageState')!)).toEqual({ themePage: 'default', activeTheme: 'default/cyberpunk' });
+    expect(window.localStorage.getItem('hallu.styles.active')).toBe('default/oak');
+    expect(JSON.parse(window.localStorage.getItem('hallu.modal.styles.pageState')!)).toEqual({ stylePage: 'default', activeStyle: 'default/oak' });
+    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBeNull();
+    expect(window.localStorage.getItem('hallu.modal.themes.pageState')).toBeNull();
+  });
+
+  it('moves the theme saved before the Themes rename too', () => {
+    window.localStorage.setItem('hallu.styles.activeTheme', 'default/cyberpunk');
+
+    migrateRenamedKeys();
+
+    expect(window.localStorage.getItem('hallu.styles.active')).toBe('default/cyberpunk');
     expect(window.localStorage.getItem('hallu.styles.activeTheme')).toBeNull();
-    expect(window.localStorage.getItem('hallu.modal.styles.pageState')).toBeNull();
   });
 
   it('keeps a value already saved under the new name', () => {
-    window.localStorage.setItem('hallu.styles.activeTheme', 'default/oak');
-    window.localStorage.setItem('hallu.themes.activeTheme', 'default/forest');
+    window.localStorage.setItem('hallu.themes.activeTheme', 'default/oak');
+    window.localStorage.setItem('hallu.styles.active', 'default/forest');
 
     migrateRenamedKeys();
 
-    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBe('default/forest');
-    expect(window.localStorage.getItem('hallu.styles.activeTheme')).toBeNull();
+    expect(window.localStorage.getItem('hallu.styles.active')).toBe('default/forest');
+    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBeNull();
+  });
+
+  it('drops the Shaders modal settings, since the style picks the shader', () => {
+    window.localStorage.setItem('hallu.shaders.active', 'haezans_shader');
+    window.localStorage.setItem('hallu.modal.shaderSelector.pageState', '{}');
+
+    migrateRenamedKeys();
+
+    expect(window.localStorage.getItem('hallu.shaders.active')).toBeNull();
+    expect(window.localStorage.getItem('hallu.modal.shaderSelector.pageState')).toBeNull();
   });
 });

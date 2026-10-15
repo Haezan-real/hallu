@@ -1,14 +1,14 @@
-//src/modals/themes/icons/ThemePreview.tsx
-import type { ThemeColors } from '../colorFields';
+//src/modals/styles/StylePreview.tsx
+import type { ThemeColors } from './colorFields';
 
 const SIZE = 96;
 const RULER_STEP = 8;
 
 /**
- * A miniature Hallu editor painted in one theme's colors: title bar, media pool,
+ * A miniature Hallu editor painted in one style's colors: title bar, media pool,
  * viewer and timeline with clips, automation and the playneedle.
  */
-export default function ThemePreview({ colors }: { colors: ThemeColors }) {
+export default function StylePreview({ colors }: { colors: ThemeColors }) {
   const c = (varName: keyof ThemeColors) => colors[varName] || 'transparent';
   const rulerTicks = Array.from({ length: Math.floor((SIZE - 12) / RULER_STEP) + 1 }, (_, i) => 12 + i * RULER_STEP);
 

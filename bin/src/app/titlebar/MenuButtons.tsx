@@ -1,22 +1,16 @@
 //src/app/titlebar/MenuButtons.tsx
 import { OpenSettings } from '../../modals/settings/Settings';
-import { OpenShaderSelector } from '../../modals/shaders/ShaderSelector';
-import { OpenThemes } from '../../modals/themes/ThemesModal';
+import { OpenStyles } from '../../modals/styles/StylesModal';
 
 const TOP_BAR_MENU_BUTTONS_SPACING = 0; //px
 
-// Buttons that open the Themes, Shaders and Settings modals
+// Buttons that open the Styles and Settings modals
 export default function MenuButtons({ style }: { style?: React.CSSProperties }) {
   return (
     <div style={{ display: 'flex', gap: TOP_BAR_MENU_BUTTONS_SPACING, alignItems: 'center', ...style }}>
-      <button className="icon-btn" onClick={() => OpenThemes()} title="Themes">
+      <button className="icon-btn" onClick={() => OpenStyles()} title="Styles">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2C12 2 5 10 5 15c0 3.866 3.134 7 7 7s7-3.134 7-7c0-5-7-13-7-13z"/>
-        </svg>
-      </button>
-      <button className="icon-btn" onClick={() => OpenShaderSelector()} title="Shaders">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L6.82 21 12 17.27 17.18 21l-.64-7.26L22 9.24l-7.19-.61z"/>
         </svg>
       </button>
       <button className="icon-btn" onClick={() => OpenSettings()} title="Settings">

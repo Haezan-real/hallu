@@ -1,10 +1,11 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cubicBezier, parseCssEasing } from '../src/shared/lib/cubicBezier';
-import { colorFields } from '../src/modals/themes/colorFields';
-import { applyThemeToDocument, loadThemeLibrary } from '../src/modals/themes/themes';
+import { colorFields } from '../src/modals/styles/colorFields';
+import { loadStyleLibrary } from '../src/modals/styles/styleLibrary';
+import { applyThemeToDocument } from '../src/modals/styles/themeColors';
 import { THEME_FLOATS, ThemeColorFade, parseCssDuration, readThemeColors } from '../src/features/shaders/themeColorFade';
 import type { ElectronAPI } from '../src/shared/platform/electronApi';
-import { THEME_VARS, readThemeLibrary } from '../themeLibrary.cjs';
+import { THEME_VARS, readStyleLibrary } from '../styleLibrary.cjs';
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 const colorAt = (colors: Float32Array, varName: string) => {
@@ -30,8 +31,8 @@ describe('cubic-bezier easing', () => {
 
 describe('theme colors for shaders', () => {
   beforeAll(async () => {
-    window.electronAPI = { loadThemes: async () => readThemeLibrary() } as unknown as ElectronAPI;
-    await loadThemeLibrary();
+    window.electronAPI = { loadStyles: async () => readStyleLibrary() } as unknown as ElectronAPI;
+    await loadStyleLibrary();
   });
 
   afterEach(() => {

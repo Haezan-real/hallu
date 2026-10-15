@@ -19,7 +19,7 @@ interface DraggableModalProps {
   headerLeft?: ReactNode;
   /** Inline styles for the modal-box element */
   style?: React.CSSProperties;
-  /** Unique key for persisting page state to localStorage (e.g., 'settings', 'themes'); read it back with readModalPageState */
+  /** Unique key for persisting page state to localStorage (e.g., 'settings', 'styles'); read it back with readModalPageState */
   persistenceKey?: string;
   /** Current page state to persist (e.g., active tab, selected folder) */
   pageState?: unknown;

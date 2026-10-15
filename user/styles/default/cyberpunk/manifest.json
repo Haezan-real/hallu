@@ -1,5 +1,5 @@
 {
-  "name": "Haezan's Shader",
+  "name": "cyberpunk",
   "language": "glsl",
   "surfaces": {
     "background": "neonGrid.frag"

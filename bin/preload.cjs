@@ -46,20 +46,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadUserSettings: () => ipcRenderer.invoke('load-user-settings'),
   saveUserSettings: (data) => ipcRenderer.send('save-user-settings', data),
   saveUserSettingsSync: (data) => ipcRenderer.send('save-user-settings-sync', data),
-  listShaderPacks: () => ipcRenderer.invoke('shader-packs-list'),
   compileShaderSurface: (packId, surface) => ipcRenderer.invoke('shader-packs-compile', packId, surface),
   readShaderAsset: (packId, file) => ipcRenderer.invoke('shader-packs-asset', packId, file),
-  onShaderPacksChanged: (callback) => {
+  loadStyles: () => ipcRenderer.invoke('styles-load'),
+  readStyleIconImage: (file) => ipcRenderer.invoke('styles-icon-image', file),
+  compileStyleIconShader: (file) => ipcRenderer.invoke('styles-icon-shader', file),
+  onStylesChanged: (callback) => {
     const listener = () => callback();
-    ipcRenderer.on('shader-packs-changed', listener);
-    return () => ipcRenderer.removeListener('shader-packs-changed', listener);
-  },
-  loadThemes: () => ipcRenderer.invoke('themes-load'),
-  readThemeIconImage: (file) => ipcRenderer.invoke('themes-icon-image', file),
-  compileThemeIconShader: (file) => ipcRenderer.invoke('themes-icon-shader', file),
-  onThemesChanged: (callback) => {
-    const listener = () => callback();
-    ipcRenderer.on('themes-changed', listener);
-    return () => ipcRenderer.removeListener('themes-changed', listener);
+    ipcRenderer.on('styles-changed', listener);
+    return () => ipcRenderer.removeListener('styles-changed', listener);
   },
 });

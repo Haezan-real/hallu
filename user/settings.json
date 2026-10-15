@@ -10,11 +10,12 @@
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
-  "hallu.settings.scrollAmount": 100,
-  "hallu.modal.themes.pageState": {
-    "themePage": "default",
-    "activeTheme": "default/cyberpunk"
+  "hallu.styles.active": "default/aquatic",
+  "hallu.modal.styles.pageState": {
+    "stylePage": "default",
+    "activeStyle": "default/aquatic"
   },
+  "hallu.settings.scrollAmount": 100,
   "hallu.layout.timelineHeightPct": 42.731652951885216,
   "hallu.settings.playneedle_t": 0.092,
   "hallu.layout.leftCollapsed": false,
@@ -23,7 +24,6 @@
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
-  "hallu.themes.activeTheme": "default/cyberpunk",
   "hallu.settings.viewerControlsType": "compact",
   "hallu.settings.allowMultipleMenus": true,
   "hallu.settings.playneedle_k": 103,
@@ -47,7 +47,6 @@
   "hallu.settings.torusDelay": 81,
   "hallu.settings.timecodePanel": "both",
   "hallu.settings.guiScale": 100,
-  "hallu.shaders.active": "haezans_shader",
   "hallu.settings.playneedle_v_o": 0.4,
   "hallu.settings.draggableHeaderButtons": true,
   "hallu.modal.settings.pageState": "sliders",

@@ -1,11 +1,5 @@
 //src/shared/platform/electronApi.ts
 
-export interface ShaderPackInfo {
-  id: string;
-  name: string;
-  language: 'glsl' | 'wgsl';
-}
-
 export interface ShaderCompileError {
   line: number | null;
   message: string;
@@ -34,25 +28,34 @@ export type ShaderCompileResult =
   | CompiledShaderSurface
   | { ok: false; file: string; stage: string; errors: ShaderCompileError[] };
 
-/** A same-name .frag or image next to a theme file; version changes whenever the file does */
-export interface ThemeIconFile {
+/** A style's .frag or image icon; version changes whenever the file does */
+export interface StyleIconFile {
   kind: 'shader' | 'image';
   file: string;
   version: number;
 }
 
-export type ThemeLibraryItem =
+export type StyleLibraryItem =
   | { id: string; label: string; type: 'folder'; parent: string | null; children: string[] }
-  | { id: string; label: string; type: 'theme'; parent: string | null; colors: Partial<Record<string, string>>; icon: ThemeIconFile | null };
+  | {
+    id: string;
+    label: string;
+    type: 'style';
+    parent: string | null;
+    colors: Partial<Record<string, string>>;
+    icon: StyleIconFile | null;
+    /** The style's shader pack id, or null for a colors-only style */
+    shader: string | null;
+  };
 
-export type ThemeIconShaderResult =
+export type StyleIconShaderResult =
   | { ok: true; wgsl: string }
   | { ok: false; errors: ShaderCompileError[] };
 
-/** Everything under user/themes; ids are paths without ".json", like "default/cyberpunk" */
-export interface ThemeLibrary {
+/** Everything under user/styles; ids are paths like "default/forest" (a theme file) or "cyberpunk" (a pack) */
+export interface StyleLibrary {
   topLevel: string[];
-  items: Record<string, ThemeLibraryItem>;
+  items: Record<string, StyleLibraryItem>;
   problems: { file: string; message: string }[];
 }
 
@@ -64,14 +67,12 @@ export interface ElectronAPI {
   loadUserSettings: () => Promise<Record<string, unknown> | null>;
   saveUserSettings: (data: Record<string, unknown>) => void;
   saveUserSettingsSync: (data: Record<string, unknown>) => void;
-  listShaderPacks: () => Promise<ShaderPackInfo[]>;
   compileShaderSurface: (packId: string, surface: string) => Promise<ShaderCompileResult>;
   readShaderAsset: (packId: string, file: string) => Promise<Uint8Array>;
-  onShaderPacksChanged: (callback: () => void) => () => void;
-  loadThemes: () => Promise<ThemeLibrary>;
-  readThemeIconImage: (file: string) => Promise<Uint8Array>;
-  compileThemeIconShader: (file: string) => Promise<ThemeIconShaderResult>;
-  onThemesChanged: (callback: () => void) => () => void;
+  loadStyles: () => Promise<StyleLibrary>;
+  readStyleIconImage: (file: string) => Promise<Uint8Array>;
+  compileStyleIconShader: (file: string) => Promise<StyleIconShaderResult>;
+  onStylesChanged: (callback: () => void) => () => void;
 }
 
 declare global {

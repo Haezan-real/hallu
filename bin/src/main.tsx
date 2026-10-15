@@ -6,15 +6,17 @@ import { migrateLegacyStorage, migrateRenamedKeys } from './modals/settings/stor
 import { initUserSettingsSync } from './modals/settings/userSettingsSync';
 import { readSetting } from './modals/settings/settingsStore';
 import { applyTransitionDuration } from './app/useAppearance';
-import { loadThemeLibrary } from './modals/themes/themes';
+import { loadStyleLibrary } from './modals/styles/styleLibrary';
+import { initActiveStyle } from './modals/styles/activeStyle';
 
 //src/main.tsx
 
 migrateLegacyStorage();
 
 async function start() {
-  await Promise.all([initUserSettingsSync(), loadThemeLibrary()]);
+  await Promise.all([initUserSettingsSync(), loadStyleLibrary()]);
   migrateRenamedKeys();
+  initActiveStyle();
 
   // Initialize the theme transition before the app renders
   applyTransitionDuration(readSetting('colorTransitionDuration'));

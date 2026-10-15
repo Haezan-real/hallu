@@ -2,7 +2,7 @@ import { onSettingChange, readSetting } from '../../modals/settings/settingsStor
 
 //src/shared/modals/modalManager.ts
 
-export type ModalType = 'settings' | 'themes' | 'export' | 'torusMenuEditor' | 'playneedleEditor' | 'colorPicker' | 'rollDialog' | 'shaderSelector';
+export type ModalType = 'settings' | 'styles' | 'export' | 'torusMenuEditor' | 'playneedleEditor' | 'colorPicker' | 'rollDialog';
 
 export interface ModalPermission {
   id: ModalType;

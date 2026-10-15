@@ -78,7 +78,7 @@ const errorMessage = (err: unknown) => (err instanceof Error ? err.message : Str
 const imageKey = (channel: ShaderChannel) => `${channel.source}|${channel.kind === 'image' && channel.flipY}`;
 
 /**
- * Runs the active shader pack's background surface on one WebGPU canvas: buffer and compute
+ * Runs a shader pack's background surface on one WebGPU canvas: buffer and compute
  * passes in manifest order, then the screen pass, with Shadertoy-style inputs.
  */
 export class ShaderBackgroundRenderer {
@@ -168,6 +168,21 @@ export class ShaderBackgroundRenderer {
     this.frame = 0;
     if (!this.rafId) this.rafId = requestAnimationFrame(this.render);
     return null;
+  }
+
+  /** Stops drawing and leaves the canvas transparent; also cancels a setProgram still building */
+  clearProgram() {
+    this.latestProgram++;
+    cancelAnimationFrame(this.rafId);
+    this.rafId = 0;
+    if (this.program) this.destroyProgram(this.program);
+    this.program = null;
+    if (!this.resize()) return;
+    const encoder = this.device.createCommandEncoder();
+    encoder.beginRenderPass({
+      colorAttachments: [{ view: this.context.getCurrentTexture().createView(), clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
+    }).end();
+    this.device.queue.submit([encoder.finish()]);
   }
 
   destroy() {

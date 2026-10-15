@@ -1,5 +1,5 @@
 //src/features/shaders/themeColorFade.ts
-import { colorFields } from '../../modals/themes/colorFields';
+import { colorFields } from '../../modals/styles/colorFields';
 import { hexToRgb, toHexColor } from '../../shared/lib/color';
 import { cubicBezier, parseCssEasing, type Easing } from '../../shared/lib/cubicBezier';
 

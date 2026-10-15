@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { showToast } from '../../shared/ui/Toast';
 import type { ShaderCompileError } from '../../shared/platform/electronApi';
-import { SHADER_CHANGE_EVENT, getActiveShader, getShaderChangeName } from './shaderRegistry';
+import { SHADER_CHANGE_EVENT, getActiveShader } from './shaderRegistry';
 import { ShaderBackgroundRenderer } from './shaderBackgroundRenderer';
 
 const SURFACE = 'background';
@@ -18,8 +18,9 @@ function reportShaderErrors(file: string, errors: ShaderCompileError[]) {
 }
 
 /**
- * Full-window WebGPU canvas behind the whole UI, drawing the active shader pack's
- * background surface. It shows through wherever the UI above it is transparent.
+ * Full-window WebGPU canvas behind the whole UI, drawing the active style's shader pack
+ * background surface. It shows through wherever the UI above it is transparent, and stays
+ * empty for colors-only styles.
  */
 export default function ShaderBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,8 +35,12 @@ export default function ShaderBackground() {
     let latestRequest = 0;
 
     // A broken shader leaves the last working one running, so live edits never blank the screen
-    const load = async (packId: string) => {
+    const load = async (packId: string | null) => {
       const request = ++latestRequest;
+      if (packId === null) {
+        renderer?.clearProgram();
+        return;
+      }
       const result = await api.compileShaderSurface(packId, SURFACE);
       if (disposed || request !== latestRequest || !renderer) return;
       if (!result.ok) {
@@ -68,17 +73,12 @@ export default function ShaderBackground() {
     };
     void start();
 
-    const onShaderChange = (event: Event) => {
-      const packId = getShaderChangeName(event);
-      if (packId) void load(packId);
-    };
+    const onShaderChange = () => void load(getActiveShader());
     window.addEventListener(SHADER_CHANGE_EVENT, onShaderChange);
-    const stopWatching = api.onShaderPacksChanged(() => void load(getActiveShader()));
 
     return () => {
       disposed = true;
       window.removeEventListener(SHADER_CHANGE_EVENT, onShaderChange);
-      stopWatching();
       renderer?.destroy();
     };
   }, []);

@@ -21,18 +21,22 @@ export function migrateLegacyStorage(): void {
   }
 }
 
-// Settings saved before the Styles modal was renamed to Themes
+// Settings saved by the separate Themes and Shaders modals, which became the Styles modal
 const RENAMED_KEYS: { from: string; to: string; convert?: (value: string) => string }[] = [
-  { from: 'hallu.styles.activeTheme', to: 'hallu.themes.activeTheme' },
+  { from: 'hallu.themes.activeTheme', to: 'hallu.styles.active' },
+  { from: 'hallu.styles.activeTheme', to: 'hallu.styles.active' },
   {
-    from: 'hallu.modal.styles.pageState',
-    to: 'hallu.modal.themes.pageState',
+    from: 'hallu.modal.themes.pageState',
+    to: 'hallu.modal.styles.pageState',
     convert: value => {
-      const { stylePage, ...rest } = JSON.parse(value) as { stylePage?: unknown };
-      return JSON.stringify({ ...rest, themePage: stylePage ?? null });
+      const { themePage, activeTheme, ...rest } = JSON.parse(value) as { themePage?: unknown; activeTheme?: unknown };
+      return JSON.stringify({ ...rest, stylePage: themePage ?? null, activeStyle: activeTheme ?? null });
     },
   },
 ];
+
+// The active style now decides the shader
+const REMOVED_KEYS = ['hallu.shaders.active', 'hallu.modal.shaderSelector.pageState'];
 
 // Must run after user/settings.json is imported, since the file can still hold the old keys
 export function migrateRenamedKeys(): void {
@@ -45,5 +49,10 @@ export function migrateRenamedKeys(): void {
     } catch (error) {
       console.warn(`Could not migrate the setting ${from}:`, error);
     }
+  }
+  try {
+    REMOVED_KEYS.forEach(key => window.localStorage.removeItem(key));
+  } catch (error) {
+    console.warn('Could not remove old settings:', error);
   }
 }

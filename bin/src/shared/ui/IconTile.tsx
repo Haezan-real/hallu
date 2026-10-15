@@ -12,7 +12,7 @@ interface IconTileProps {
   onClick: () => void;
 }
 
-// Large icon button used by the Themes, Shaders and Settings > Components grids
+// Large icon button used by the Styles and Settings > Components grids
 export function IconTile({ label, icon, active = false, onClick }: IconTileProps) {
   const color = active ? 'var(--accent-green)' : 'var(--text-secondary)';
   return (
@@ -36,7 +36,7 @@ export function IconTile({ label, icon, active = false, onClick }: IconTileProps
 export const PREVIEW_TILE_WIDTH = 100;
 const PREVIEW_SIZE = 84;
 
-// Tile with a square picture above its label, used for themes
+// Tile with a square picture above its label, used for styles
 export function PreviewTile({ label, preview, active = false, onClick }: { label: string; preview: ReactNode; active?: boolean; onClick: () => void }) {
   const color = active ? 'var(--accent-green)' : 'var(--text-secondary)';
   return (

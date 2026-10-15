@@ -1,5 +1,5 @@
-//src/modals/themes/icons/themeIconRenderer.ts
-import type { ShaderCompileError } from '../../../shared/platform/electronApi';
+//src/modals/styles/shaderIconRenderer.ts
+import type { ShaderCompileError } from '../../shared/platform/electronApi';
 import {
   CHANNEL_COUNT,
   THEME_OFFSET,
@@ -7,7 +7,7 @@ import {
   VERTEX_WGSL,
   channelSamplerBinding,
   channelTextureBinding,
-} from '../../../features/shaders/shaderBackgroundRenderer';
+} from '../../features/shaders/shaderBackgroundRenderer';
 
 const FRAME_RATE_SMOOTHING = 0.9;
 
@@ -37,11 +37,11 @@ interface ShaderIcon {
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 /**
- * Draws the shader icons in the Themes modal: single-pass mainImage shaders with the same
+ * Draws the shader icons in the Styles modal: single-pass mainImage shaders with the same
  * inputs as a shader pack's screen pass, where iTheme holds that icon's own theme colors.
  * All icons share one GPU device and one animation loop.
  */
-class ThemeIconRenderer {
+class ShaderIconRenderer {
   private icons = new Set<ShaderIcon>();
   private canvasOwners = new WeakMap<HTMLCanvasElement, ShaderIcon>();
   private rafId = 0;
@@ -189,10 +189,10 @@ class ThemeIconRenderer {
   }
 }
 
-let shared: Promise<ThemeIconRenderer | null> | null = null;
+let shared: Promise<ShaderIconRenderer | null> | null = null;
 
 /** The shared icon renderer, or null without WebGPU. A lost device is replaced on the next call. */
-export function getThemeIconRenderer(): Promise<ThemeIconRenderer | null> {
+export function getShaderIconRenderer(): Promise<ShaderIconRenderer | null> {
   shared ??= (async () => {
     if (!navigator.gpu) return null;
     try {
@@ -200,9 +200,9 @@ export function getThemeIconRenderer(): Promise<ThemeIconRenderer | null> {
       if (!adapter) return null;
       const device = await adapter.requestDevice();
       void device.lost.then(() => { shared = null; });
-      return new ThemeIconRenderer(device);
+      return new ShaderIconRenderer(device);
     } catch (err) {
-      console.warn('Theme shader icons are disabled:', err);
+      console.warn('Style shader icons are disabled:', err);
       shared = null;
       return null;
     }

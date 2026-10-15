@@ -1,4 +1,4 @@
-//src/modals/themes/colorFields.ts
+//src/modals/styles/colorFields.ts
 // Single source of truth for universal color settings used by every theme.
 // Any theme (or component) that wants to define or read a color value should
 // import from this file so that the key set and ordering stay consistent.
@@ -30,7 +30,7 @@ export interface ColorField {
 }
 
 // Ordered list of universal color fields. The order here is the canonical
-// display order in the themes UI and the order in which every theme must
+// display order in the styles UI and the order in which every theme must
 // supply values.
 export const colorFields: ColorField[] = [
   { varName: '--bg-panel', label: 'Primary background' },
