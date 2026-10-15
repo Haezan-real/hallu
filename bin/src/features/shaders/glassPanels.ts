@@ -2,7 +2,7 @@
 import { useEffect, type RefObject } from 'react';
 
 /** Corner radius in CSS pixels, shared by the panel element and the glass drawn behind it */
-export const GLASS_RADIUS = 14;
+export const GLASS_RADIUS = 0;
 export const MAX_GLASS_PANELS = 8;
 
 /** A registered panel in canvas pixels, top-left origin */

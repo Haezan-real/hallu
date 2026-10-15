@@ -9,6 +9,7 @@ import type {
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
 import { GlassCompositor } from './glassCompositor';
 import { measureGlassPanels } from './glassPanels';
+import { colorFields } from '../../modals/styles/colorFields';
 
 // Hallu owns the vertex stage: one triangle that covers the whole target
 export const VERTEX_WGSL = `
@@ -47,6 +48,8 @@ const BLEND_STATES: Record<ShaderGeometry['blend'], GPUBlendState | undefined> =
   },
 };
 const EMPTY_STORAGE_BYTES = 256;
+// The glass frit takes the theme's splitter colour
+const SPLITTER_COLOR = colorFields.findIndex(field => field.varName === '--splitter');
 const FRAME_RATE_SMOOTHING = 0.9;
 
 export interface ShaderProgramError {
@@ -408,7 +411,15 @@ export class ShaderBackgroundRenderer {
     for (const pass of program.passes) this.encodePass(encoder, program, pass, screen);
     if (screen) {
       const pixelsPerCssPixel = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
-      this.glass.encode(encoder, this.context.getCurrentTexture().createView(), panels, pixelsPerCssPixel, this.uniforms[3]);
+      const splitter = THEME_OFFSET + SPLITTER_COLOR * 4;
+      this.glass.encode(
+        encoder,
+        this.context.getCurrentTexture().createView(),
+        panels,
+        pixelsPerCssPixel,
+        this.uniforms[3],
+        this.uniforms.subarray(splitter, splitter + 3),
+      );
     }
     this.device.queue.submit([encoder.finish()]);
     this.mouse.clicked = false;

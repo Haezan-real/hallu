@@ -8,7 +8,7 @@ const SOFT_DEPTH = 1;
 const DOWN_SPREAD = 1.0;
 const UP_SPREAD = 0.75;
 const PANEL_FLOATS = 8;
-const HEADER_FLOATS = 8;
+const HEADER_FLOATS = 12;
 const COMPOSITE_FLOATS = HEADER_FLOATS + MAX_GLASS_PANELS * PANEL_FLOATS;
 
 const BLUR_WGSL = /* wgsl */ `
@@ -55,6 +55,7 @@ struct Panel {
 struct Glass {
   frame: vec4f,  // canvas width, height, canvas pixels per CSS pixel, panel count
   clock: vec4f,  // x: seconds
+  frit: vec4f,   // rgb: the theme's splitter colour
   panels: array<Panel, ${MAX_GLASS_PANELS}>,
 }
 
@@ -80,6 +81,12 @@ const FLARE_HALO = 0.6;        // ring radius, as a fraction of the pane's half 
 const FLARE_HALO_DISPERSION = 0.05;
 const DROP_SCALE = 450.0;      // CSS pixels per unit of the raindrop pattern
 const DROP_REFRACTION = 3.0;   // how far a drop bends the view through it, in units of DROP_SCALE pixels
+// Ceramic frit printed around the pane's edge in the splitter colour: a solid band, then dots
+// shrinking inward
+const FRIT_SOLID = 5.0;
+const FRIT_DOTS = 24.0;        // how far in the dots reach past the solid band
+const FRIT_PITCH = 4.5;        // dot spacing
+const FRIT_BLEED = 3.0;        // how far the solid band reaches past the pane's edge
 const SHADOW_OFFSET = 6.0;
 const SHADOW_BLUR = 16.0;
 const SHADOW_LIGHTNESS = 0.6;
@@ -194,6 +201,22 @@ fn rain(uv: vec2f, t: f32) -> vec2f {
   return vec2f(ss(0.3, 1.0, landing + near.x + far.x), max(near.y, far.y));
 }
 
+// How much of p the frit covers. Dots sit on a staggered grid and are sized by how far their
+// centre is from the edge, so each one stays round
+fn frit(p: vec2f, panel: Panel, px: f32) -> f32 {
+  let solid = linearstep(-0.5 * px, 0.5 * px, FRIT_SOLID * px + panelSdf(p, panel));
+  let pitch = FRIT_PITCH * px;
+  let q = (p - panel.rect.xy) / pitch;
+  let row = floor(q.y);
+  let stagger = 0.5 * (row - 2.0 * floor(row * 0.5));
+  let cell = vec2f(floor(q.x + stagger) - stagger + 0.5, row + 0.5);
+  let centre = panel.rect.xy + cell * pitch;
+  let fade = (-panelSdf(centre, panel) - FRIT_SOLID * px) / (FRIT_DOTS * px);
+  let radius = mix(0.62, 0.0, clamp(fade, 0.0, 1.0)) * pitch;
+  let spot = linearstep(0.5 * px, -0.5 * px, length(p - centre) - radius);
+  return max(solid, spot * step(fade, 1.0));
+}
+
 // The part of the (blurred) scene at p bright enough to flare
 fn flareSource(p: vec2f) -> vec3f {
   let c = textureSampleLevel(heavyBlur, linearSampler, p / glass.frame.xy, 0.0).rgb;
@@ -253,10 +276,13 @@ fn composite(@builtin(position) position: vec4f) -> @location(0) vec4f {
     shadow *= mix(SHADOW_LIGHTNESS, 1.0, linearstep(-shadowBlur, shadowBlur, s));
   }
 
+  // The solid frit runs a little past the pane, over the seam with whatever borders it
   let edge = EDGE * linearstep(px, -px, abs(sdf) - px);
+  let bleed = linearstep(0.5 * px, -0.5 * px, sdf - FRIT_BLEED * px);
+  let outside = mix(base.rgb * shadow + edge, glass.frit.rgb, bleed);
   let mask = linearstep(0.75 * px, -0.75 * px, sdf);
   if (mask <= 0.0) {
-    return vec4f(base.rgb * shadow + edge, base.a);
+    return vec4f(outside, max(base.a, bleed));
   }
 
   let panel = glass.panels[nearest];
@@ -303,8 +329,12 @@ fn composite(@builtin(position) position: vec4f) -> @location(0) vec4f {
   if (LENS_FLARE > 0.0) {
     col += flare(p, panel.rect.xy + halfSize, halfSize, local);
   }
+  // The frit is printed on the glass, so the rim's sheen still catches on its dots; the solid band
+  // stays flat so the pane's border reads as one clean edge
+  let sheen = RIM_SHARP * 0.4 * pow(rim, RIM_SHARP_POWER) * linearstep(FRIT_SOLID * px, (FRIT_SOLID + 2.0) * px, -sdf);
+  col = mix(col, glass.frit.rgb + sheen, frit(p, panel, px));
 
-  return vec4f(mix(base.rgb * shadow, col, mask) + edge, max(base.a, mask));
+  return vec4f(mix(outside, col, mask), max(base.a, max(mask, bleed)));
 }
 `;
 
@@ -397,11 +427,19 @@ export class GlassCompositor {
   }
 
   /** Blurs sceneView and draws it to the canvas with the panels' glass on top */
-  encode(encoder: GPUCommandEncoder, canvasView: GPUTextureView, panels: GlassRect[], pixelsPerCssPixel: number, seconds: number) {
+  encode(
+    encoder: GPUCommandEncoder,
+    canvasView: GPUTextureView,
+    panels: GlassRect[],
+    pixelsPerCssPixel: number,
+    seconds: number,
+    fritColor: ArrayLike<number>,
+  ) {
     if (!this.compositeGroup) return;
     const data = this.compositeData;
     data.fill(0);
     data.set([this.width, this.height, pixelsPerCssPixel, panels.length, seconds], 0);
+    data.set([fritColor[0], fritColor[1], fritColor[2], 1], 8);
     panels.forEach((panel, index) => {
       data.set([panel.x, panel.y, panel.width, panel.height, panel.radius], HEADER_FLOATS + index * PANEL_FLOATS);
     });

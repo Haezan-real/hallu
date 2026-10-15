@@ -203,11 +203,7 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* The shader background draws frosted glass behind these (glassPanels.ts sets the radius) */
-.glass-panel {
-  margin: 6px;
-}
-
+/* The shader background draws glass behind these (glassPanels.ts); let it show through the bars */
 .glass-panel .viewer-header,
 .glass-panel .viewer-controls,
 .glass-panel .empty-drop {
