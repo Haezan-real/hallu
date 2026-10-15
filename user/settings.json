@@ -13,7 +13,7 @@
   "hallu.settings.scrollAmount": 100,
   "hallu.modal.themes.pageState": {
     "themePage": "default",
-    "activeTheme": "default/oak"
+    "activeTheme": "default/cyberpunk"
   },
   "hallu.layout.timelineHeightPct": 42.731652951885216,
   "hallu.settings.playneedle_t": 0.092,
@@ -23,7 +23,7 @@
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
-  "hallu.themes.activeTheme": "default/oak",
+  "hallu.themes.activeTheme": "default/cyberpunk",
   "hallu.settings.viewerControlsType": "compact",
   "hallu.settings.allowMultipleMenus": true,
   "hallu.settings.playneedle_k": 103,

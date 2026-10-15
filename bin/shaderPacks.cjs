@@ -25,7 +25,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { THEME_VARS } = require('./themeLibrary.cjs');
+const { THEME_VARS } = require('./themeVars.cjs');
 
 const SHADERS_DIR = path.join(__dirname, '..', 'user', 'shaders');
 const CACHE_DIR = path.join(__dirname, '..', 'user', '.cache', 'shaders');
@@ -411,16 +411,20 @@ async function compilePass(packId, language, pass) {
     return { ok: true, file, wgsl: wrapWgsl(source, pass.kind), lineOffset: wgslPreludeLines(pass.kind), cached: false };
   }
 
-  const cachePath = path.join(CACHE_DIR, `${cacheKey(source, language, pass.kind)}.wgsl`);
-  if (fs.existsSync(cachePath)) {
-    return { ok: true, file, wgsl: fs.readFileSync(cachePath, 'utf8'), lineOffset: null, cached: true };
-  }
+  const result = await translateGlslCached(source, pass.kind);
+  return result.ok ? { ...result, file, lineOffset: null } : { ...result, file };
+}
 
-  const result = await translateGlsl(source, pass.kind);
-  if (!result.ok) return { ...result, file };
+// translateGlsl, reusing the stored result when the same source was translated before
+async function translateGlslCached(source, kind = 'image') {
+  const cachePath = path.join(CACHE_DIR, `${cacheKey(source, 'glsl', kind)}.wgsl`);
+  if (fs.existsSync(cachePath)) return { ok: true, wgsl: fs.readFileSync(cachePath, 'utf8'), cached: true };
+
+  const result = await translateGlsl(source, kind);
+  if (!result.ok) return result;
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   fs.writeFileSync(cachePath, result.wgsl, 'utf8');
-  return { ok: true, file, wgsl: result.wgsl, lineOffset: null, cached: false };
+  return { ok: true, wgsl: result.wgsl, cached: false };
 }
 
 /** Compiles every pass of one surface of a pack, or returns the first error that stopped it. */
@@ -513,6 +517,7 @@ module.exports = {
   normalizeSurface,
   validateManifest,
   translateGlsl,
+  translateGlslCached,
   listShaderPacks,
   compileSurface,
   registerShaderPackHandlers,

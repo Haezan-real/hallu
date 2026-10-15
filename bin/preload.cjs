@@ -55,6 +55,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('shader-packs-changed', listener);
   },
   loadThemes: () => ipcRenderer.invoke('themes-load'),
+  readThemeIconImage: (file) => ipcRenderer.invoke('themes-icon-image', file),
+  compileThemeIconShader: (file) => ipcRenderer.invoke('themes-icon-shader', file),
   onThemesChanged: (callback) => {
     const listener = () => callback();
     ipcRenderer.on('themes-changed', listener);

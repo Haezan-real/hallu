@@ -8,7 +8,7 @@ import type {
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
 
 // Hallu owns the vertex stage: one triangle that covers the whole target
-const VERTEX_WGSL = `
+export const VERTEX_WGSL = `
 @vertex
 fn main(@builtin(vertex_index) index : u32) -> @builtin(position) vec4f {
   let corners = array(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
@@ -18,13 +18,13 @@ fn main(@builtin(vertex_index) index : u32) -> @builtin(position) vec4f {
 
 // Mirrors HalluGlobals and the binding numbers in shaderPacks.cjs (std140, 400 bytes)
 const CHANNEL_RESOLUTION_OFFSET = 16;
-const THEME_OFFSET = 32;
-const UNIFORM_FLOATS = THEME_OFFSET + THEME_FLOATS;
-const CHANNEL_COUNT = 4;
+export const THEME_OFFSET = 32;
+export const UNIFORM_FLOATS = THEME_OFFSET + THEME_FLOATS;
+export const CHANNEL_COUNT = 4;
 const OUTPUT_BINDING = 9;
 const STORAGE_BINDING = 10;
-const channelTextureBinding = (slot: number) => 1 + slot * 2;
-const channelSamplerBinding = (slot: number) => 2 + slot * 2;
+export const channelTextureBinding = (slot: number) => 1 + slot * 2;
+export const channelSamplerBinding = (slot: number) => 2 + slot * 2;
 
 // Full float precision so simulations can keep positions and velocities in buffers
 const BUFFER_FORMAT: GPUTextureFormat = 'rgba32float';

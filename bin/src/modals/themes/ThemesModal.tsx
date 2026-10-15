@@ -2,11 +2,12 @@
 import { useState, useEffect, useRef } from 'react';
 import DraggableModal from '../../shared/ui/DraggableModal';
 import BackButton from '../../shared/ui/BackButton';
-import { IconTile, IconTileGrid } from '../../shared/ui/IconTile';
+import { IconTile, IconTileGrid, PREVIEW_TILE_WIDTH, PreviewTile } from '../../shared/ui/IconTile';
 import { openModal } from '../../shared/modals/openModal';
 import { modalManager } from '../../shared/modals/modalManager';
 import { readModalPageState } from '../../shared/modals/modalPageState';
-import { catalogIcon, getPathLabel } from './themeCatalog';
+import { folderIcon, getPathLabel } from './themeCatalog';
+import ThemeTileIcon from './icons/ThemeTileIcon';
 import { getActiveTheme, getThemeLibrary, setActiveTheme, useThemeLibrary } from './themes';
 import ThemeColorEditor from './ThemeColorEditor';
 
@@ -60,13 +61,16 @@ export default function ThemesModal({ modalId, initialPage, onClose }: {
   const renderTiles = (itemIds: string[]) => itemIds.map(itemId => {
     const item = library.items[itemId];
     if (!item) return null;
+    if (item.type === 'folder') {
+      return <IconTile key={item.id} label={item.label} icon={folderIcon} onClick={() => setThemePage(item.id)} />;
+    }
     return (
-      <IconTile
+      <PreviewTile
         key={item.id}
         label={item.label}
-        icon={catalogIcon(item)}
+        preview={<ThemeTileIcon theme={item} />}
         active={activeTheme === item.id}
-        onClick={() => item.type === 'folder' ? setThemePage(item.id) : selectTheme(item.id)}
+        onClick={() => selectTheme(item.id)}
       />
     );
   });
@@ -82,8 +86,8 @@ export default function ThemesModal({ modalId, initialPage, onClose }: {
       headerLeft={themePage && <BackButton onClick={() => setThemePage(parentOf(themePage))} />}
       body={
         <>
-          {!themePage && <IconTileGrid>{renderTiles(library.topLevel)}</IconTileGrid>}
-          {currentItem?.type === 'folder' && <IconTileGrid rowGap={4}>{renderTiles(currentItem.children)}</IconTileGrid>}
+          {!themePage && <IconTileGrid columnWidth={PREVIEW_TILE_WIDTH}>{renderTiles(library.topLevel)}</IconTileGrid>}
+          {currentItem?.type === 'folder' && <IconTileGrid rowGap={4} columnWidth={PREVIEW_TILE_WIDTH}>{renderTiles(currentItem.children)}</IconTileGrid>}
           {currentItem?.type === 'theme' && themePage && (
             <ThemeColorEditor themeName={themePage} closeThemes={onClose} reopenThemes={() => OpenThemes(themePage)} />
           )}
