@@ -2,6 +2,7 @@
 import type { ShaderCompileError } from '../../shared/platform/electronApi';
 import {
   CHANNEL_COUNT,
+  PIXEL_RATIO_OFFSET,
   THEME_OFFSET,
   UNIFORM_FLOATS,
   VERTEX_WGSL,
@@ -169,6 +170,7 @@ class ShaderIconRenderer {
     u[8] = delta;
     this.uniformInts[9] = icon.frame;
     u[10] = icon.frameRate;
+    u[PIXEL_RATIO_OFFSET] = dpr;
     u[12] = date.getFullYear();
     u[13] = date.getMonth();
     u[14] = date.getDate();

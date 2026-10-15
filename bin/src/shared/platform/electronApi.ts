@@ -29,6 +29,8 @@ export interface CompiledShaderPass {
   lineOffset: number | null;
   channels: (ShaderChannel | null)[];
   dispatch: [number, number, number] | null;
+  /** Fraction of the screen size a buffer pass renders at; 1 for every other pass */
+  scale: number;
   workgroupSize: [number, number, number] | null;
   geometry: ShaderGeometry | null;
 }

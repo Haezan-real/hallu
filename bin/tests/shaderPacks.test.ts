@@ -124,7 +124,7 @@ describe('shader pack manifest', () => {
   it('accepts the single-file shorthand', () => {
     expect(validateManifest({ name: 'Pack', language: 'glsl', surfaces: { background: 'bg.frag' } })).toBeNull();
     expect(normalizeSurface('bg.frag')).toEqual({
-      passes: [{ name: null, kind: 'image', file: 'bg.frag', channels: [], dispatch: null, geometry: null }],
+      passes: [{ name: null, kind: 'image', file: 'bg.frag', channels: [], dispatch: null, geometry: null, scale: 1 }],
       storage: 0,
     });
   });
@@ -168,6 +168,18 @@ describe('shader pack manifest', () => {
     expect(problem([{ file: 'a.frag', channels: ['a', 'b', 'c', 'd', 'e'] }])).toMatch(/up to 4/);
     expect(problem([{ file: 'a.frag', dispatch: [1, 1, 1] }])).toMatch(/dispatch/);
     expect(problem([{ file: 'a.frag' }], 3)).toMatch(/storage/);
+  });
+
+  it('scales fragment buffer passes, but not the last pass or other kinds', () => {
+    const surface = normalizeSurface({ passes: [{ name: 'half', file: 'a.frag', scale: 0.5 }, { file: 'b.frag', channels: ['half'] }] });
+    expect(surface.passes.map(pass => pass.scale)).toEqual([0.5, 1]);
+
+    const problem = (passes: unknown[]) => validateManifest({ language: 'glsl', surfaces: { background: { passes } } });
+    expect(problem([{ name: 'a', file: 'a.frag', scale: 0 }, { file: 'b.frag' }])).toMatch(/scale/);
+    expect(problem([{ name: 'a', file: 'a.frag', scale: 1.5 }, { file: 'b.frag' }])).toMatch(/scale/);
+    expect(problem([{ name: 'a', file: 'a.frag', scale: '0.5' }, { file: 'b.frag' }])).toMatch(/scale/);
+    expect(problem([{ file: 'a.frag', scale: 0.5 }])).toMatch(/scale/);
+    expect(problem([{ name: 'a', type: 'compute', file: 'a.comp', scale: 0.5 }, { file: 'b.frag' }])).toMatch(/scale/);
   });
 
   it('expands geometry passes with their vertex file and draw settings', () => {

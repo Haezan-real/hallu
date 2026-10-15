@@ -7,9 +7,7 @@ import type {
   ShaderGeometry,
 } from '../../shared/platform/electronApi';
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
-import { GlassCompositor } from './glassCompositor';
-import { measureGlassPanels } from './glassPanels';
-import { colorFields } from '../../modals/styles/colorFields';
+import { MAX_SHADER_PANELS, measureShaderPanels } from './shaderPanels';
 
 // Hallu owns the vertex stage: one triangle that covers the whole target
 export const VERTEX_WGSL = `
@@ -20,10 +18,14 @@ fn main(@builtin(vertex_index) index : u32) -> @builtin(position) vec4f {
 }
 `;
 
-// Mirrors HalluGlobals and the binding numbers in shaderPacks.cjs (std140, 400 bytes)
+// Mirrors HalluGlobals and the binding numbers in shaderPacks.cjs (std140)
 const CHANNEL_RESOLUTION_OFFSET = 16;
+export const PIXEL_RATIO_OFFSET = 11;
 export const THEME_OFFSET = 32;
-export const UNIFORM_FLOATS = THEME_OFFSET + THEME_FLOATS;
+const PANELS_OFFSET = THEME_OFFSET + THEME_FLOATS;
+const PANEL_COUNT_OFFSET = PANELS_OFFSET + MAX_SHADER_PANELS * 4;
+// The struct's size rounds up to its 16-byte alignment
+export const UNIFORM_FLOATS = Math.ceil((PANEL_COUNT_OFFSET + 1) / 4) * 4;
 export const CHANNEL_COUNT = 4;
 const OUTPUT_BINDING = 9;
 const STORAGE_BINDING = 10;
@@ -48,8 +50,6 @@ const BLEND_STATES: Record<ShaderGeometry['blend'], GPUBlendState | undefined> =
   },
 };
 const EMPTY_STORAGE_BYTES = 256;
-// The glass frit takes the theme's splitter colour
-const SPLITTER_COLOR = colorFields.findIndex(field => field.varName === '--splitter');
 const FRAME_RATE_SMOOTHING = 0.9;
 
 export interface ShaderProgramError {
@@ -68,6 +68,10 @@ interface TextureInput {
 // Two textures per buffer: passes read the latest one and write the other, then they swap
 interface PassTarget {
   format: GPUTextureFormat;
+  /** Fraction of the canvas size */
+  scale: number;
+  width: number;
+  height: number;
   textures: GPUTexture[];
   views: GPUTextureView[];
   current: number;
@@ -97,6 +101,7 @@ type PipelineResult = { render: GPURenderPipeline | null; compute: GPUComputePip
 
 const isProgramError = (value: object): value is ShaderProgramError => 'errors' in value;
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+const scaledSize = (size: number, scale: number) => Math.max(1, Math.round(size * scale));
 const imageKey = (channel: ShaderChannel) => `${channel.source}|${channel.kind === 'image' && channel.flipY}`;
 
 /**
@@ -119,6 +124,7 @@ export class ShaderBackgroundRenderer {
   private emptySampler: GPUSampler;
   private uniforms = new Float32Array(UNIFORM_FLOATS);
   private uniformInts = new Int32Array(this.uniforms.buffer);
+  private panels = new Float32Array(MAX_SHADER_PANELS * 4);
   private program: Program | null = null;
   private rafId = 0;
   private latestProgram = 0;
@@ -129,7 +135,6 @@ export class ShaderBackgroundRenderer {
   private frameRate = 60;
   private mouse = { x: 0, y: 0, clickX: 0, clickY: 0, down: false, clicked: false };
   private theme = new ThemeColorFade();
-  private glass: GlassCompositor;
   private detachInput: () => void;
 
   private constructor(private canvas: HTMLCanvasElement, device: GPUDevice, context: GPUCanvasContext, filterable: boolean) {
@@ -148,7 +153,6 @@ export class ShaderBackgroundRenderer {
     this.emptyOutputView = device.createTexture({ size: [1, 1], format: BUFFER_FORMAT, usage: GPUTextureUsage.STORAGE_BINDING }).createView();
     this.emptyStorage = device.createBuffer({ size: EMPTY_STORAGE_BYTES, usage: GPUBufferUsage.STORAGE });
     this.emptySampler = device.createSampler();
-    this.glass = new GlassCompositor(device, this.format);
     this.detachInput = this.attachMouse();
   }
 
@@ -221,7 +225,6 @@ export class ShaderBackgroundRenderer {
     this.theme.disconnect();
     if (this.program) this.destroyProgram(this.program);
     this.program = null;
-    this.glass.destroy();
     this.context.unconfigure();
     this.device.destroy();
   }
@@ -275,7 +278,7 @@ export class ShaderBackgroundRenderer {
     for (const pass of surface.passes) {
       if (pass.name && (pass.kind === 'buffer' || pass.kind === 'geometry' || readPasses.has(pass.name))) {
         const format = pass.kind === 'geometry' ? GEOMETRY_FORMAT : BUFFER_FORMAT;
-        program.targets.set(pass.name, this.createTarget(program.width, program.height, format));
+        program.targets.set(pass.name, this.createTarget(program.width, program.height, pass.scale, format));
       }
       if (pass.kind === 'compute' && !pass.dispatch && !pass.workgroupSize) {
         return fail({ file: pass.file, errors: [{ line: null, message: 'couldn\'t read the workgroup size; add "dispatch": [x, y, z] to this pass' }] });
@@ -364,10 +367,12 @@ export class ShaderBackgroundRenderer {
     }
   }
 
-  private createTarget(width: number, height: number, format: GPUTextureFormat): PassTarget {
+  private createTarget(canvasWidth: number, canvasHeight: number, scale: number, format: GPUTextureFormat): PassTarget {
     const usage = format === GEOMETRY_FORMAT ? GEOMETRY_USAGE : BUFFER_USAGE;
+    const width = scaledSize(canvasWidth, scale);
+    const height = scaledSize(canvasHeight, scale);
     const textures = [0, 1].map(() => this.device.createTexture({ size: [width, height], format, usage }));
-    return { format, textures, views: textures.map(texture => texture.createView()), current: 0 };
+    return { format, scale, width, height, textures, views: textures.map(texture => texture.createView()), current: 0 };
   }
 
   private createDepth(width: number, height: number): GPUTexture {
@@ -402,25 +407,8 @@ export class ShaderBackgroundRenderer {
     this.resizeTargets(program);
     this.writeGlobals(now, delta);
 
-    // With glass panels the screen pass draws offscreen, and the glass composites it to the canvas
-    const panels = measureGlassPanels(this.canvas);
-    if (panels.length > 0) this.glass.resize(this.canvas.width, this.canvas.height);
-    const screen = panels.length > 0 ? this.glass.sceneView : null;
-
     const encoder = this.device.createCommandEncoder();
-    for (const pass of program.passes) this.encodePass(encoder, program, pass, screen);
-    if (screen) {
-      const pixelsPerCssPixel = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
-      const splitter = THEME_OFFSET + SPLITTER_COLOR * 4;
-      this.glass.encode(
-        encoder,
-        this.context.getCurrentTexture().createView(),
-        panels,
-        pixelsPerCssPixel,
-        this.uniforms[3],
-        this.uniforms.subarray(splitter, splitter + 3),
-      );
-    }
+    for (const pass of program.passes) this.encodePass(encoder, program, pass);
     this.device.queue.submit([encoder.finish()]);
     this.mouse.clicked = false;
     this.frame++;
@@ -430,15 +418,18 @@ export class ShaderBackgroundRenderer {
     if (!channel) return null;
     if (channel.kind === 'image') return program.images.get(imageKey(channel)) ?? null;
     const target = program.targets.get(channel.source);
-    return target ? { view: target.views[target.current], width: program.width, height: program.height } : null;
+    return target ? { view: target.views[target.current], width: target.width, height: target.height } : null;
   }
 
-  private encodePass(encoder: GPUCommandEncoder, program: Program, pass: RuntimePass, screen: GPUTextureView | null) {
+  private encodePass(encoder: GPUCommandEncoder, program: Program, pass: RuntimePass) {
     const { target } = pass;
     const writeIndex = target ? 1 - target.current : 0;
     const inputs = Array.from({ length: CHANNEL_COUNT }, (_, slot) => this.channelInput(program, pass.info.channels[slot] ?? null));
 
+    // iResolution is the size this pass draws at
     const u = this.uniforms;
+    u[0] = target?.width ?? program.width;
+    u[1] = target?.height ?? program.height;
     inputs.forEach((input, slot) => {
       const offset = CHANNEL_RESOLUTION_OFFSET + slot * 4;
       u[offset] = input?.width ?? 0;
@@ -464,7 +455,7 @@ export class ShaderBackgroundRenderer {
     if (pass.compute) {
       // Texels the compute shader doesn't write keep last frame's value
       if (target) {
-        encoder.copyTextureToTexture({ texture: target.textures[target.current] }, { texture: target.textures[writeIndex] }, [program.width, program.height]);
+        encoder.copyTextureToTexture({ texture: target.textures[target.current] }, { texture: target.textures[writeIndex] }, [target.width, target.height]);
       }
       const computePass = encoder.beginComputePass();
       computePass.setPipeline(pass.compute);
@@ -472,7 +463,7 @@ export class ShaderBackgroundRenderer {
       computePass.dispatchWorkgroups(...this.dispatchSize(pass.info, program));
       computePass.end();
     } else if (pass.render) {
-      const view = target ? target.views[writeIndex] : screen ?? this.context.getCurrentTexture().createView();
+      const view = target ? target.views[writeIndex] : this.context.getCurrentTexture().createView();
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
         depthStencilAttachment: pass.depth
@@ -516,11 +507,11 @@ export class ShaderBackgroundRenderer {
     const encoder = this.device.createCommandEncoder();
     const old: GPUTexture[] = [];
     for (const target of program.targets.values()) {
-      const resized = this.createTarget(width, height, target.format);
+      const resized = this.createTarget(width, height, target.scale, target.format);
       encoder.copyTextureToTexture(
         { texture: target.textures[target.current] },
         { texture: resized.textures[0] },
-        [Math.min(width, program.width), Math.min(height, program.height)],
+        [Math.min(resized.width, target.width), Math.min(resized.height, target.height)],
       );
       old.push(...target.textures);
       Object.assign(target, resized);
@@ -552,12 +543,14 @@ export class ShaderBackgroundRenderer {
     u[8] = delta;
     this.uniformInts[9] = this.frame;
     u[10] = this.frameRate;
-    u[11] = 0;
+    u[PIXEL_RATIO_OFFSET] = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
     u[12] = date.getFullYear();
     u[13] = date.getMonth();
     u[14] = date.getDate();
     u[15] = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds() + date.getMilliseconds() / 1000;
     u.set(this.theme.sample(now), THEME_OFFSET);
+    this.uniformInts[PANEL_COUNT_OFFSET] = measureShaderPanels(this.canvas, this.panels);
+    u.set(this.panels, PANELS_OFFSET);
   }
 
   // Mouse in canvas pixels with a bottom-left origin, like fragCoord

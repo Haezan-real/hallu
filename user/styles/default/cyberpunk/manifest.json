@@ -15,7 +15,13 @@
           "instanceCount": 9000,
           "blend": "add"
         },
-        { "file": "drive.frag", "channels": [{ "source": "rain", "filter": "nearest" }] }
+        { "name": "scene", "file": "drive.frag", "channels": [{ "source": "rain", "filter": "nearest" }] },
+        { "name": "blurHalf", "file": "blurDown.frag", "scale": 0.5, "channels": ["scene"] },
+        { "name": "blurQuarter", "file": "blurDown.frag", "scale": 0.25, "channels": ["blurHalf"] },
+        { "name": "blurEighth", "file": "blurDown.frag", "scale": 0.125, "channels": ["blurQuarter"] },
+        { "name": "blurQuarterUp", "file": "blurUp.frag", "scale": 0.25, "channels": ["blurEighth"] },
+        { "name": "blurHalfUp", "file": "blurUp.frag", "scale": 0.5, "channels": ["blurQuarterUp"] },
+        { "file": "glass.frag", "channels": ["scene", "blurHalf", "blurHalfUp"] }
       ]
     }
   }

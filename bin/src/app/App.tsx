@@ -22,7 +22,7 @@ import { registerModalPermissions } from '../shared/modals';
 import { useBackgroundLock } from './useBackgroundLock';
 import { useSuppressContextMenu } from './useSuppressContextMenu';
 import ShaderBackground from '../features/shaders/ShaderBackground';
-import { useGlassPanel } from '../features/shaders/glassPanels';
+import { useShaderPanel } from '../features/shaders/shaderPanels';
 
 registerModalPermissions();
 
@@ -34,8 +34,8 @@ function AppContent() {
   const blockBackground = useBackgroundLock();
   const mediaPoolPanelRef = useRef<HTMLDivElement>(null);
   const viewerPanelRef = useRef<HTMLDivElement>(null);
-  useGlassPanel(mediaPoolPanelRef);
-  useGlassPanel(viewerPanelRef);
+  useShaderPanel(mediaPoolPanelRef);
+  useShaderPanel(viewerPanelRef);
 
   const [mediaItems, setMediaItems] = useState<Map<string, MediaItem>>(new Map());
   const [clips, setClips] = useState<TimelineClip[]>([]);

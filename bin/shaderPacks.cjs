@@ -27,8 +27,13 @@
 // Pass values between them with layout(location = N) out / in variables. "blend" is "replace"
 // (default), "add" or "alpha"; "depth": true adds a depth test. Both stages may read the storage
 // buffer but not write it, so declare it HALLU_STORAGE as usual and fill it from a compute pass.
+// Fragment passes other than the last may set "scale" (0 to 1) to render at a fraction of the
+// screen size, e.g. 0.5 for a cheap blur; iResolution is then that pass's own size.
 // iTheme holds the active theme's colors as vec4s (iTheme.bgBase, iTheme.border, ...; in WGSL
 // hallu.iTheme.bgBase), exactly matching the UI and fading along with theme transitions.
+// iPanels[0 .. iPanelCount-1] are the UI panels drawn over the background (the media pool and
+// the viewer) as (x, y, width, height) in screen pixels, from the bottom-left corner like
+// fragCoord. iPixelRatio is screen pixels per CSS pixel, for sizes that should match the UI.
 const { execFile } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -43,8 +48,9 @@ const GLSLANG = path.join(TOOLS_DIR, 'glslang.exe');
 const TINT = path.join(TOOLS_DIR, 'tint.exe');
 
 // Bump whenever the boilerplate or the translation flags change, so cached WGSL is rebuilt
-const BOILERPLATE_VERSION = 4;
+const BOILERPLATE_VERSION = 5;
 const LANGUAGES = ['glsl', 'wgsl'];
+const MAX_PANELS = 8;
 const SURFACES = ['background'];
 const PASS_TYPES = ['fragment', 'compute', 'geometry'];
 const BLEND_MODES = ['replace', 'add', 'alpha'];
@@ -58,7 +64,7 @@ const TOOL_TIMEOUT_MS = 20000;
 // "--bg-base" becomes iTheme.bgBase, and so on.
 const THEME_FIELDS = THEME_VARS.map(varName => varName.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()));
 
-// Shadertoy-compatible inputs plus iTheme, mirrored by the renderer's uniform buffer (std140, 400 bytes).
+// Shadertoy-compatible inputs plus iTheme and the panels, mirrored by the renderer's uniform buffer (std140).
 // Tint splits each sampler2D into a texture at its binding and a sampler at the next one.
 // storageAccess is "readonly " for geometry passes, whose vertex stage can't write storage.
 const glslHeader = storageAccess => `#version 460
@@ -72,10 +78,12 @@ layout(set = 0, binding = 0, std140) uniform HalluGlobals {
   float iTimeDelta;
   int iFrame;
   float iFrameRate;
-  float halluPad0;
+  float iPixelRatio;
   vec4 iDate;
   vec3 iChannelResolution[4];
   HalluTheme iTheme;
+  vec4 iPanels[${MAX_PANELS}];
+  int iPanelCount;
 };
 layout(set = 0, binding = 1) uniform sampler2D iChannel0;
 layout(set = 0, binding = 3) uniform sampler2D iChannel1;
@@ -138,10 +146,12 @@ struct HalluGlobals {
   iTimeDelta : f32,
   iFrame : i32,
   iFrameRate : f32,
-  halluPad0 : f32,
+  iPixelRatio : f32,
   iDate : vec4f,
   iChannelResolution : array<vec3f, 4>,
   iTheme : HalluTheme,
+  iPanels : array<vec4f, ${MAX_PANELS}>,
+  iPanelCount : i32,
 }
 @group(0) @binding(0) var<uniform> hallu : HalluGlobals;
 @group(0) @binding(1) var iChannel0 : texture_2d<f32>;
@@ -349,12 +359,20 @@ function normalizeSurface(surface) {
     }
     const geometryKeys = ['vertex', 'vertexCount', 'instanceCount', 'blend', 'depth'].filter(key => pass[key] !== undefined);
     if (type !== 'geometry' && geometryKeys.length > 0) throw new Error(`${label} "${geometryKeys[0]}" only applies to geometry passes`);
+    const scale = pass.scale ?? 1;
+    if (pass.scale !== undefined) {
+      const valid = typeof scale === 'number' && scale > 0 && scale <= 1;
+      if (type !== 'fragment' || index === last || !valid) {
+        throw new Error(`${label} "scale" must be a number above 0 and at most 1, on a fragment pass that isn't the last`);
+      }
+    }
     return {
       name: index === last ? null : pass.name,
       kind: type === 'fragment' ? (index === last ? 'image' : 'buffer') : type,
       file: pass.file,
       channels: channels.map((channel, slot) => normalizeChannel(channel, `${label} channel ${slot}`, passNames)),
       dispatch,
+      scale,
       geometry: type === 'geometry' ? normalizeGeometry(pass, label) : null,
     };
   });
@@ -550,4 +568,5 @@ module.exports = {
   compileSurface,
   registerShaderPackHandlers,
   THEME_FIELDS,
+  MAX_PANELS,
 };

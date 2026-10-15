@@ -203,10 +203,10 @@ html, body, #root {
   overflow: hidden;
 }
 
-/* The shader background draws glass behind these (glassPanels.ts); let it show through the bars */
-.glass-panel .viewer-header,
-.glass-panel .viewer-controls,
-.glass-panel .empty-drop {
+/* Shader packs know where these are (shaderPanels.ts) and may draw behind them; let it show through the bars */
+.shader-panel .viewer-header,
+.shader-panel .viewer-controls,
+.shader-panel .empty-drop {
   background: color-mix(in srgb, var(--bg-base) 45%, transparent);
 }
 
