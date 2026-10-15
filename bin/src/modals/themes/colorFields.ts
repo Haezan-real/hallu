@@ -30,7 +30,7 @@ export interface ColorField {
 }
 
 // Ordered list of universal color fields. The order here is the canonical
-// display order in the styles UI and the order in which every theme must
+// display order in the themes UI and the order in which every theme must
 // supply values.
 export const colorFields: ColorField[] = [
   { varName: '--bg-panel', label: 'Primary background' },

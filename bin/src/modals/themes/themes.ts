@@ -5,7 +5,7 @@ import { colorFields, type ThemeColors } from './colorFields';
 
 export const DEFAULT_THEME = 'default/og-dark';
 const DEFAULT_FOLDER = 'default';
-const ACTIVE_THEME_KEY = 'hallu.styles.activeTheme';
+const ACTIVE_THEME_KEY = 'hallu.themes.activeTheme';
 
 type ThemeItem = Extract<ThemeLibraryItem, { type: 'theme' }>;
 

@@ -12,7 +12,7 @@ interface IconTileProps {
   onClick: () => void;
 }
 
-// Large icon button used by the Styles, Shaders and Settings > Components grids
+// Large icon button used by the Themes, Shaders and Settings > Components grids
 export function IconTile({ label, icon, active = false, onClick }: IconTileProps) {
   const color = active ? 'var(--accent-green)' : 'var(--text-secondary)';
   return (

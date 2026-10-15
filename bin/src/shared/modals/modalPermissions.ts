@@ -5,9 +5,9 @@ import type { ModalPermission, ModalType } from './modalManager';
 
 export const MULTIPLE_MENUS_DISABLED = '⚠ <br/>opening multiple menus is disabled';
 
-const exclusiveMenuPermission = (allowDuplicateStyles = false): ModalPermission['canOpen'] => state => {
+const exclusiveMenuPermission = (allowDuplicateThemes = false): ModalPermission['canOpen'] => state => {
   if (state.settings.allowMultipleMenus) return { allowed: true };
-  if (allowDuplicateStyles && state.settings.allowDuplicateMenus && state.openModals.some(modal => modal.type === 'styles')) {
+  if (allowDuplicateThemes && state.settings.allowDuplicateMenus && state.openModals.some(modal => modal.type === 'themes')) {
     return { allowed: true };
   }
   if (state.openModals.length > 0) {
@@ -22,7 +22,7 @@ const alwaysAllowed: ModalPermission['canOpen'] = () => ({ allowed: true });
 // Adding a ModalType without adding a policy here is a compile-time error.
 const modalPolicies: Record<ModalType, ModalPermission['canOpen']> = {
   settings: exclusiveMenuPermission(),
-  styles: exclusiveMenuPermission(true),
+  themes: exclusiveMenuPermission(true),
   export: exclusiveMenuPermission(),
   torusMenuEditor: exclusiveMenuPermission(),
   playneedleEditor: exclusiveMenuPermission(),

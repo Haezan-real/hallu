@@ -6,12 +6,12 @@ import { toHexColor } from '../../shared/lib/color';
 import { colorFields, type ColorVarName } from './colorFields';
 import { applyThemeToDocument, getThemeColors } from './themes';
 
-// Swatches for each theme color. Picking a color swaps Styles for the color picker,
-// and closing the picker calls `reopenStyles`.
-export default function ThemeColorEditor({ themeName, closeStyles, reopenStyles }: {
+// Swatches for each theme color. Picking a color swaps Themes for the color picker,
+// and closing the picker calls `reopenThemes`.
+export default function ThemeColorEditor({ themeName, closeThemes, reopenThemes }: {
   themeName: string;
-  closeStyles: () => void;
-  reopenStyles: () => void;
+  closeThemes: () => void;
+  reopenThemes: () => void;
 }) {
   const [colors, setColors] = useState<Record<string, string>>(() => {
     const styles = getComputedStyle(document.documentElement);
@@ -37,12 +37,12 @@ export default function ThemeColorEditor({ themeName, closeStyles, reopenStyles 
 
   function handleColorClick(varName: string, currentValue: string) {
     const colorField = colorFields.find(c => c.varName === varName);
-    closeStyles();
+    closeThemes();
     OpenColorPicker({
       value: currentValue,
       onChange: (hex: string) => setColor(varName, hex),
       targetElement: colorField ? colorField.label : 'Color',
-      onClose: reopenStyles,
+      onClose: reopenThemes,
     });
   }
 

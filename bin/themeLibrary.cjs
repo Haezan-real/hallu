@@ -1,5 +1,5 @@
 // themeLibrary.cjs
-// Themes live in user/themes as JSON files; folders become folders in the Styles modal.
+// Themes live in user/themes as JSON files; folders become folders in the Themes modal.
 //   { "name": "cyberpunk", "colors": { "--bg-panel": "#0D0221", ... } }
 // A theme's id is its path without ".json" ("default/cyberpunk"); "name" is its label and
 // defaults to the file name. Missing colors fall back to the default theme in the renderer.

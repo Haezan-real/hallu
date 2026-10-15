@@ -1,5 +1,5 @@
 //src/modals/themes/themeCatalog.ts
-// Icons and titles for the Styles browser, which mirrors the user/themes folder
+// Icons and titles for the Themes browser, which mirrors the user/themes folder
 import type { ThemeLibrary, ThemeLibraryItem } from '../../shared/platform/electronApi';
 
 const folderIcon = 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2z';
@@ -23,7 +23,7 @@ export function catalogIcon(item: ThemeLibraryItem): string {
 }
 
 export function getPathLabel(library: ThemeLibrary, itemId: string | null): string {
-  if (!itemId) return 'Styles';
+  if (!itemId) return 'Themes';
   const path: string[] = [];
   let currentId: string | null = itemId;
   while (currentId) {
@@ -32,7 +32,7 @@ export function getPathLabel(library: ThemeLibrary, itemId: string | null): stri
     path.unshift(item.label);
     currentId = item.parent;
   }
-  const fullPath = 'Styles / ' + path.join(' / ');
+  const fullPath = 'Themes / ' + path.join(' / ');
 
   // If the path is too long, truncate the beginning with ellipsis
   if (fullPath.length > 40) {

@@ -1,27 +1,30 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { migrateLegacyStorage } from '../src/modals/settings/storageMigration';
+import { migrateRenamedKeys } from '../src/modals/settings/storageMigration';
 
-describe('legacy storage migration', () => {
+describe('renamed settings', () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it('moves saved settings to the Hallu namespace', () => {
-    window.localStorage.setItem('juicecut.settings.guiScale', '125');
+  it('moves the Styles modal settings to their Themes names', () => {
+    window.localStorage.setItem('hallu.styles.activeTheme', 'default/cyberpunk');
+    window.localStorage.setItem('hallu.modal.styles.pageState', JSON.stringify({ stylePage: 'default', activeTheme: 'default/cyberpunk' }));
 
-    migrateLegacyStorage();
+    migrateRenamedKeys();
 
-    expect(window.localStorage.getItem('hallu.settings.guiScale')).toBe('125');
-    expect(window.localStorage.getItem('juicecut.settings.guiScale')).toBeNull();
+    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBe('default/cyberpunk');
+    expect(JSON.parse(window.localStorage.getItem('hallu.modal.themes.pageState')!)).toEqual({ themePage: 'default', activeTheme: 'default/cyberpunk' });
+    expect(window.localStorage.getItem('hallu.styles.activeTheme')).toBeNull();
+    expect(window.localStorage.getItem('hallu.modal.styles.pageState')).toBeNull();
   });
 
-  it('preserves values already saved in the Hallu namespace', () => {
-    window.localStorage.setItem('juicecut.settings.guiScale', '125');
-    window.localStorage.setItem('hallu.settings.guiScale', '150');
+  it('keeps a value already saved under the new name', () => {
+    window.localStorage.setItem('hallu.styles.activeTheme', 'default/oak');
+    window.localStorage.setItem('hallu.themes.activeTheme', 'default/forest');
 
-    migrateLegacyStorage();
+    migrateRenamedKeys();
 
-    expect(window.localStorage.getItem('hallu.settings.guiScale')).toBe('150');
-    expect(window.localStorage.getItem('juicecut.settings.guiScale')).toBeNull();
+    expect(window.localStorage.getItem('hallu.themes.activeTheme')).toBe('default/forest');
+    expect(window.localStorage.getItem('hallu.styles.activeTheme')).toBeNull();
   });
 });
