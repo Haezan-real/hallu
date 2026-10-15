@@ -83,9 +83,10 @@ const DROP_SCALE = 450.0;      // CSS pixels per unit of the raindrop pattern
 const DROP_REFRACTION = 3.0;   // how far a drop bends the view through it, in units of DROP_SCALE pixels
 // Ceramic frit printed around the pane's edge in the splitter colour: a solid band, then dots
 // shrinking inward
-const FRIT_SOLID = 5.0;
-const FRIT_DOTS = 24.0;        // how far in the dots reach past the solid band
-const FRIT_PITCH = 4.5;        // dot spacing
+const FRIT_SIZE = 1.2;         // scales the whole frit border: band width, dot reach and dot size
+const FRIT_SOLID = 5.0 * FRIT_SIZE;
+const FRIT_DOTS = 24.0 * FRIT_SIZE;   // how far in the dots reach past the solid band
+const FRIT_PITCH = 4.5 * FRIT_SIZE;   // dot spacing
 const FRIT_BLEED = 3.0;        // how far the solid band reaches past the pane's edge
 const SHADOW_OFFSET = 6.0;
 const SHADOW_BLUR = 16.0;
