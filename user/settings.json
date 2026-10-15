@@ -10,16 +10,16 @@
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
-  "hallu.styles.active": "default/aquatic",
+  "hallu.styles.active": "default/cyberpunk",
   "hallu.modal.styles.pageState": {
     "stylePage": "default",
-    "activeStyle": "default/aquatic"
+    "activeStyle": "default/cyberpunk"
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.timelineHeightPct": 42.731652951885216,
   "hallu.settings.playneedle_t": 0.092,
-  "hallu.layout.leftCollapsed": false,
   "hallu.settings.includeResizeInUndo": true,
+  "hallu.layout.leftCollapsed": false,
   "hallu.settings.playheadTopPercent": 0,
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,

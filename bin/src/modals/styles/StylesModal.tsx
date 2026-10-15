@@ -80,8 +80,8 @@ export default function StylesModal({ modalId, onClose }: { modalId: number; onC
       headerLeft={stylePage && <BackButton onClick={() => setStylePage(parentOf(stylePage))} />}
       body={
         currentFolder
-          ? <IconTileGrid rowGap={4} columnWidth={PREVIEW_TILE_WIDTH}>{renderTiles(currentFolder.children)}</IconTileGrid>
-          : <IconTileGrid columnWidth={PREVIEW_TILE_WIDTH}>{renderTiles(library.topLevel)}</IconTileGrid>
+          ? <IconTileGrid rowGap={4} columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(currentFolder.children)}</IconTileGrid>
+          : <IconTileGrid columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(library.topLevel)}</IconTileGrid>
       }
     />
   );
