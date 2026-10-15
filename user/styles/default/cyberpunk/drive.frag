@@ -295,10 +295,29 @@ vec3 carLight(vec3 pos, vec3 n) {
 
 // â”€â”€â”€ Sky â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+const vec3 SUN_DIR = normalize(vec3(-0.06, 0.12, 1.0));
+
+// The sky without anything in it: the gradient, the glow around the sun and along the horizon.
+// Fog fades everything toward this, so distant buildings melt into the sky behind them
+vec3 skyBase(vec3 rd) {
+  float el = rd.y;
+  vec3 col = mix(haze, night, smoothstep(-0.02, 0.3, el));
+  float sd = length(rd - SUN_DIR) / 0.16;
+  col += mix(neon, SUN_TOP, 0.35) * exp(-max(sd - 1.0, 0.0) * 3.0) * 0.5;
+  col += mix(neon, SUN_TOP, 0.3) * exp(-abs(el) * 40.0) * 0.25;
+  return col;
+}
+
+float fogAmount(float dist) {
+  // Fully fogged by FAR, so nothing pops in where the march gives up
+  return max(1.0 - exp(-dist * FOG_DENSITY), smoothstep(FAR * 0.55, FAR, dist));
+}
+
 vec3 sky(vec3 rd) {
   float el = rd.y;
   float az = atan(rd.x, rd.z);
-  vec3 col = mix(haze, night, smoothstep(-0.02, 0.3, el));
+  vec3 base = skyBase(rd);
+  vec3 col = base;
 
   // Stars
   vec2 sc = vec2(az * 140.0, el * 140.0);
@@ -311,39 +330,40 @@ vec3 sky(vec3 rd) {
   }
 
   // The sun, sinking at the end of the boulevard, its lower half cut into drifting bands
-  vec3 sunDir = normalize(vec3(-0.06, 0.12, 1.0));
-  vec3 sunRight = normalize(cross(vec3(0.0, 1.0, 0.0), sunDir));
-  vec3 sunUp = cross(sunDir, sunRight);
+  vec3 sunRight = normalize(cross(vec3(0.0, 1.0, 0.0), SUN_DIR));
+  vec3 sunUp = cross(SUN_DIR, sunRight);
   vec2 s = vec2(dot(rd, sunRight), dot(rd, sunUp)) / 0.16;
   float sd = length(s);
   vec3 sunCol = mix(neon, SUN_TOP, smoothstep(-0.8, 0.7, s.y)) * 1.2;
-  col += mix(neon, SUN_TOP, 0.35) * exp(-max(sd - 1.0, 0.0) * 3.0) * 0.5 * step(0.0, dot(rd, sunDir));
   float bands = fract(s.y * 7.0 + iTime * 0.35);
   float cutHalf = clamp((0.55 - s.y) * 0.2, 0.0, 0.35);
   float cut = (1.0 - smoothstep(cutHalf - 0.02, cutHalf + 0.02, abs(bands - 0.5))) * step(0.01, cutHalf);
-  col = mix(col, sunCol, smoothstep(1.0, 0.985, sd) * (1.0 - cut) * step(0.0, dot(rd, sunDir)));
+  col = mix(col, sunCol, smoothstep(1.0, 0.985, sd) * (1.0 - cut) * step(0.0, dot(rd, SUN_DIR)));
 
-  // Wireframe mountains on the horizon
+  // Below the horizon is ground past FAR, which the fog has already swallowed
+  if (el < 0.0) return base;
+
+  // Wireframe mountains, and distant towers with scattered lit windows. Both lie beyond FAR, so
+  // they sit deeper in the haze than anything the march finds
   float ridge = 0.012 + 0.06 * fbm(vec2(az * 3.0, 1.7)) * smoothstep(0.0, 0.6, abs(az + 0.06) + 0.15);
   if (el < ridge) {
-    col = mix(night, haze, 0.35) * 0.8;
-    col += accent * (1.0 - smoothstep(0.0, 0.0025, abs(fract(el * 120.0 + 0.5) - 0.5) / 120.0)) * 0.12;
-    col += accent * exp(-(ridge - el) * 600.0) * 0.8;
+    vec3 mountain = mix(night, haze, 0.35) * 0.8;
+    mountain += accent * (1.0 - smoothstep(0.0, 0.0025, abs(fract(el * 120.0 + 0.5) - 0.5) / 120.0)) * 0.12;
+    mountain += accent * exp(-(ridge - el) * 600.0) * 0.8;
+    col = mix(mountain, base, 0.75);
   } else {
-    col += accent * exp(-(el - ridge) * 400.0) * 0.25;
+    col += accent * exp(-(el - ridge) * 400.0) * 0.08;
   }
 
-  // Distant towers beyond the street, with scattered lit windows
   float towerCell = floor(az * 60.0);
   float towerH = 0.008 + 0.05 * pow(hash(ivec2(int(towerCell), 99)), 2.5);
-  if (el < towerH && el > -0.01 && hash(ivec2(int(towerCell), 98)) > 0.35) {
-    col = night * 0.8;
+  if (el < towerH && hash(ivec2(int(towerCell), 98)) > 0.35) {
+    vec3 tower = night * 0.8;
     ivec2 win = ivec2(floor(vec2(az * 900.0, el * 700.0)));
-    col += vec3(1.0, 0.7, 0.4) * step(0.82, hash(win)) * step(0.4, fract(az * 900.0)) * 0.5;
-    col += neon * exp(-(towerH - el) * 2500.0) * 0.6;
+    tower += vec3(1.0, 0.7, 0.4) * step(0.82, hash(win)) * step(0.4, fract(az * 900.0)) * 0.5;
+    tower += neon * exp(-(towerH - el) * 2500.0) * 0.6;
+    col = mix(tower, base, 0.8);
   }
-
-  col += mix(neon, SUN_TOP, 0.3) * exp(-abs(el) * 40.0) * 0.25;
   return col;
 }
 
@@ -560,12 +580,12 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
     float amount = fresnel * wet;
     if (amount > 0.01) {
       vec3 ro2 = pos + n * 0.02;
-      vec2 mirror = march(ro2, rr, FAR * 0.6, REFLECT_STEPS);
+      vec2 mirror = march(ro2, rr, max(FAR - dist, 1.0), REFLECT_STEPS);
       vec3 reflected;
       if (mirror.y > 0.0) {
         vec3 rp = ro2 + rr * mirror.x;
         reflected = shadeObject(rp, normalAt(rp), rr, mirror.y);
-        reflected = mix(reflected, haze * 0.5, 1.0 - exp(-mirror.x * FOG_DENSITY));
+        reflected = mix(reflected, skyBase(rr), fogAmount(dist + mirror.x));
       } else {
         reflected = sky(rr);
       }
@@ -577,7 +597,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   // Fog (the sky has its own horizon haze), lamp halos and light cones in the rain
-  if (dist < FAR) col = mix(col, haze * 0.5, 1.0 - exp(-dist * FOG_DENSITY));
+  if (dist < FAR) col = mix(col, skyBase(rd), fogAmount(dist));
   col += lampHalos(ro, rd, dist);
   float jitter = hash(ivec2(fragCoord) + ivec2(iFrame * 7, iFrame * 13));
   col += lightShafts(ro, rd, dist, jitter);
