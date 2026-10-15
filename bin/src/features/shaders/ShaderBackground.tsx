@@ -6,6 +6,9 @@ import { SHADER_CHANGE_EVENT, getActiveShader } from './shaderRegistry';
 import { ShaderBackgroundRenderer } from './shaderBackgroundRenderer';
 
 const SURFACE = 'background';
+/** On <html> while a shader is drawing, so panels only turn see-through when there's something behind them */
+const ACTIVE_CLASS = 'shader-background-active';
+const setActive = (active: boolean) => document.documentElement.classList.toggle(ACTIVE_CLASS, active);
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
 
@@ -39,6 +42,7 @@ export default function ShaderBackground() {
       const request = ++latestRequest;
       if (packId === null) {
         renderer?.clearProgram();
+        setActive(false);
         return;
       }
       const result = await api.compileShaderSurface(packId, SURFACE);
@@ -48,7 +52,9 @@ export default function ShaderBackground() {
         return;
       }
       const failure = await renderer.setProgram(result, file => api.readShaderAsset(packId, file));
-      if (failure && !disposed) reportShaderErrors(failure.file, failure.errors);
+      if (disposed) return;
+      if (failure) reportShaderErrors(failure.file, failure.errors);
+      else setActive(true);
     };
 
     const start = async () => {
@@ -80,6 +86,7 @@ export default function ShaderBackground() {
       disposed = true;
       window.removeEventListener(SHADER_CHANGE_EVENT, onShaderChange);
       renderer?.destroy();
+      setActive(false);
     };
   }, []);
 

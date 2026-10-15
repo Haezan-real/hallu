@@ -21,7 +21,8 @@
         { "name": "blurEighth", "file": "blurDown.frag", "scale": 0.125, "channels": ["blurQuarter"] },
         { "name": "blurQuarterUp", "file": "blurUp.frag", "scale": 0.25, "channels": ["blurEighth"] },
         { "name": "blurHalfUp", "file": "blurUp.frag", "scale": 0.5, "channels": ["blurQuarterUp"] },
-        { "file": "glass.frag", "channels": ["scene", "blurHalf", "blurHalfUp"] }
+        { "name": "dash", "file": "dash.frag", "channels": ["blurHalfUp"] },
+        { "file": "glass.frag", "channels": ["scene", "blurHalf", "blurHalfUp", { "source": "dash", "filter": "nearest" }] }
       ]
     }
   }

@@ -31,9 +31,11 @@
 // screen size, e.g. 0.5 for a cheap blur; iResolution is then that pass's own size.
 // iTheme holds the active theme's colors as vec4s (iTheme.bgBase, iTheme.border, ...; in WGSL
 // hallu.iTheme.bgBase), exactly matching the UI and fading along with theme transitions.
-// iPanels[0 .. iPanelCount-1] are the UI panels drawn over the background (the media pool and
-// the viewer) as (x, y, width, height) in screen pixels, from the bottom-left corner like
-// fragCoord. iPixelRatio is screen pixels per CSS pixel, for sizes that should match the UI.
+// iPanels are the UI panels drawn over the background as (x, y, width, height) in screen pixels,
+// from the bottom-left corner like fragCoord: [0] the media pool, [1] the viewer, [2] the
+// timeline, [3] the timeline's track-label column. A hidden panel is all zeros, and iPanelCount
+// is one past the last one shown. iPixelRatio is screen pixels per CSS pixel, for sizes that
+// should match the UI.
 const { execFile } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');

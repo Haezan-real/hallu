@@ -204,10 +204,17 @@ html, body, #root {
 }
 
 /* Shader packs know where these are (shaderPanels.ts) and may draw behind them; let it show through the bars */
-.shader-panel .viewer-header,
-.shader-panel .viewer-controls,
-.shader-panel .empty-drop {
+.shader-background-active .shader-panel .viewer-header,
+.shader-background-active .shader-panel .viewer-controls,
+.shader-background-active .shader-panel .empty-drop {
   background: color-mix(in srgb, var(--bg-base) 45%, transparent);
+}
+.shader-background-active .timeline.shader-panel,
+.shader-background-active .tl-labels.shader-panel {
+  background: transparent;
+}
+.shader-background-active .shader-panel .tl-ruler {
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
 }
 
 .workspace-vsplit {

@@ -16,6 +16,7 @@ import { useTimelinePointer } from './useTimelinePointer';
 import { useTimelineTorus } from './useTimelineTorus';
 import { TimelineGrid, TimelineRuler } from './TimelineRuler';
 import TimelineClipView from './TimelineClipView';
+import { SHADER_PANEL, useShaderPanel } from '../../features/shaders/shaderPanels';
 
 interface Props {
   clips: TimelineClip[];
@@ -48,6 +49,10 @@ export default function Timeline({
   mediaItems
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null);
+  useShaderPanel(rootRef, SHADER_PANEL.timeline);
+  useShaderPanel(labelsRef, SHADER_PANEL.timelineLabels);
   const playheadRef = useRef(playhead);
   useEffect(() => { playheadRef.current = playhead; }, [playhead]);
 
@@ -115,7 +120,7 @@ export default function Timeline({
   const joinPairs = getJoinPairs(clips);
 
   return (
-    <div className="timeline">
+    <div ref={rootRef} className="timeline">
       <div className="tl-toolbar">
         <span className="panel-title">Timeline</span>
         <div className="zoom-ctrl">
@@ -129,7 +134,7 @@ export default function Timeline({
       </div>
 
       <div className="tl-main">
-        <div className="tl-labels">
+        <div ref={labelsRef} className="tl-labels">
           {tracks.map(tr => (
             <div key={tr.id} className="tl-label" style={{ height: TRACK_H }}>
               {tr.type === 'video' ? <Film size={13} /> : <Music size={13} />}

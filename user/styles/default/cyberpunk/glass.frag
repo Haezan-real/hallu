@@ -1,7 +1,10 @@
-// Glass over the app's panels (iPanels): the street behind each pane is frosted, more so toward
-// its corners, bent by a curved rim and a fisheye lens, beaded with rain, flared by bright lights
-// and framed by ceramic frit in the splitter colour. Everywhere else the street shows as it is.
-// iChannel0: the street, iChannel1: lightly blurred, iChannel2: heavily blurred
+// Glass over the media pool and viewer (iPanels[0] and [1]): the street behind each pane is
+// frosted, more so toward its corners, bent by a curved rim and a fisheye lens, beaded with rain,
+// flared by bright lights and framed by ceramic frit in the splitter colour. The dashboard sits
+// under the timeline, and everywhere else the street shows as it is.
+// iChannel0: the street, iChannel1: lightly blurred, iChannel2: heavily blurred, iChannel3: the dash
+
+const int GLASS_PANELS = 2;
 
 // Lengths in CSS pixels
 const float CORNER_RADIUS = 0.0;
@@ -187,6 +190,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord;
   float px = max(iPixelRatio, 1e-3);
   vec3 base = textureLod(iChannel0, p / iResolution.xy, 0.0).rgb;
+  vec4 dash = textureLod(iChannel3, p / iResolution.xy, 0.0);
+  base = mix(base, dash.rgb, dash.a);
   vec3 ldir = normalize(vec3(-0.6, 0.8, LIGHT_HEIGHT));
 
   // The nearest pane gets drawn; every pane casts a shadow, falling away from the light
@@ -194,7 +199,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float sdf = 1e9;
   float shadow = 1.0;
   float shadowBlur = SHADOW_BLUR * px;
-  for (int i = 0; i < iPanelCount && i < 8; i++) {
+  for (int i = 0; i < iPanelCount && i < GLASS_PANELS; i++) {
+    if (iPanels[i].z < 1.0) continue;
     float d = panelSdf(p, iPanels[i]);
     if (d < sdf) {
       sdf = d;
