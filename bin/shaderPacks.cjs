@@ -13,12 +13,20 @@
 //     "passes": [
 //       { "name": "bufferA", "file": "a.frag", "channels": ["bufferA", "noise.png"] },
 //       { "name": "sim", "type": "compute", "file": "sim.comp", "dispatch": [64, 1, 1] },
+//       { "name": "rain", "type": "geometry", "vertex": "rain.vert", "file": "rain.frag",
+//         "vertexCount": 6, "instanceCount": 5000, "blend": "add", "depth": false },
 //       { "file": "image.frag", "channels": ["bufferA", { "source": "sim", "filter": "nearest" }] } ] }
 // channels fill iChannel0-3. A channel names a pass (reading a pass that hasn't run yet this
 // frame, including itself, gives its previous frame) or an image in the pack. Object form adds
 // "filter": "linear" | "nearest", "wrap": "clamp" | "repeat" and, for images, "flipY" (default true).
 // Compute passes write their output with imageStore(iOutput, ...); texels they skip keep last
 // frame's value. Without "dispatch" they run one invocation per pixel.
+// Geometry passes (GLSL packs only) draw vertexCount vertices instanceCount times into a cleared
+// buffer: the vertex file defines vec4 mainVertex(int vertexIndex, int instanceIndex) returning a
+// clip-space position (+y up, z from 0 near to 1 far), and the file is a mainImage fragment shader.
+// Pass values between them with layout(location = N) out / in variables. "blend" is "replace"
+// (default), "add" or "alpha"; "depth": true adds a depth test. Both stages may read the storage
+// buffer but not write it, so declare it HALLU_STORAGE as usual and fill it from a compute pass.
 // iTheme holds the active theme's colors as vec4s (iTheme.bgBase, iTheme.border, ...; in WGSL
 // hallu.iTheme.bgBase), exactly matching the UI and fading along with theme transitions.
 const { execFile } = require('child_process');
@@ -35,10 +43,12 @@ const GLSLANG = path.join(TOOLS_DIR, 'glslang.exe');
 const TINT = path.join(TOOLS_DIR, 'tint.exe');
 
 // Bump whenever the boilerplate or the translation flags change, so cached WGSL is rebuilt
-const BOILERPLATE_VERSION = 3;
+const BOILERPLATE_VERSION = 4;
 const LANGUAGES = ['glsl', 'wgsl'];
 const SURFACES = ['background'];
-const PASS_TYPES = ['fragment', 'compute'];
+const PASS_TYPES = ['fragment', 'compute', 'geometry'];
+const BLEND_MODES = ['replace', 'add', 'alpha'];
+const MAX_DRAW_COUNT = 16 * 1024 * 1024;
 const PASS_NAME = /^[A-Za-z_][\w-]*$/;
 const MAX_CHANNELS = 4;
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
@@ -50,7 +60,8 @@ const THEME_FIELDS = THEME_VARS.map(varName => varName.slice(2).replace(/-([a-z]
 
 // Shadertoy-compatible inputs plus iTheme, mirrored by the renderer's uniform buffer (std140, 400 bytes).
 // Tint splits each sampler2D into a texture at its binding and a sampler at the next one.
-const GLSL_HEADER = `#version 460
+// storageAccess is "readonly " for geometry passes, whose vertex stage can't write storage.
+const glslHeader = storageAccess => `#version 460
 struct HalluTheme {
 ${THEME_FIELDS.map(field => `  vec4 ${field};`).join('\n')}
 };
@@ -70,13 +81,17 @@ layout(set = 0, binding = 1) uniform sampler2D iChannel0;
 layout(set = 0, binding = 3) uniform sampler2D iChannel1;
 layout(set = 0, binding = 5) uniform sampler2D iChannel2;
 layout(set = 0, binding = 7) uniform sampler2D iChannel3;
-#define HALLU_STORAGE layout(std430, set = 0, binding = 10) buffer
+#define HALLU_STORAGE layout(std430, set = 0, binding = 10) ${storageAccess}buffer
 `;
+const GLSL_HEADER = glslHeader('');
+const GLSL_READONLY_HEADER = glslHeader('readonly ');
 
 const GLSL_PRELUDES = {
   image: `${GLSL_HEADER}layout(location = 0) out vec4 halluFragColor;\n#line 1\n`,
   buffer: `${GLSL_HEADER}layout(location = 0) out vec4 halluFragColor;\n#line 1\n`,
   compute: `${GLSL_HEADER}layout(set = 0, binding = 9, rgba32f) uniform writeonly image2D iOutput;\n#line 1\n`,
+  geometry: `${GLSL_READONLY_HEADER}layout(location = 0) out vec4 halluFragColor;\n#line 1\n`,
+  vertex: `${GLSL_READONLY_HEADER}#line 1\n`,
 };
 
 // Buffers are stored bottom row first, so fragCoord, texelFetch and texture() uv all agree.
@@ -97,6 +112,20 @@ void main() {
 }
 `,
   compute: '',
+  geometry: `
+void main() {
+  vec4 color = vec4(0.0);
+  mainImage(color, gl_FragCoord.xy);
+  halluFragColor = color;
+}
+`,
+  // Flipping y keeps +y up in the picture, since buffers are stored bottom row first
+  vertex: `
+void main() {
+  vec4 position = mainVertex(gl_VertexIndex, gl_InstanceIndex);
+  gl_Position = vec4(position.x, -position.y, position.z, position.w);
+}
+`,
 };
 
 const WGSL_HEADER = `struct HalluTheme {
@@ -163,11 +192,13 @@ function wrapWgsl(source, kind = 'image') {
 
 function hasEntryPoint(source, language, kind) {
   if (kind === 'compute') return language === 'wgsl' ? /\bfn\s+main\s*\(/.test(source) : /\bvoid\s+main\s*\(/.test(source);
+  if (kind === 'vertex') return /\bvec4\s+mainVertex\s*\(/.test(source);
   return language === 'wgsl' ? /\bfn\s+mainImage\s*\(/.test(source) : /\bvoid\s+mainImage\s*\(/.test(source);
 }
 
 function entryPointSignature(language, kind) {
   if (kind === 'compute') return language === 'wgsl' ? '@compute @workgroup_size(...) fn main(...)' : 'layout(local_size_x = ...) in; void main()';
+  if (kind === 'vertex') return 'vec4 mainVertex(int vertexIndex, int instanceIndex)';
   return language === 'wgsl' ? 'fn mainImage(fragCoord : vec2f) -> vec4f' : 'void mainImage(out vec4 fragColor, in vec2 fragCoord)';
 }
 
@@ -269,6 +300,19 @@ function normalizeChannel(channel, label, passNames) {
   return { kind: 'image', source: spec.source, filter, wrap, flipY };
 }
 
+function normalizeGeometry(pass, label) {
+  if (!isPackPath(pass.vertex)) throw new Error(`${label} needs a "vertex" shader file inside the pack`);
+  const instanceCount = pass.instanceCount ?? 1;
+  for (const [key, value] of [['vertexCount', pass.vertexCount], ['instanceCount', instanceCount]]) {
+    if (!Number.isInteger(value) || value < 1 || value > MAX_DRAW_COUNT) throw new Error(`${label} "${key}" must be a whole number from 1 to ${MAX_DRAW_COUNT}`);
+  }
+  const blend = pass.blend ?? 'replace';
+  if (!BLEND_MODES.includes(blend)) throw new Error(`${label} "blend" must be one of: ${BLEND_MODES.join(', ')}`);
+  const depth = pass.depth ?? false;
+  if (typeof depth !== 'boolean') throw new Error(`${label} "depth" must be true or false`);
+  return { vertexFile: pass.vertex, vertexCount: pass.vertexCount, instanceCount, blend, depth };
+}
+
 // Expands the single-file shorthand and checks every pass; throws with a message for the pack author
 function normalizeSurface(surface) {
   const spec = typeof surface === 'string' ? { passes: [{ file: surface }] } : surface;
@@ -303,12 +347,15 @@ function normalizeSurface(surface) {
       if (type !== 'compute' || !valid) throw new Error(`${label} "dispatch" must be [x, y, z] workgroup counts on a compute pass`);
       dispatch = pass.dispatch;
     }
+    const geometryKeys = ['vertex', 'vertexCount', 'instanceCount', 'blend', 'depth'].filter(key => pass[key] !== undefined);
+    if (type !== 'geometry' && geometryKeys.length > 0) throw new Error(`${label} "${geometryKeys[0]}" only applies to geometry passes`);
     return {
       name: index === last ? null : pass.name,
-      kind: type === 'compute' ? 'compute' : index === last ? 'image' : 'buffer',
+      kind: type === 'fragment' ? (index === last ? 'image' : 'buffer') : type,
       file: pass.file,
       channels: channels.map((channel, slot) => normalizeChannel(channel, `${label} channel ${slot}`, passNames)),
       dispatch,
+      geometry: type === 'geometry' ? normalizeGeometry(pass, label) : null,
     };
   });
 
@@ -326,7 +373,8 @@ function validateManifest(manifest) {
   for (const [surface, spec] of Object.entries(manifest.surfaces)) {
     if (!SURFACES.includes(surface)) return `unknown surface "${surface}" (supported: ${SURFACES.join(', ')})`;
     try {
-      normalizeSurface(spec);
+      const { passes } = normalizeSurface(spec);
+      if (manifest.language === 'wgsl' && passes.some(pass => pass.geometry)) throw new Error('geometry passes are only supported in GLSL packs');
     } catch (err) {
       return `surface "${surface}": ${err.message}`;
     }
@@ -354,7 +402,7 @@ async function translateGlsl(source, kind = 'image') {
   if (!fs.existsSync(GLSLANG) || !fs.existsSync(TINT)) {
     return { ok: false, stage: 'setup', errors: [{ line: null, message: 'Shader tools are not installed. Run "npm run tools:shaders" in bin/.' }] };
   }
-  const stage = kind === 'compute' ? 'comp' : 'frag';
+  const stage = { compute: 'comp', vertex: 'vert' }[kind] ?? 'frag';
   const workDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hallu-shader-'));
   try {
     const glslPath = path.join(workDir, `shader.${stage}`);
@@ -379,24 +427,35 @@ async function translateGlsl(source, kind = 'image') {
  * Returns WGSL for one pass. lineOffset is how many boilerplate lines precede the author's
  * WGSL; it is null for GLSL, whose translated line numbers don't match the author's file.
  */
-async function compilePass(packId, language, pass) {
-  const file = `${packId}/${pass.file}`;
+async function compileFile(packId, language, fileName, kind) {
+  const file = `${packId}/${fileName}`;
   let source;
   try {
-    source = fs.readFileSync(path.join(STYLES_DIR, packId, pass.file), 'utf8');
+    source = fs.readFileSync(path.join(STYLES_DIR, packId, fileName), 'utf8');
   } catch {
     return { ok: false, file, stage: 'manifest', errors: [{ line: null, message: 'file not found' }] };
   }
-  if (!hasEntryPoint(source, language, pass.kind)) {
-    return { ok: false, file, stage: 'source', errors: [{ line: null, message: `missing ${entryPointSignature(language, pass.kind)}` }] };
+  if (!hasEntryPoint(source, language, kind)) {
+    return { ok: false, file, stage: 'source', errors: [{ line: null, message: `missing ${entryPointSignature(language, kind)}` }] };
   }
 
   if (language === 'wgsl') {
-    return { ok: true, file, wgsl: wrapWgsl(source, pass.kind), lineOffset: wgslPreludeLines(pass.kind), cached: false };
+    return { ok: true, file, wgsl: wrapWgsl(source, kind), lineOffset: wgslPreludeLines(kind), cached: false };
   }
 
-  const result = await translateGlslCached(source, pass.kind);
+  const result = await translateGlslCached(source, kind);
   return result.ok ? { ...result, file, lineOffset: null } : { ...result, file };
+}
+
+// Geometry passes also compile their vertex file
+async function compilePass(packId, language, pass) {
+  const [fragment, vertex] = await Promise.all([
+    compileFile(packId, language, pass.file, pass.kind),
+    pass.geometry ? compileFile(packId, language, pass.geometry.vertexFile, 'vertex') : null,
+  ]);
+  if (!fragment.ok || !vertex) return fragment;
+  if (!vertex.ok) return vertex;
+  return { ...fragment, vertexFile: vertex.file, vertexWgsl: vertex.wgsl, cached: fragment.cached && vertex.cached };
 }
 
 // translateGlsl, reusing the stored result when the same source was translated before
@@ -436,9 +495,11 @@ async function compileSurface(packId, surface) {
     passes: passes.map((pass, index) => ({
       ...pass,
       file: compiled[index].file,
-      wgsl: allowStorageWrites(compiled[index].wgsl),
+      // Geometry passes keep their read-only storage binding, which the vertex stage requires
+      wgsl: pass.geometry ? compiled[index].wgsl : allowStorageWrites(compiled[index].wgsl),
       lineOffset: compiled[index].lineOffset,
       workgroupSize: pass.kind === 'compute' ? parseWorkgroupSize(compiled[index].wgsl) : null,
+      geometry: pass.geometry && { ...pass.geometry, vertexFile: compiled[index].vertexFile, vertexWgsl: compiled[index].vertexWgsl },
     })),
   };
 }

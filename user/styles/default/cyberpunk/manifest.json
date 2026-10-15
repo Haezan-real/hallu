@@ -2,6 +2,21 @@
   "name": "cyberpunk",
   "language": "glsl",
   "surfaces": {
-    "background": "neonGrid.frag"
+    "background": {
+      "storage": 512,
+      "passes": [
+        { "name": "traffic", "type": "compute", "file": "traffic.comp", "dispatch": [1, 1, 1] },
+        {
+          "name": "rain",
+          "type": "geometry",
+          "vertex": "rain.vert",
+          "file": "rain.frag",
+          "vertexCount": 6,
+          "instanceCount": 9000,
+          "blend": "add"
+        },
+        { "file": "drive.frag", "channels": [{ "source": "rain", "filter": "nearest" }] }
+      ]
+    }
   }
 }

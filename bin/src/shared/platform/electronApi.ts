@@ -9,10 +9,20 @@ export type ShaderChannel =
   | { kind: 'pass'; source: string; filter: 'linear' | 'nearest'; wrap: 'clamp' | 'repeat' }
   | { kind: 'image'; source: string; filter: 'linear' | 'nearest'; wrap: 'clamp' | 'repeat'; flipY: boolean };
 
+/** A geometry pass's vertex stage and draw settings */
+export interface ShaderGeometry {
+  vertexFile: string;
+  vertexWgsl: string;
+  vertexCount: number;
+  instanceCount: number;
+  blend: 'replace' | 'add' | 'alpha';
+  depth: boolean;
+}
+
 export interface CompiledShaderPass {
   /** null for the last pass, which draws to the screen */
   name: string | null;
-  kind: 'image' | 'buffer' | 'compute';
+  kind: 'image' | 'buffer' | 'compute' | 'geometry';
   file: string;
   wgsl: string;
   /** Boilerplate lines before the author's WGSL; null when lines don't map back (GLSL) */
@@ -20,6 +30,7 @@ export interface CompiledShaderPass {
   channels: (ShaderChannel | null)[];
   dispatch: [number, number, number] | null;
   workgroupSize: [number, number, number] | null;
+  geometry: ShaderGeometry | null;
 }
 
 export type CompiledShaderSurface = { ok: true; passes: CompiledShaderPass[]; storage: number; cached: boolean };

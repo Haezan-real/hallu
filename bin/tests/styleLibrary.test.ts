@@ -8,6 +8,7 @@ import { getThemeColors } from '../src/modals/styles/themeColors';
 import type { ElectronAPI } from '../src/shared/platform/electronApi';
 
 const BUILT_IN_THEMES = ['aquatic', 'forest', 'lavender', 'monokai', 'oak', 'og-dark', 'og-light'];
+const BUILT_IN_PACKS = ['cyberpunk', 'hallu_feature_demo'];
 const MANIFEST = { language: 'glsl', surfaces: { background: 'image.frag' } };
 
 describe('style files', () => {
@@ -146,7 +147,8 @@ describe('built-in styles', () => {
 
   it('ship as complete theme files in user/styles/default', () => {
     expect(library.problems).toEqual([]);
-    expect(library.items.default).toMatchObject({ type: 'folder', children: BUILT_IN_THEMES.map(name => `default/${name}`) });
+    const children = [...BUILT_IN_THEMES, ...BUILT_IN_PACKS].sort().map(name => `default/${name}`);
+    expect(library.items.default).toMatchObject({ type: 'folder', children });
     for (const name of BUILT_IN_THEMES) {
       const style = library.items[`default/${name}`];
       expect(style).toMatchObject({ type: 'style', shader: null });
@@ -155,8 +157,10 @@ describe('built-in styles', () => {
   });
 
   it('include the cyberpunk shader pack with its own colors and icon', () => {
-    const style = library.items.cyberpunk;
-    expect(style).toMatchObject({ type: 'style', parent: null, shader: 'cyberpunk', icon: { kind: 'image', file: 'cyberpunk/icon.webp' } });
+    const style = library.items['default/cyberpunk'];
+    expect(style).toMatchObject({
+      type: 'style', parent: 'default', shader: 'default/cyberpunk', icon: { kind: 'image', file: 'default/cyberpunk/icon.webp' },
+    });
     if (style?.type === 'style') expect(Object.keys(style.colors)).toEqual(THEME_VARS);
   });
 
@@ -169,8 +173,8 @@ describe('built-in styles', () => {
 
     expect(resolveStyleId('forest')).toBe('default/forest');
     expect(resolveStyleId('default/forest')).toBe('default/forest');
-    expect(resolveStyleId('cyberpunk')).toBe('cyberpunk');
-    expect(resolveStyleId('default/cyberpunk')).toBe('cyberpunk');
+    expect(resolveStyleId('cyberpunk')).toBe('default/cyberpunk');
+    expect(resolveStyleId('default/cyberpunk')).toBe('default/cyberpunk');
     expect(resolveStyleId('partial')).toBe('mine/partial');
     expect(resolveStyleId('gone')).toBeNull();
 

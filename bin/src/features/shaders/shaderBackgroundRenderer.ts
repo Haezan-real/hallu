@@ -4,6 +4,7 @@ import type {
   CompiledShaderSurface,
   ShaderChannel,
   ShaderCompileError,
+  ShaderGeometry,
 } from '../../shared/platform/electronApi';
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
 
@@ -30,6 +31,19 @@ export const channelSamplerBinding = (slot: number) => 2 + slot * 2;
 const BUFFER_FORMAT: GPUTextureFormat = 'rgba32float';
 const BUFFER_USAGE = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
   | GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST;
+// Geometry passes blend, which rgba32float only supports behind an optional feature
+const GEOMETRY_FORMAT: GPUTextureFormat = 'rgba16float';
+const GEOMETRY_USAGE = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING
+  | GPUTextureUsage.COPY_SRC | GPUTextureUsage.COPY_DST;
+const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
+const BLEND_STATES: Record<ShaderGeometry['blend'], GPUBlendState | undefined> = {
+  replace: undefined,
+  add: { color: { srcFactor: 'one', dstFactor: 'one' }, alpha: { srcFactor: 'one', dstFactor: 'one' } },
+  alpha: {
+    color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha' },
+    alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha' },
+  },
+};
 const EMPTY_STORAGE_BYTES = 256;
 const FRAME_RATE_SMOOTHING = 0.9;
 
@@ -48,6 +62,7 @@ interface TextureInput {
 
 // Two textures per buffer: passes read the latest one and write the other, then they swap
 interface PassTarget {
+  format: GPUTextureFormat;
   textures: GPUTexture[];
   views: GPUTextureView[];
   current: number;
@@ -60,6 +75,8 @@ interface RuntimePass {
   uniforms: GPUBuffer;
   samplers: GPUSampler[];
   target: PassTarget | null;
+  /** Geometry passes with "depth": true; follows the canvas size */
+  depth: GPUTexture | null;
 }
 
 interface Program {
@@ -88,6 +105,8 @@ export class ShaderBackgroundRenderer {
   private filterable: boolean;
   private bindGroupLayout: GPUBindGroupLayout;
   private pipelineLayout: GPUPipelineLayout;
+  private geometryBindGroupLayout: GPUBindGroupLayout;
+  private geometryPipelineLayout: GPUPipelineLayout;
   private vertexModule: GPUShaderModule;
   private emptyView: GPUTextureView;
   private emptyOutputView: GPUTextureView;
@@ -114,8 +133,10 @@ export class ShaderBackgroundRenderer {
     this.format = navigator.gpu.getPreferredCanvasFormat();
     context.configure({ device, format: this.format, alphaMode: 'premultiplied' });
     this.vertexModule = device.createShaderModule({ code: VERTEX_WGSL });
-    this.bindGroupLayout = this.createBindGroupLayout();
+    this.bindGroupLayout = this.createBindGroupLayout(false);
     this.pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
+    this.geometryBindGroupLayout = this.createBindGroupLayout(true);
+    this.geometryPipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [this.geometryBindGroupLayout] });
     // Placeholders for unused channels, compute passes nobody reads and packs without storage
     this.emptyView = device.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING }).createView();
     this.emptyOutputView = device.createTexture({ size: [1, 1], format: BUFFER_FORMAT, usage: GPUTextureUsage.STORAGE_BINDING }).createView();
@@ -197,8 +218,9 @@ export class ShaderBackgroundRenderer {
     this.device.destroy();
   }
 
-  private createBindGroupLayout(): GPUBindGroupLayout {
-    const stages = GPUShaderStage.FRAGMENT | GPUShaderStage.COMPUTE;
+  // Geometry passes add the vertex stage, which may only read storage, and have no output image
+  private createBindGroupLayout(geometry: boolean): GPUBindGroupLayout {
+    const stages = GPUShaderStage.FRAGMENT | (geometry ? GPUShaderStage.VERTEX : GPUShaderStage.COMPUTE);
     const entries: GPUBindGroupLayoutEntry[] = [{ binding: 0, visibility: stages, buffer: { type: 'uniform' } }];
     for (let slot = 0; slot < CHANNEL_COUNT; slot++) {
       entries.push(
@@ -206,10 +228,10 @@ export class ShaderBackgroundRenderer {
         { binding: channelSamplerBinding(slot), visibility: stages, sampler: { type: this.filterable ? 'filtering' : 'non-filtering' } },
       );
     }
-    entries.push(
-      { binding: OUTPUT_BINDING, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: BUFFER_FORMAT } },
-      { binding: STORAGE_BINDING, visibility: stages, buffer: { type: 'storage' } },
-    );
+    if (!geometry) {
+      entries.push({ binding: OUTPUT_BINDING, visibility: GPUShaderStage.COMPUTE, storageTexture: { access: 'write-only', format: BUFFER_FORMAT } });
+    }
+    entries.push({ binding: STORAGE_BINDING, visibility: stages, buffer: { type: geometry ? 'read-only-storage' : 'storage' } });
     return this.device.createBindGroupLayout({ entries });
   }
 
@@ -243,8 +265,9 @@ export class ShaderBackgroundRenderer {
     // Compute passes only need an output texture when another pass reads it
     const readPasses = new Set(surface.passes.flatMap(pass => pass.channels).filter(c => c?.kind === 'pass').map(c => c!.source));
     for (const pass of surface.passes) {
-      if (pass.name && (pass.kind === 'buffer' || readPasses.has(pass.name))) {
-        program.targets.set(pass.name, this.createTarget(program.width, program.height));
+      if (pass.name && (pass.kind === 'buffer' || pass.kind === 'geometry' || readPasses.has(pass.name))) {
+        const format = pass.kind === 'geometry' ? GEOMETRY_FORMAT : BUFFER_FORMAT;
+        program.targets.set(pass.name, this.createTarget(program.width, program.height, format));
       }
       if (pass.kind === 'compute' && !pass.dispatch && !pass.workgroupSize) {
         return fail({ file: pass.file, errors: [{ line: null, message: 'couldn\'t read the workgroup size; add "dispatch": [x, y, z] to this pass' }] });
@@ -261,23 +284,42 @@ export class ShaderBackgroundRenderer {
         uniforms: this.device.createBuffer({ size: UNIFORM_FLOATS * 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
         samplers: Array.from({ length: CHANNEL_COUNT }, (_, slot) => this.createSampler(info.channels[slot] ?? null)),
         target: info.name ? program.targets.get(info.name) ?? null : null,
+        depth: info.geometry?.depth ? this.createDepth(program.width, program.height) : null,
       });
     }
     return program;
   }
 
-  private async buildPipeline(pass: CompiledShaderPass): Promise<PipelineResult> {
-    const module = this.device.createShaderModule({ code: pass.wgsl });
+  private async createModule(code: string, file: string, lineOffset: number | null): Promise<GPUShaderModule | ShaderProgramError> {
+    const module = this.device.createShaderModule({ code });
     const info = await module.getCompilationInfo();
     const errors = info.messages
       .filter(message => message.type === 'error')
       .map(message => ({
-        line: pass.lineOffset !== null && message.lineNum > pass.lineOffset ? message.lineNum - pass.lineOffset : null,
+        line: lineOffset !== null && message.lineNum > lineOffset ? message.lineNum - lineOffset : null,
         message: message.message,
       }));
-    if (errors.length > 0) return { file: pass.file, errors };
+    return errors.length > 0 ? { file, errors } : module;
+  }
+
+  private async buildPipeline(pass: CompiledShaderPass): Promise<PipelineResult> {
+    const module = await this.createModule(pass.wgsl, pass.file, pass.lineOffset);
+    if (isProgramError(module)) return module;
 
     try {
+      if (pass.geometry) {
+        const { geometry } = pass;
+        const vertex = await this.createModule(geometry.vertexWgsl, geometry.vertexFile, null);
+        if (isProgramError(vertex)) return vertex;
+        const render = await this.device.createRenderPipelineAsync({
+          layout: this.geometryPipelineLayout,
+          vertex: { module: vertex, entryPoint: 'main' },
+          fragment: { module, entryPoint: 'main', targets: [{ format: GEOMETRY_FORMAT, blend: BLEND_STATES[geometry.blend] }] },
+          primitive: { topology: 'triangle-list' },
+          depthStencil: geometry.depth ? { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'less' } : undefined,
+        });
+        return { render, compute: null };
+      }
       if (pass.kind === 'compute') {
         const compute = await this.device.createComputePipelineAsync({
           layout: this.pipelineLayout,
@@ -314,9 +356,14 @@ export class ShaderBackgroundRenderer {
     }
   }
 
-  private createTarget(width: number, height: number): PassTarget {
-    const textures = [0, 1].map(() => this.device.createTexture({ size: [width, height], format: BUFFER_FORMAT, usage: BUFFER_USAGE }));
-    return { textures, views: textures.map(texture => texture.createView()), current: 0 };
+  private createTarget(width: number, height: number, format: GPUTextureFormat): PassTarget {
+    const usage = format === GEOMETRY_FORMAT ? GEOMETRY_USAGE : BUFFER_USAGE;
+    const textures = [0, 1].map(() => this.device.createTexture({ size: [width, height], format, usage }));
+    return { format, textures, views: textures.map(texture => texture.createView()), current: 0 };
+  }
+
+  private createDepth(width: number, height: number): GPUTexture {
+    return this.device.createTexture({ size: [width, height], format: DEPTH_FORMAT, usage: GPUTextureUsage.RENDER_ATTACHMENT });
   }
 
   private createSampler(channel: ShaderChannel | null): GPUSampler {
@@ -329,7 +376,10 @@ export class ShaderBackgroundRenderer {
   private destroyProgram(program: Program) {
     for (const target of program.targets.values()) target.textures.forEach(texture => texture.destroy());
     for (const image of program.images.values()) image.texture.destroy();
-    for (const pass of program.passes) pass.uniforms.destroy();
+    for (const pass of program.passes) {
+      pass.uniforms.destroy();
+      pass.depth?.destroy();
+    }
     program.storage?.destroy();
   }
 
@@ -379,12 +429,12 @@ export class ShaderBackgroundRenderer {
         { binding: channelSamplerBinding(slot), resource: pass.samplers[slot] },
       );
     });
-    const output = pass.compute && target ? target.views[writeIndex] : this.emptyOutputView;
-    entries.push(
-      { binding: OUTPUT_BINDING, resource: output },
-      { binding: STORAGE_BINDING, resource: { buffer: program.storage ?? this.emptyStorage } },
-    );
-    const bindGroup = this.device.createBindGroup({ layout: this.bindGroupLayout, entries });
+    if (!pass.info.geometry) {
+      entries.push({ binding: OUTPUT_BINDING, resource: pass.compute && target ? target.views[writeIndex] : this.emptyOutputView });
+    }
+    entries.push({ binding: STORAGE_BINDING, resource: { buffer: program.storage ?? this.emptyStorage } });
+    const layout = pass.info.geometry ? this.geometryBindGroupLayout : this.bindGroupLayout;
+    const bindGroup = this.device.createBindGroup({ layout, entries });
 
     if (pass.compute) {
       // Texels the compute shader doesn't write keep last frame's value
@@ -400,10 +450,15 @@ export class ShaderBackgroundRenderer {
       const view = target ? target.views[writeIndex] : this.context.getCurrentTexture().createView();
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
+        depthStencilAttachment: pass.depth
+          ? { view: pass.depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'discard' }
+          : undefined,
       });
       renderPass.setPipeline(pass.render);
       renderPass.setBindGroup(0, bindGroup);
-      renderPass.draw(3);
+      const { geometry } = pass.info;
+      if (geometry) renderPass.draw(geometry.vertexCount, geometry.instanceCount);
+      else renderPass.draw(3);
       renderPass.end();
     }
     if (target) target.current = writeIndex;
@@ -436,7 +491,7 @@ export class ShaderBackgroundRenderer {
     const encoder = this.device.createCommandEncoder();
     const old: GPUTexture[] = [];
     for (const target of program.targets.values()) {
-      const resized = this.createTarget(width, height);
+      const resized = this.createTarget(width, height, target.format);
       encoder.copyTextureToTexture(
         { texture: target.textures[target.current] },
         { texture: resized.textures[0] },
@@ -444,6 +499,11 @@ export class ShaderBackgroundRenderer {
       );
       old.push(...target.textures);
       Object.assign(target, resized);
+    }
+    for (const pass of program.passes) {
+      if (!pass.depth) continue;
+      old.push(pass.depth);
+      pass.depth = this.createDepth(width, height);
     }
     this.device.queue.submit([encoder.finish()]);
     old.forEach(texture => texture.destroy());

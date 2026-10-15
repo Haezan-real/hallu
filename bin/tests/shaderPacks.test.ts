@@ -37,6 +37,14 @@ describe('shader boilerplate', () => {
     expect(wrapped).not.toContain('halluFragColor');
   });
 
+  it('gives geometry passes read-only storage and flips the vertex position into buffer rows', () => {
+    const vertex = wrapGlsl('vec4 mainVertex(int vertexIndex, int instanceIndex) { return vec4(0.0); }\n', 'vertex');
+    expect(vertex).toContain('readonly buffer');
+    expect(vertex).toContain('gl_Position = vec4(position.x, -position.y, position.z, position.w)');
+    expect(wrapGlsl(MAIN_IMAGE, 'geometry')).toContain('readonly buffer');
+    expect(wrapGlsl(MAIN_IMAGE, 'buffer')).not.toContain('readonly buffer');
+  });
+
   it('reports how many WGSL boilerplate lines precede the author\'s code', () => {
     const source = 'fn mainImage(fragCoord : vec2f) -> vec4f { return vec4f(1.0); }';
     for (const kind of ['image', 'buffer', 'compute'] as const) {
@@ -50,6 +58,8 @@ describe('shader boilerplate', () => {
     expect(hasEntryPoint('void main() {}', 'glsl', 'compute')).toBe(true);
     expect(hasEntryPoint('fn mainImage(fragCoord : vec2f) -> vec4f {}', 'wgsl', 'buffer')).toBe(true);
     expect(hasEntryPoint('@compute @workgroup_size(8) fn main() {}', 'wgsl', 'compute')).toBe(true);
+    expect(hasEntryPoint('vec4 mainVertex(int v, int i) { return vec4(0.0); }', 'glsl', 'vertex')).toBe(true);
+    expect(hasEntryPoint(MAIN_IMAGE, 'glsl', 'vertex')).toBe(false);
   });
 
   it('turns read-only storage declarations into the read-write binding Hallu provides', () => {
@@ -114,7 +124,7 @@ describe('shader pack manifest', () => {
   it('accepts the single-file shorthand', () => {
     expect(validateManifest({ name: 'Pack', language: 'glsl', surfaces: { background: 'bg.frag' } })).toBeNull();
     expect(normalizeSurface('bg.frag')).toEqual({
-      passes: [{ name: null, kind: 'image', file: 'bg.frag', channels: [], dispatch: null }],
+      passes: [{ name: null, kind: 'image', file: 'bg.frag', channels: [], dispatch: null, geometry: null }],
       storage: 0,
     });
   });
@@ -158,6 +168,38 @@ describe('shader pack manifest', () => {
     expect(problem([{ file: 'a.frag', channels: ['a', 'b', 'c', 'd', 'e'] }])).toMatch(/up to 4/);
     expect(problem([{ file: 'a.frag', dispatch: [1, 1, 1] }])).toMatch(/dispatch/);
     expect(problem([{ file: 'a.frag' }], 3)).toMatch(/storage/);
+  });
+
+  it('expands geometry passes with their vertex file and draw settings', () => {
+    const surface = normalizeSurface({
+      passes: [
+        { name: 'rain', type: 'geometry', vertex: 'rain.vert', file: 'rain.frag', vertexCount: 6, instanceCount: 500, blend: 'add' },
+        { name: 'cars', type: 'geometry', vertex: 'cars.vert', file: 'cars.frag', vertexCount: 36, depth: true },
+        { file: 'image.frag', channels: ['rain', 'cars'] },
+      ],
+    });
+    expect(surface.passes.map(pass => pass.kind)).toEqual(['geometry', 'geometry', 'image']);
+    expect(surface.passes[0].geometry).toEqual({ vertexFile: 'rain.vert', vertexCount: 6, instanceCount: 500, blend: 'add', depth: false });
+    expect(surface.passes[1].geometry).toEqual({ vertexFile: 'cars.vert', vertexCount: 36, instanceCount: 1, blend: 'replace', depth: true });
+    expect(surface.passes[2].geometry).toBeNull();
+  });
+
+  it('rejects broken geometry passes', () => {
+    const problem = (pass: object, language = 'glsl') => validateManifest({
+      language,
+      surfaces: { background: { passes: [{ name: 'g', type: 'geometry', file: 'g.frag', vertex: 'g.vert', vertexCount: 3, ...pass }, { file: 'a.frag' }] } },
+    });
+    expect(problem({})).toBeNull();
+    expect(problem({ vertex: undefined })).toMatch(/"vertex" shader file/);
+    expect(problem({ vertexCount: 0 })).toMatch(/"vertexCount"/);
+    expect(problem({ instanceCount: 1.5 })).toMatch(/"instanceCount"/);
+    expect(problem({ blend: 'multiply' })).toMatch(/"blend"/);
+    expect(problem({ depth: 'yes' })).toMatch(/"depth"/);
+    expect(problem({}, 'wgsl')).toMatch(/only supported in GLSL/);
+    expect(validateManifest({ language: 'glsl', surfaces: { background: { passes: [{ name: 'a', file: 'a.frag', vertexCount: 3 }, { file: 'b.frag' }] } } }))
+      .toMatch(/only applies to geometry passes/);
+    expect(validateManifest({ language: 'glsl', surfaces: { background: { passes: [{ type: 'geometry', file: 'g.frag', vertex: 'g.vert', vertexCount: 3 }] } } }))
+      .toMatch(/last pass/);
   });
 });
 
@@ -217,4 +259,21 @@ describe.skipIf(!toolsInstalled)('glslang + tint translation', () => {
     expect(result.wgsl).toMatch(/@binding\(9u?\) var iOutput : texture_storage_2d<rgba32float, write>/);
     expect(result.wgsl).toMatch(/@binding\(10u?\) var<storage, read_write>/);
   });
+
+  it('translates geometry passes: a vertex stage and a fragment stage sharing varyings and read-only storage', async () => {
+    const storage = 'HALLU_STORAGE Points { vec4 points[]; };\n';
+    const vertex = await translateGlsl(`${storage}layout(location = 0) out vec4 vColor;
+vec4 mainVertex(int vertexIndex, int instanceIndex) {
+  vColor = points[instanceIndex] * iTheme.border;
+  return vec4(float(vertexIndex) * 0.1, textureLod(iChannel0, vec2(0.5), 0.0).r, 0.5, 1.0);
+}
+`, 'vertex');
+    const fragment = await translateGlsl(`${storage}layout(location = 0) in vec4 vColor;
+void mainImage(out vec4 fragColor, in vec2 fragCoord) { fragColor = vColor + points[0]; }
+`, 'geometry');
+    expect(vertex.ok && fragment.ok).toBe(true);
+    expect(vertex.wgsl).toContain('@vertex');
+    expect(fragment.wgsl).toMatch(/@location\(0u?\) vColor/);
+    for (const wgsl of [vertex.wgsl, fragment.wgsl]) expect(wgsl).toMatch(/@binding\(10u?\) var<storage, read>/);
+  }, 30000);
 });

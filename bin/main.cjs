@@ -63,6 +63,10 @@ const IS_DEVELOPMENT = process.env.ELECTRON_DEV === 'true';
 const DEV_SERVER_URL = 'http://localhost:5173';
 const APP_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
 
+// On laptops with two GPUs Chromium runs the UI and WebGPU on the integrated one and ignores
+// requestAdapter's powerPreference on Windows, so shaders would never reach the discrete GPU
+app.commandLine.appendSwitch('force-high-performance-gpu');
+
 // ─── Config validation with defaults ─────────────────────────────────────────
 function loadConfig() {
   return {

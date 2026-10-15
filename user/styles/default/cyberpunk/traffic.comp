@@ -1,0 +1,98 @@
+// Traffic: one invocation per car. Cars keep their lane, ease toward their own cruising speed,
+// brake when the car ahead gets close, and are recycled ahead of or behind the camera so the
+// boulevard never empties. drive.frag ray marches and lights the cars from this buffer.
+const int CAR_COUNT = 16;
+const float DRIVE_SPEED = 12.0;   // the camera's speed; keep in sync with drive.frag and rain.vert
+const float SPAWN_AHEAD = 260.0;
+const float BEHIND = 40.0;
+const float CAMERA_GAP = 22.0;    // cars in our lane stay at least this far ahead of us
+
+// Lanes 0 and 1 drive toward us, 2 is ours, 3 is the overtaking lane on our right
+const float LANE_X[4] = float[4](-5.25, -1.75, 1.75, 5.25);
+
+// body: x, z, speed along z (negative for oncoming), brake light 0..1
+// look: paint hue, length scale, respawn count, 1 once placed
+struct Car { vec4 body; vec4 look; };
+HALLU_STORAGE Traffic { Car cars[]; };
+
+layout(local_size_x = 16) in;
+
+uint pcg(uint v) {
+  uint state = v * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
+}
+
+float rand(uint seed, uint salt) {
+  return float(pcg(seed * 1664525u + salt * 1013904223u)) / 4294967295.0;
+}
+
+float cruiseSpeed(int lane, float r) {
+  if (lane < 2) return -(10.0 + 8.0 * r);
+  if (lane == 2) return DRIVE_SPEED * (0.92 + 0.16 * r);
+  return DRIVE_SPEED * (0.7 + 0.9 * r);
+}
+
+void main() {
+  int i = int(gl_GlobalInvocationID.x);
+  if (i >= CAR_COUNT) return;
+  int lane = i % 4;
+  float camZ = iTime * DRIVE_SPEED;
+  float dt = clamp(iTimeDelta, 0.0, 0.1);
+  vec4 body = cars[i].body;
+  vec4 look = cars[i].look;
+
+  // First frame: spread each lane's cars along the road
+  if (look.w == 0.0) {
+    uint seed = uint(i) * 7919u;
+    look = vec4(rand(seed, 1u), 0.85 + 0.35 * rand(seed, 2u), 0.0, 1.0);
+    float slot = float(i / 4) + 0.6 * rand(seed, 3u);
+    float z = lane == 2 ? camZ + CAMERA_GAP + 8.0 + slot * 55.0 : camZ - 20.0 + slot * 65.0;
+    body = vec4(LANE_X[lane], z, cruiseSpeed(lane, look.x), 0.0);
+  }
+
+  float cruise = cruiseSpeed(lane, look.x);
+  float dir = sign(cruise);
+
+  // Gap to the nearest car ahead in this lane, in the direction this lane drives
+  float gap = 1e5;
+  for (int j = lane; j < CAR_COUNT; j += 4) {
+    if (j == i) continue;
+    float d = (cars[j].body.y - body.y) * dir;
+    if (d > 0.0) gap = min(gap, d);
+  }
+
+  float speed = body.z;
+  float safe = 6.0 + abs(speed) * 0.8;
+  float braking = 0.0;
+  if (gap < safe) {
+    speed -= dir * 16.0 * dt * clamp((safe - gap) / safe * 2.0, 0.0, 1.0);
+    braking = 1.0;
+  } else {
+    speed += clamp(cruise - speed, -5.0 * dt, 5.0 * dt);
+  }
+  // We never rear-end the car in our lane: it pulls away when we get close
+  if (lane == 2 && body.y - camZ < CAMERA_GAP) speed = max(speed, DRIVE_SPEED + 3.0);
+  if (speed * dir < 0.0) speed = 0.0;
+
+  body.y += speed * dt;
+  body.z = speed;
+  body.w = mix(body.w, braking, 1.0 - exp(-dt * 12.0));
+
+  // Recycle: slow and oncoming cars that fell behind reappear far ahead, fast cars that raced off
+  // reappear behind and overtake again (our own lane only ever reappears ahead)
+  float rel = body.y - camZ;
+  if (rel < -BEHIND || rel > SPAWN_AHEAD + 60.0) {
+    look.z += 1.0;
+    uint seed = uint(i) * 7919u + uint(look.z) * 104729u;
+    look.x = rand(seed, 1u);
+    look.y = 0.85 + 0.35 * rand(seed, 2u);
+    bool ahead = rel < -BEHIND || lane == 2;
+    body.y = ahead ? camZ + SPAWN_AHEAD + 40.0 * rand(seed, 3u) : camZ - BEHIND + 5.0;
+    body.z = cruiseSpeed(lane, look.x);
+    body.w = 0.0;
+  }
+
+  cars[i].body = body;
+  cars[i].look = look;
+}
