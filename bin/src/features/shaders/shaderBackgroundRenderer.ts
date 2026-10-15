@@ -7,6 +7,8 @@ import type {
   ShaderGeometry,
 } from '../../shared/platform/electronApi';
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
+import { GlassCompositor } from './glassCompositor';
+import { measureGlassPanels } from './glassPanels';
 
 // Hallu owns the vertex stage: one triangle that covers the whole target
 export const VERTEX_WGSL = `
@@ -124,6 +126,7 @@ export class ShaderBackgroundRenderer {
   private frameRate = 60;
   private mouse = { x: 0, y: 0, clickX: 0, clickY: 0, down: false, clicked: false };
   private theme = new ThemeColorFade();
+  private glass: GlassCompositor;
   private detachInput: () => void;
 
   private constructor(private canvas: HTMLCanvasElement, device: GPUDevice, context: GPUCanvasContext, filterable: boolean) {
@@ -142,6 +145,7 @@ export class ShaderBackgroundRenderer {
     this.emptyOutputView = device.createTexture({ size: [1, 1], format: BUFFER_FORMAT, usage: GPUTextureUsage.STORAGE_BINDING }).createView();
     this.emptyStorage = device.createBuffer({ size: EMPTY_STORAGE_BYTES, usage: GPUBufferUsage.STORAGE });
     this.emptySampler = device.createSampler();
+    this.glass = new GlassCompositor(device, this.format);
     this.detachInput = this.attachMouse();
   }
 
@@ -214,6 +218,7 @@ export class ShaderBackgroundRenderer {
     this.theme.disconnect();
     if (this.program) this.destroyProgram(this.program);
     this.program = null;
+    this.glass.destroy();
     this.context.unconfigure();
     this.device.destroy();
   }
@@ -394,8 +399,17 @@ export class ShaderBackgroundRenderer {
     this.resizeTargets(program);
     this.writeGlobals(now, delta);
 
+    // With glass panels the screen pass draws offscreen, and the glass composites it to the canvas
+    const panels = measureGlassPanels(this.canvas);
+    if (panels.length > 0) this.glass.resize(this.canvas.width, this.canvas.height);
+    const screen = panels.length > 0 ? this.glass.sceneView : null;
+
     const encoder = this.device.createCommandEncoder();
-    for (const pass of program.passes) this.encodePass(encoder, program, pass);
+    for (const pass of program.passes) this.encodePass(encoder, program, pass, screen);
+    if (screen) {
+      const pixelsPerCssPixel = this.canvas.width / Math.max(this.canvas.clientWidth, 1);
+      this.glass.encode(encoder, this.context.getCurrentTexture().createView(), panels, pixelsPerCssPixel, this.uniforms[3]);
+    }
     this.device.queue.submit([encoder.finish()]);
     this.mouse.clicked = false;
     this.frame++;
@@ -408,7 +422,7 @@ export class ShaderBackgroundRenderer {
     return target ? { view: target.views[target.current], width: program.width, height: program.height } : null;
   }
 
-  private encodePass(encoder: GPUCommandEncoder, program: Program, pass: RuntimePass) {
+  private encodePass(encoder: GPUCommandEncoder, program: Program, pass: RuntimePass, screen: GPUTextureView | null) {
     const { target } = pass;
     const writeIndex = target ? 1 - target.current : 0;
     const inputs = Array.from({ length: CHANNEL_COUNT }, (_, slot) => this.channelInput(program, pass.info.channels[slot] ?? null));
@@ -447,7 +461,7 @@ export class ShaderBackgroundRenderer {
       computePass.dispatchWorkgroups(...this.dispatchSize(pass.info, program));
       computePass.end();
     } else if (pass.render) {
-      const view = target ? target.views[writeIndex] : this.context.getCurrentTexture().createView();
+      const view = target ? target.views[writeIndex] : screen ?? this.context.getCurrentTexture().createView();
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [{ view, clearValue: { r: 0, g: 0, b: 0, a: 0 }, loadOp: 'clear', storeOp: 'store' }],
         depthStencilAttachment: pass.depth

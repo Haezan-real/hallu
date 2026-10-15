@@ -203,6 +203,17 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* The shader background draws frosted glass behind these (glassPanels.ts sets the radius) */
+.glass-panel {
+  margin: 6px;
+}
+
+.glass-panel .viewer-header,
+.glass-panel .viewer-controls,
+.glass-panel .empty-drop {
+  background: color-mix(in srgb, var(--bg-base) 45%, transparent);
+}
+
 .workspace-vsplit {
   grid-area: vsplit;
   display: flex;

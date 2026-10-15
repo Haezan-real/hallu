@@ -22,6 +22,7 @@ import { registerModalPermissions } from '../shared/modals';
 import { useBackgroundLock } from './useBackgroundLock';
 import { useSuppressContextMenu } from './useSuppressContextMenu';
 import ShaderBackground from '../features/shaders/ShaderBackground';
+import { useGlassPanel } from '../features/shaders/glassPanels';
 
 registerModalPermissions();
 
@@ -31,6 +32,10 @@ function AppContent() {
   useSuppressContextMenu();
   const history = useHistory();
   const blockBackground = useBackgroundLock();
+  const mediaPoolPanelRef = useRef<HTMLDivElement>(null);
+  const viewerPanelRef = useRef<HTMLDivElement>(null);
+  useGlassPanel(mediaPoolPanelRef);
+  useGlassPanel(viewerPanelRef);
 
   const [mediaItems, setMediaItems] = useState<Map<string, MediaItem>>(new Map());
   const [clips, setClips] = useState<TimelineClip[]>([]);
@@ -147,7 +152,7 @@ function AppContent() {
           '--vsplit-width': leftCollapsed ? '0px' : '8px',
         } as React.CSSProperties}
       >
-        <div className="workspace-panel-mediapool" onDrop={handleDropMediaPool} onDragOver={handleDragOverMediaPool}>
+        <div ref={mediaPoolPanelRef} className="workspace-panel-mediapool" onDrop={handleDropMediaPool} onDragOver={handleDragOverMediaPool}>
           {!leftCollapsed && (
             <MediaPool items={Array.from(mediaItems.values())} selectedMediaId={selectedMediaId} onSelect={setSelectedMediaId} onAdd={handleAddMedia} onRemove={handleRemoveMedia} />
           )}
@@ -163,7 +168,7 @@ function AppContent() {
           </div>
         )}
 
-        <div className="workspace-panel-viewer">
+        <div ref={viewerPanelRef} className="workspace-panel-viewer">
           <Viewer clips={clips} mediaItems={mediaItems} playhead={playhead} playing={playing} totalFrames={totalFrames} onExport={openExport} />
           <ViewerControls
             style={{ marginTop: 'auto' }}

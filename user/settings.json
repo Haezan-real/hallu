@@ -6,7 +6,7 @@
   "hallu.settings.torusScrollingDisabled": "whole torus menu",
   "hallu.settings.elevatedPanelDarkenAmount": 50,
   "hallu.settings.zoomEpicenter": "playneedle",
-  "hallu.layout.leftWidthPct": 50,
+  "hallu.layout.leftWidthPct": 45.38882256672225,
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
@@ -16,7 +16,7 @@
     "activeStyle": "default/cyberpunk"
   },
   "hallu.settings.scrollAmount": 100,
-  "hallu.layout.timelineHeightPct": 46.40333660451421,
+  "hallu.layout.timelineHeightPct": 41.49656526005888,
   "hallu.settings.playneedle_t": 0.092,
   "hallu.settings.includeResizeInUndo": true,
   "hallu.layout.leftCollapsed": false,
