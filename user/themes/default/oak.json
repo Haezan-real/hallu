@@ -1,0 +1,22 @@
+{
+  "name": "oak",
+  "colors": {
+    "--bg-panel": "#362E2E",
+    "--bg-base": "#2A2222",
+    "--bg-viewer": "#1F1717",
+    "--video-bg": "#150e0e",
+    "--bg-elevated": "#4C4242",
+    "--bg-hover": "#5D5050",
+    "--border": "#706060",
+    "--border-mid": "#857373",
+    "--splitter": "#231c1c",
+    "--text-primary": "#D4C4C4",
+    "--text-secondary": "#A99A9A",
+    "--text-muted": "#807070",
+    "--input-field": "#b0796d",
+    "--input-field-bg": "#3F3737",
+    "--playneedle": "#d2899d",
+    "--highlight-color": "#f59e0b",
+    "--automation-line": "#f59e0b"
+  }
+}

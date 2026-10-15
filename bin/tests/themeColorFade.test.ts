@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { cubicBezier, parseCssEasing } from '../src/shared/lib/cubicBezier';
 import { colorFields } from '../src/modals/themes/colorFields';
-import { applyThemeToDocument } from '../src/modals/themes/themes';
+import { applyThemeToDocument, loadThemeLibrary } from '../src/modals/themes/themes';
 import { THEME_FLOATS, ThemeColorFade, parseCssDuration, readThemeColors } from '../src/features/shaders/themeColorFade';
-import { THEME_VARS } from '../shaderPacks.cjs';
+import type { ElectronAPI } from '../src/shared/platform/electronApi';
+import { THEME_VARS, readThemeLibrary } from '../themeLibrary.cjs';
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 const colorAt = (colors: Float32Array, varName: string) => {
@@ -28,6 +29,11 @@ describe('cubic-bezier easing', () => {
 });
 
 describe('theme colors for shaders', () => {
+  beforeAll(async () => {
+    window.electronAPI = { loadThemes: async () => readThemeLibrary() } as unknown as ElectronAPI;
+    await loadThemeLibrary();
+  });
+
   afterEach(() => {
     document.documentElement.removeAttribute('style');
   });

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { DEFAULT_THEME, applyThemeToDocument, getStoredTheme, setActiveTheme } from '../modals/themes/themes';
+import { DEFAULT_THEME, applyThemeToDocument, getStoredTheme, resolveThemeId, setActiveTheme, watchThemeLibrary } from '../modals/themes/themes';
 import { onSettingChange, readSetting } from '../modals/settings/settingsStore';
 
 //src/app/useAppearance.ts
@@ -33,9 +33,13 @@ export function applyTransitionDuration(ms: number) {
 // Applies the saved theme, GUI scale, transition speed and modal overlay look, and keeps them in sync with Settings
 export function useAppearance() {
   useEffect(() => {
+    // Names saved before themes were files ("cyberpunk") are upgraded to their file id ("default/cyberpunk").
+    // A choice whose file is missing stays saved, so it comes back when the file does
     const storedTheme = getStoredTheme();
-    if (storedTheme) applyThemeToDocument(storedTheme);
-    else setActiveTheme(DEFAULT_THEME);
+    const resolvedTheme = storedTheme && resolveThemeId(storedTheme);
+    if (!storedTheme) setActiveTheme(DEFAULT_THEME);
+    else if (resolvedTheme && resolvedTheme !== storedTheme) setActiveTheme(resolvedTheme);
+    else applyThemeToDocument(storedTheme);
 
     applyGuiScale(readSetting('guiScale'));
     applyTransitionDuration(readSetting('colorTransitionDuration'));
@@ -47,6 +51,7 @@ export function useAppearance() {
       onSettingChange('colorTransitionDuration', applyTransitionDuration),
       onSettingChange('elevatedPanelDarken', applyOverlayDarken),
       onSettingChange('elevatedPanelBlur', applyOverlayBlur),
+      watchThemeLibrary(),
     ];
     return () => unsubscribers.forEach(unsubscribe => unsubscribe());
   }, []);

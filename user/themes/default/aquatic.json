@@ -1,0 +1,22 @@
+{
+  "name": "aquatic",
+  "colors": {
+    "--bg-panel": "#1A3D3D",
+    "--bg-base": "#0F2A2A",
+    "--bg-viewer": "#0A1F1F",
+    "--video-bg": "#081818",
+    "--bg-elevated": "#224848",
+    "--bg-hover": "#2A5555",
+    "--border": "#3A6F6F",
+    "--border-mid": "#4A7F7F",
+    "--splitter": "#0D2323",
+    "--text-primary": "#B2E8B2",
+    "--text-secondary": "#88D8B8",
+    "--text-muted": "#60B89F",
+    "--input-field": "#469985",
+    "--input-field-bg": "#163333",
+    "--playneedle": "#00D8B0",
+    "--highlight-color": "#00D8B0",
+    "--automation-line": "#00D8B0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "lavender",
+  "colors": {
+    "--bg-panel": "#2D1C4D",
+    "--bg-base": "#1B0A3A",
+    "--bg-viewer": "#15043A",
+    "--video-bg": "#0d0618",
+    "--bg-elevated": "#392358",
+    "--bg-hover": "#432A66",
+    "--border": "#684A9C",
+    "--border-mid": "#7E5DBA",
+    "--splitter": "#15082f",
+    "--text-primary": "#E5DEF1",
+    "--text-secondary": "#B1A3D0",
+    "--text-muted": "#8A7B9C",
+    "--input-field": "#7953C2",
+    "--input-field-bg": "#27184A",
+    "--playneedle": "#C4A8E8",
+    "--highlight-color": "#a78bfa",
+    "--automation-line": "#a78bfa"
+  }
+}

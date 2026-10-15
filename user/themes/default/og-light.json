@@ -1,0 +1,22 @@
+{
+  "name": "og light",
+  "colors": {
+    "--bg-panel": "#f0f1f5",
+    "--bg-base": "#e8e9ed",
+    "--bg-viewer": "#d4d5d9",
+    "--video-bg": "#d0d2d8",
+    "--bg-elevated": "#ffffff",
+    "--bg-hover": "#e2e4e8",
+    "--border": "#c5c7cc",
+    "--border-mid": "#d8dade",
+    "--splitter": "#c8c9cd",
+    "--text-primary": "#1a1c24",
+    "--text-secondary": "#4a4d5e",
+    "--text-muted": "#8b8fa8",
+    "--input-field": "#4a5568",
+    "--input-field-bg": "#e2e4e8",
+    "--playneedle": "#1a1c24",
+    "--highlight-color": "#0ea5e9",
+    "--automation-line": "#0ea5e9"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "monokai",
+  "colors": {
+    "--bg-panel": "#272822",
+    "--bg-base": "#1c1e19",
+    "--bg-viewer": "#1c1e19",
+    "--video-bg": "#131411",
+    "--bg-elevated": "#3c3d38",
+    "--bg-hover": "#49483e",
+    "--border": "#414339",
+    "--border-mid": "#5a5c54",
+    "--splitter": "#161815",
+    "--text-primary": "#f8f8f2",
+    "--text-secondary": "#a6e22e",
+    "--text-muted": "#75715e",
+    "--input-field": "#66d9ef",
+    "--input-field-bg": "#3b3a32",
+    "--playneedle": "#f92672",
+    "--highlight-color": "#66d9ef",
+    "--automation-line": "#66d9ef"
+  }
+}

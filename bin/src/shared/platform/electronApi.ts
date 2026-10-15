@@ -34,6 +34,17 @@ export type ShaderCompileResult =
   | CompiledShaderSurface
   | { ok: false; file: string; stage: string; errors: ShaderCompileError[] };
 
+export type ThemeLibraryItem =
+  | { id: string; label: string; type: 'folder'; parent: string | null; children: string[] }
+  | { id: string; label: string; type: 'theme'; parent: string | null; colors: Partial<Record<string, string>> };
+
+/** Everything under user/themes; ids are paths without ".json", like "default/cyberpunk" */
+export interface ThemeLibrary {
+  topLevel: string[];
+  items: Record<string, ThemeLibraryItem>;
+  problems: { file: string; message: string }[];
+}
+
 export interface ElectronAPI {
   minimizeWindow: () => void;
   toggleMaximizeWindow: () => void;
@@ -46,6 +57,8 @@ export interface ElectronAPI {
   compileShaderSurface: (packId: string, surface: string) => Promise<ShaderCompileResult>;
   readShaderAsset: (packId: string, file: string) => Promise<Uint8Array>;
   onShaderPacksChanged: (callback: () => void) => () => void;
+  loadThemes: () => Promise<ThemeLibrary>;
+  onThemesChanged: (callback: () => void) => () => void;
 }
 
 declare global {

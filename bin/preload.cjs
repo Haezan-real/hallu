@@ -54,4 +54,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('shader-packs-changed', listener);
     return () => ipcRenderer.removeListener('shader-packs-changed', listener);
   },
+  loadThemes: () => ipcRenderer.invoke('themes-load'),
+  onThemesChanged: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('themes-changed', listener);
+    return () => ipcRenderer.removeListener('themes-changed', listener);
+  },
 });

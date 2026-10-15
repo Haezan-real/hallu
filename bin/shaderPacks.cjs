@@ -25,6 +25,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { THEME_VARS } = require('./themeLibrary.cjs');
 
 const SHADERS_DIR = path.join(__dirname, '..', 'user', 'shaders');
 const CACHE_DIR = path.join(__dirname, '..', 'user', '.cache', 'shaders');
@@ -44,13 +45,8 @@ const MAX_STORAGE_BYTES = 1024 ** 3;
 const TOOL_TIMEOUT_MS = 20000;
 const WATCH_DEBOUNCE_MS = 150;
 
-// The active theme's colors, in the order of src/modals/themes/colorFields.ts, which is the
-// order the renderer fills them in. "--bg-base" becomes iTheme.bgBase, and so on.
-const THEME_VARS = [
-  '--bg-panel', '--bg-base', '--bg-viewer', '--video-bg', '--bg-elevated', '--bg-hover',
-  '--border', '--border-mid', '--splitter', '--text-primary', '--text-secondary', '--text-muted',
-  '--input-field', '--input-field-bg', '--playneedle', '--highlight-color', '--automation-line',
-];
+// The active theme's colors, in the order the renderer fills them in.
+// "--bg-base" becomes iTheme.bgBase, and so on.
 const THEME_FIELDS = THEME_VARS.map(varName => varName.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()));
 
 // Shadertoy-compatible inputs plus iTheme, mirrored by the renderer's uniform buffer (std140, 400 bytes).
@@ -520,6 +516,5 @@ module.exports = {
   listShaderPacks,
   compileSurface,
   registerShaderPackHandlers,
-  THEME_VARS,
   THEME_FIELDS,
 };

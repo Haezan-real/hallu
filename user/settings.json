@@ -11,8 +11,8 @@
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
   "hallu.modal.styles.pageState": {
-    "stylePage": "vynelox-built-in-folder",
-    "activeTheme": "cyberpunk"
+    "stylePage": "default",
+    "activeTheme": "default/aquatic"
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.timelineHeightPct": 42.731652951885216,
@@ -20,7 +20,7 @@
   "hallu.layout.leftCollapsed": false,
   "hallu.settings.includeResizeInUndo": true,
   "hallu.settings.playheadTopPercent": 0,
-  "hallu.styles.activeTheme": "cyberpunk",
+  "hallu.styles.activeTheme": "default/aquatic",
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
