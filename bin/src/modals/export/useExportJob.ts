@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { MediaItem, TimelineClip } from '../../types';
 import { FPS } from '../../types';
+import { provideTimelineExport } from './timelineExport';
 //src/modals/export/useExportJob.ts
 function waitForVideoFrame(video: HTMLVideoElement, signal: AbortSignal): Promise<void> {
   if (signal.aborted) return Promise.reject(new DOMException('Export cancelled', 'AbortError'));
@@ -170,6 +171,8 @@ export function useExportJob({ clips, mediaItems, totalFrames }: ExportJobOption
       if (abortRef.current === abortController) abortRef.current = null;
     }
   }, [clips, mediaItems, totalFrames]);
+
+  useEffect(() => provideTimelineExport(exportVideo), [exportVideo]);
 
   return { exportVideo };
 }

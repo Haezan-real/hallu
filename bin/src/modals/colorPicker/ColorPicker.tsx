@@ -1,16 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { RotateCcw } from 'lucide-react';
 import Splitter from '../../shared/ui/Splitter';
-import { mountDetached } from '../../shared/modals/openModal';
+import { closePanel, defineToolPanel, isPanelOpen, openPanel, panelRegistry } from '../../shared/panels/openPanel';
 import { hexToHsl, hslCss, hslToHex, hslToRgb } from '../../shared/lib/color';
 import { readSetting } from '../settings/settingsStore';
+import {
+  getColorPickerBinding, pickColor, releaseColorPickerTarget, setColorPickerTarget, subscribeColorPickerTarget,
+  type ColorPickerTarget,
+} from './colorPickerTarget';
 //src/modals/colorPicker/ColorPicker.tsx
 
 interface Props {
   value: string; // hex color like #rrggbb
   onChange: (hex: string) => void;
   fullScreen?: boolean;
+  /** Just the picker itself, laid out in place: for the Color Picker panel */
+  embedded?: boolean;
   autoOpen?: boolean;
   onClose?: () => void;
   targetElement?: string;
@@ -49,7 +55,7 @@ function formatTitle(text: string | undefined): string {
   return `${line1}\n${line2}…`;
 }
 
-export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onClose, targetElement }: Props) {
+export default function ColorPicker({ value, onChange, fullScreen, embedded, autoOpen, onClose, targetElement }: Props) {
   // Format the title for display
   const title = formatTitle(targetElement);
   const [open, setOpen] = useState(!!autoOpen);
@@ -123,9 +129,9 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
         if (!insideTrigger && !insidePopover) setOpen(false);
       }
     }
-    if (open && !fullScreen) document.addEventListener('mousedown', onDoc);
+    if (open && !fullScreen && !embedded) document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [open, fullScreen]);
+  }, [open, fullScreen, embedded]);
 
   function updatePopoverPos() {
     const btn = triggerRef.current;
@@ -143,7 +149,7 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
   }
 
   useEffect(() => {
-    if (!open || fullScreen) return;
+    if (!open || fullScreen || embedded) return;
     updatePopoverPos();
     window.addEventListener('resize', updatePopoverPos);
     window.addEventListener('scroll', updatePopoverPos, true);
@@ -151,7 +157,7 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
       window.removeEventListener('resize', updatePopoverPos);
       window.removeEventListener('scroll', updatePopoverPos, true);
     };
-  }, [open, fullScreen]);
+  }, [open, fullScreen, embedded]);
 
   useEffect(() => {
     if (!open) setDragPos(null);
@@ -498,6 +504,8 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
     dragStateRef.current = null;
   };
 
+  if (embedded) return body;
+
   const inlinePopover = open && !fullScreen && (
     <div
       className="color-popover"
@@ -555,20 +563,35 @@ export default function ColorPicker({ value, onChange, fullScreen, autoOpen, onC
   );
 }
 
-// Programmatic helper: mount a fullscreen ColorPicker immediately
-export function OpenColorPicker(initial?: { value?: string; onChange?: (hex: string) => void; targetElement?: string; onClose?: () => void }) {
-  return mountDetached(unmount => (
-    <ColorPicker
-      value={initial?.value || '#00ff88'}
-      onChange={(hex) => { try { initial?.onChange?.(hex); } catch {} }}
-      fullScreen
-      autoOpen
-      onClose={() => {
-        initial?.onClose?.();
-        // onClose fires from an effect, where a root can't unmount itself synchronously
-        setTimeout(unmount, 0);
-      }}
-      targetElement={initial?.targetElement}
-    />
-  ));
+/** The Color Picker panel: edits whatever opened it most recently, starting over at each new target */
+function ColorPickerPanel() {
+  const binding = useSyncExternalStore(subscribeColorPickerTarget, getColorPickerBinding);
+  return (
+    <div className="editor-root color-picker-panel">
+      {binding
+        ? <ColorPicker key={binding.id} value={binding.target.value} onChange={pickColor} embedded autoOpen targetElement={binding.target.label} />
+        : <span className="color-picker-panel-empty">Nothing to pick a color for</span>}
+    </div>
+  );
+}
+
+defineToolPanel('colorPicker', { title: 'Color Picker', component: ColorPickerPanel });
+
+// However the panel closes (its ×, the exit shortcut, a layout reset), its target hears about it
+panelRegistry.subscribe(() => {
+  if (!isPanelOpen('colorPicker')) releaseColorPickerTarget();
+});
+
+/**
+ * Points the Color Picker at `target` and shows it: an open picker is focused and retargeted,
+ * so it reports to this target from now on. Returns a function that closes it.
+ */
+export function OpenColorPicker(target: ColorPickerTarget) {
+  setColorPickerTarget(target);
+  const id = openPanel('colorPicker');
+  if (!id) {
+    releaseColorPickerTarget();
+    return undefined;
+  }
+  return () => closePanel(id);
 }

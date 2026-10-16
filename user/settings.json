@@ -96,7 +96,7 @@
                   "activeView": "mediaPool",
                   "id": "6"
                 },
-                "size": 418
+                "size": 412
               },
               {
                 "type": "leaf",
@@ -107,10 +107,10 @@
                   "activeView": "viewer",
                   "id": "7"
                 },
-                "size": 1280
+                "size": 1286
               }
             ],
-            "size": 556
+            "size": 559
           },
           {
             "type": "leaf",
@@ -121,7 +121,7 @@
               "activeView": "timeline",
               "id": "5"
             },
-            "size": 419
+            "size": 416
           }
         ],
         "size": 1706
@@ -158,29 +158,9 @@
           "params": {}
         },
         "title": "Settings"
-      },
-      "tool.playneedleEditor": {
-        "id": "tool.playneedleEditor",
-        "contentComponent": "tool",
-        "tabComponent": "props.defaultTabComponent",
-        "params": {
-          "kind": "playneedleEditor",
-          "params": {}
-        },
-        "title": "Playneedle Editor"
-      },
-      "tool.torusMenuEditor": {
-        "id": "tool.torusMenuEditor",
-        "contentComponent": "tool",
-        "tabComponent": "props.defaultTabComponent",
-        "params": {
-          "kind": "torusMenuEditor",
-          "params": {}
-        },
-        "title": "Torus Menu Editor"
       }
     },
-    "activeGroup": "3",
+    "activeGroup": "6",
     "floatingGroups": [
       {
         "data": {
@@ -192,39 +172,9 @@
         },
         "position": {
           "top": 159,
-          "right": 479.656,
+          "right": 479.625,
           "width": 480,
           "height": 520
-        }
-      },
-      {
-        "data": {
-          "views": [
-            "tool.playneedleEditor"
-          ],
-          "activeView": "tool.playneedleEditor",
-          "id": "2"
-        },
-        "position": {
-          "top": 174.823,
-          "left": 131.656,
-          "width": 480,
-          "height": 560
-        }
-      },
-      {
-        "data": {
-          "views": [
-            "tool.torusMenuEditor"
-          ],
-          "activeView": "tool.torusMenuEditor",
-          "id": "3"
-        },
-        "position": {
-          "bottom": 80.8229,
-          "right": 311,
-          "width": 620,
-          "height": 540
         }
       }
     ]

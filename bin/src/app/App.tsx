@@ -1,5 +1,5 @@
 //src/app/App.tsx
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import MediaPool from '../panels/mediapool/MediaPool';
 import Viewer from '../panels/viewer/Viewer';
 import ViewerControls from '../panels/viewer/ViewerControls';
@@ -83,11 +83,9 @@ function AppContent() {
     handleStepEdge, handleRollApply,
   } = useTimelineEditor({ clips, mediaItems, setClips, setSelectedIds, history, snapshot });
 
-  const { exportVideo } = useExportJob({ clips, mediaItems, totalFrames });
-  // The export modal lives outside React's tree, so it exports whatever the timeline holds when clicked
-  const exportVideoRef = useRef(exportVideo);
-  exportVideoRef.current = exportVideo;
-  const openExport = useCallback(() => OpenExport(() => void exportVideoRef.current()), []);
+  // Export runs this timeline's export through timelineExport, whenever it's clicked
+  useExportJob({ clips, mediaItems, totalFrames });
+  const openExport = useCallback(() => { OpenExport(); }, []);
 
   const rollClip = rollClipId ? clips.find(c => c.id === rollClipId) ?? null : null;
   const rollMedia = rollClip ? mediaItems.get(rollClip.mediaId) ?? null : null;

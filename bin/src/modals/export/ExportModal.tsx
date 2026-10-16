@@ -1,37 +1,32 @@
 //src/modals/export/ExportModal.tsx
-import DraggableModal from '../../shared/ui/DraggableModal';
-import { openModal } from '../../shared/modals/openModal';
+import { closePanel, defineToolPanel, openPanel } from '../../shared/panels/openPanel';
+import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
+import { exportTimeline } from './timelineExport';
 
-interface ExportModalProps {
-  onClose: () => void;
-  onExport: () => void;
-}
-
-export default function ExportModal({ onClose, onExport }: ExportModalProps) {
+export default function Export({ close }: ToolPanelProps) {
   return (
-    <DraggableModal
-      title="Export"
-      onClose={onClose}
-      style={{ width: 400 }}
-      body={
-        <div className="settings-panel-content">
-          <span style={{ color: 'var(--text-secondary)' }}>Export the video track as a WebM file.</span>
-          <button
-            className="btn-primary"
-            style={{ alignSelf: 'center', padding: '8px 32px', background: 'var(--input-field)' }}
-            onClick={() => {
-              onClose();
-              onExport();
-            }}
-          >
-            Export video
-          </button>
-        </div>
-      }
-    />
+    <div className="editor-root">
+      <div className="settings-panel-content">
+        <span style={{ color: 'var(--text-secondary)' }}>Export the video track as a WebM file.</span>
+        <button
+          className="btn-primary"
+          style={{ alignSelf: 'center', padding: '8px 32px', background: 'var(--input-field)' }}
+          onClick={() => {
+            close();
+            void exportTimeline();
+          }}
+        >
+          Export video
+        </button>
+      </div>
+    </div>
   );
 }
 
-export function OpenExport(onExport: () => void) {
-  return openModal('export', close => <ExportModal onClose={close} onExport={onExport} />);
+defineToolPanel('export', { title: 'Export', component: Export });
+
+/** Opens Export, or focuses it if it's open; it always exports the timeline as it is when clicked */
+export function OpenExport() {
+  const id = openPanel('export');
+  return id ? () => closePanel(id) : undefined;
 }

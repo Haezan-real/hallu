@@ -68,7 +68,7 @@ function memoryStorage(initial: Record<string, string> = {}) {
   };
 }
 
-function setup(options: PanelRegistryOptions = {}, kinds: PanelKind[] = ['settings', 'styles', 'colorPicker', 'export']) {
+function setup(options: PanelRegistryOptions = {}, kinds: PanelKind[] = ['settings', 'styles', 'rollDialog', 'export']) {
   const registry = new PanelRegistry(options);
   for (const kind of kinds) registry.define(kind, { title: kind, component: Empty });
   const dock = new FakeDock();
@@ -80,8 +80,8 @@ describe('panel policies', () => {
   it('keeps menus exclusive only when multiple menus are turned off', () => {
     expect(canOpenPanel('settings', ['styles'], true)).toEqual({ allowed: true });
     expect(canOpenPanel('settings', ['styles'], false)).toEqual({ allowed: false, reason: MULTIPLE_MENUS_DISABLED });
-    expect(canOpenPanel('settings', ['colorPicker'], false)).toEqual({ allowed: true });
-    expect(canOpenPanel('colorPicker', ['settings'], false)).toEqual({ allowed: true });
+    expect(canOpenPanel('settings', ['rollDialog'], false)).toEqual({ allowed: true });
+    expect(canOpenPanel('rollDialog', ['settings'], false)).toEqual({ allowed: true });
   });
 
   it('gives every kind a usable default size', () => {
@@ -105,13 +105,13 @@ describe('panel registry', () => {
 
   it('adds another window for kinds that may be open more than once, offset from the last', () => {
     const { registry, dock } = setup();
-    const first = registry.openPanel('colorPicker')!;
-    const second = registry.openPanel('colorPicker')!;
+    const first = registry.openPanel('rollDialog')!;
+    const second = registry.openPanel('rollDialog')!;
     expect(first).not.toBe(second);
     const box = (id: string) => (dock.locate(id) as Extract<PanelLocation, { type: 'floating' }>).box;
     expect(box(second).x - box(first).x).toBe(24);
     expect(box(second).y - box(first).y).toBe(24);
-    expect(registry.openKinds()).toEqual(['colorPicker', 'colorPicker']);
+    expect(registry.openKinds()).toEqual(['rollDialog', 'rollDialog']);
   });
 
   it('floats new tools in the middle of the dock at their default size', () => {
@@ -130,7 +130,7 @@ describe('panel registry', () => {
     const { registry } = setup({ allowMultipleMenus: () => false, openModalKinds: () => modals, notify: reason => notified.push(reason) });
     expect(registry.openPanel('settings')).not.toBeNull();
     expect(registry.openPanel('styles')).toBeNull();
-    expect(registry.openPanel('colorPicker')).not.toBeNull();
+    expect(registry.openPanel('rollDialog')).not.toBeNull();
     registry.closePanel('settings');
     modals = ['export'];
     expect(registry.openPanel('styles')).toBeNull();
@@ -139,13 +139,13 @@ describe('panel registry', () => {
 
   it('closes by kind or id and reports what is open', () => {
     const { registry, dock } = setup();
-    const first = registry.openPanel('colorPicker')!;
-    const second = registry.openPanel('colorPicker')!;
-    expect(registry.closePanel('colorPicker')).toBe(true);
+    const first = registry.openPanel('rollDialog')!;
+    const second = registry.openPanel('rollDialog')!;
+    expect(registry.closePanel('rollDialog')).toBe(true);
     expect(dock.panels.has(second)).toBe(false);
     expect(registry.closePanel(first)).toBe(true);
-    expect(registry.isPanelOpen('colorPicker')).toBe(false);
-    expect(registry.closePanel('colorPicker')).toBe(false);
+    expect(registry.isPanelOpen('rollDialog')).toBe(false);
+    expect(registry.closePanel('rollDialog')).toBe(false);
   });
 
   it('forgets panels the dock closed by itself', () => {
@@ -279,25 +279,25 @@ describe('remembered locations', () => {
 describe('startup restore', () => {
   it('keeps restorable tools from the saved layout and closes the rest', () => {
     const registry = new PanelRegistry();
-    for (const kind of ['settings', 'export', 'colorPicker'] as const) registry.define(kind, { title: kind, component: Empty });
+    for (const kind of ['settings', 'export', 'rollDialog'] as const) registry.define(kind, { title: kind, component: Empty });
     const dock = new FakeDock();
     registry.attach(dock, [
       { id: 'tool.settings', params: { kind: 'settings', params: { tab: 'keys' } } },
       { id: 'tool.export', params: { kind: 'export', params: {} } },
       { id: 'tool.styles', params: { kind: 'styles', params: {} } },
-      { id: 'tool.colorPicker.7', params: { kind: 'colorPicker', params: {} } },
+      { id: 'tool.rollDialog.7', params: { kind: 'rollDialog', params: {} } },
       { id: 'tool.unknown', params: { kind: 'unknown' } },
     ]);
     expect(registry.openKinds()).toEqual(['settings']);
-    expect(dock.calls).toEqual(['remove tool.export', 'remove tool.styles', 'remove tool.colorPicker.7', 'remove tool.unknown']);
+    expect(dock.calls).toEqual(['remove tool.export', 'remove tool.styles', 'remove tool.rollDialog.7', 'remove tool.unknown']);
     expect(registry.openPanel('settings')).toBe('tool.settings');
   });
 
   it('numbers new windows after the restored ones', () => {
     const registry = new PanelRegistry();
     registry.define('settings', { title: 'Settings', component: Empty });
-    registry.define('colorPicker', { title: 'Color', component: Empty });
+    registry.define('rollDialog', { title: 'Color', component: Empty });
     registry.attach(new FakeDock(), [{ id: 'tool.settings.3', params: { kind: 'settings', params: {} } }]);
-    expect(registry.openPanel('colorPicker')).toBe('tool.colorPicker.4');
+    expect(registry.openPanel('rollDialog')).toBe('tool.rollDialog.4');
   });
 });

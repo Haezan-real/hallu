@@ -23,10 +23,10 @@ export interface PanelPolicy {
 export const PANEL_POLICIES: Record<PanelKind, PanelPolicy> = {
   settings: { menu: true, singleton: true, restorable: true, defaultSize: { width: 520, height: 600 } },
   styles: { menu: true, singleton: true, restorable: true, defaultSize: { width: 480, height: 640 } },
-  export: { menu: true, singleton: true, restorable: false, defaultSize: { width: 480, height: 420 } },
+  export: { menu: true, singleton: true, restorable: false, defaultSize: { width: 400, height: 180 } },
   torusMenuEditor: { menu: true, singleton: true, restorable: false, defaultSize: { width: 620, height: 540 } },
   playneedleEditor: { menu: true, singleton: true, restorable: false, defaultSize: { width: 480, height: 560 } },
-  colorPicker: { menu: false, singleton: false, restorable: false, defaultSize: { width: 300, height: 380 } },
+  colorPicker: { menu: false, singleton: true, restorable: false, defaultSize: { width: 280, height: 420 } },
   rollDialog: { menu: false, singleton: false, restorable: false, defaultSize: { width: 360, height: 200 } },
 };
 
