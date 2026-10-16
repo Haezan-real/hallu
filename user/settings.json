@@ -108,14 +108,34 @@
     "grid": {
       "root": {
         "type": "branch",
-        "data": [],
+        "data": [
+          {
+            "type": "leaf",
+            "data": {
+              "views": [
+                "timeline"
+              ],
+              "activeView": "timeline",
+              "id": "10"
+            },
+            "size": 983
+          }
+        ],
         "size": 1706
       },
       "width": 1706,
       "height": 983,
       "orientation": "VERTICAL"
     },
-    "panels": {}
+    "panels": {
+      "timeline": {
+        "id": "timeline",
+        "contentComponent": "timeline",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Timeline"
+      }
+    },
+    "activeGroup": "10"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
