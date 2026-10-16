@@ -22,7 +22,7 @@ export interface PanelPolicy {
 // The single source of truth; adding a PanelKind without a policy here is a compile-time error
 export const PANEL_POLICIES: Record<PanelKind, PanelPolicy> = {
   settings: { menu: true, singleton: true, restorable: true, defaultSize: { width: 520, height: 600 } },
-  styles: { menu: true, singleton: true, restorable: true, defaultSize: { width: 760, height: 560 } },
+  styles: { menu: true, singleton: true, restorable: true, defaultSize: { width: 480, height: 640 } },
   export: { menu: true, singleton: true, restorable: false, defaultSize: { width: 480, height: 420 } },
   torusMenuEditor: { menu: true, singleton: true, restorable: false, defaultSize: { width: 640, height: 520 } },
   playneedleEditor: { menu: true, singleton: true, restorable: false, defaultSize: { width: 560, height: 480 } },

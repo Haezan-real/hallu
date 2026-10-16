@@ -1306,6 +1306,27 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   background: color-mix(in srgb, var(--bg-panel) 85%, transparent);
 }
 
+.styles-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  min-height: 0;
+  background: var(--bg-panel);
+}
+/* Light enough that the style being tried shows through on the panel itself */
+.shader-background-active .shader-panel .styles-root {
+  background: color-mix(in srgb, var(--bg-panel) 70%, transparent);
+}
+.styles-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 36px;
+  padding-left: 42px;
+  border-bottom: 1px solid var(--border);
+}
+
 .settings-body {
   display: flex;
   gap: 0;

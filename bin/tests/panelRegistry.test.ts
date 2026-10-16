@@ -173,6 +173,29 @@ describe('panel registry', () => {
     expect(registry.closeFocusedFloating()).toBe(true);
     expect(registry.isPanelOpen('styles')).toBe(false);
   });
+
+  it('lets the focused tool step back before the exit shortcut closes it', () => {
+    const { registry, dock } = setup();
+    const id = registry.openPanel('styles')!;
+    dock.focused = id;
+    dock.focusedIsFloating = true;
+    let depth = 1;
+    registry.setBackHandler(id, () => depth > 0 && depth-- > 0);
+    expect(registry.closeFocusedFloating()).toBe(true);
+    expect(registry.isPanelOpen('styles')).toBe(true);
+    expect(registry.closeFocusedFloating()).toBe(true);
+    expect(registry.isPanelOpen('styles')).toBe(false);
+
+    // A closed panel's handler doesn't carry over when it opens again
+    let stepped = false;
+    registry.openPanel('styles');
+    registry.setBackHandler(id, () => (stepped = true));
+    registry.closePanel(id);
+    registry.openPanel('styles');
+    expect(registry.closeFocusedFloating()).toBe(true);
+    expect(stepped).toBe(false);
+    expect(registry.isPanelOpen('styles')).toBe(false);
+  });
 });
 
 describe('remembered locations', () => {

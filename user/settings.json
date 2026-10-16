@@ -24,10 +24,18 @@
     "settings": {
       "type": "floating",
       "box": {
-        "x": 220,
-        "y": 140,
+        "x": 569,
+        "y": 135,
         "width": 480,
         "height": 520
+      }
+    },
+    "styles": {
+      "type": "docked",
+      "direction": "right",
+      "size": {
+        "width": 334,
+        "height": 983
       }
     }
   },
@@ -70,7 +78,7 @@
                   "activeView": "mediaPool",
                   "id": "6"
                 },
-                "size": 441
+                "size": 432
               },
               {
                 "type": "leaf",
@@ -81,10 +89,10 @@
                   "activeView": "viewer",
                   "id": "7"
                 },
-                "size": 1257
+                "size": 1266
               }
             ],
-            "size": 619
+            "size": 627
           },
           {
             "type": "leaf",
@@ -95,7 +103,7 @@
               "activeView": "timeline",
               "id": "5"
             },
-            "size": 356
+            "size": 348
           }
         ],
         "size": 1706

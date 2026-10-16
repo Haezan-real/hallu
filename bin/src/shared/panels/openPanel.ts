@@ -1,6 +1,8 @@
 //src/shared/panels/openPanel.ts
 // The app's panel registry, alongside openModal until every modal has moved into the dock
+import { useContext, useEffect, useRef } from 'react';
 import { readSetting } from '../../modals/settings/settingsStore';
+import { DockPanelContext } from '../dock/dockPanel';
 import { modalManager } from '../modals/modalManager';
 import { showToast } from '../ui/Toast';
 import type { PanelKind } from './panelPolicies';
@@ -40,4 +42,15 @@ export function isPanelOpen(kind: PanelKind): boolean {
 
 export function closeFocusedFloatingPanel(): boolean {
   return panelRegistry.closeFocusedFloating();
+}
+
+/** Lets the exit shortcut step back inside the tool panel this renders in; return false to let it close */
+export function usePanelBack(back: () => boolean) {
+  const panel = useContext(DockPanelContext);
+  const backRef = useRef(back);
+  backRef.current = back;
+  useEffect(() => {
+    if (!panel) return;
+    return panelRegistry.setBackHandler(panel.id, () => backRef.current());
+  }, [panel]);
 }

@@ -55,8 +55,8 @@ export function PreviewTile({ label, preview, active = false, onClick }: { label
   );
 }
 
-// justify spreads the columns across the full width; the column gap is then only a minimum
+// justify spreads the columns evenly across the full width; the column gap is then only a minimum
 export function IconTileGrid({ children, rowGap = 8, columnWidth = TILE_WIDTH, justify = false }: { children: ReactNode; rowGap?: number; columnWidth?: number; justify?: boolean }) {
-  const style: CSSProperties = { flex: 1, padding: 16, overflow: 'auto', display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${columnWidth}px)`, gap: `${rowGap}px 12px`, alignItems: 'flex-start', alignContent: 'start', justifyContent: justify ? 'space-between' : 'flex-start', justifyItems: 'center' };
+  const style: CSSProperties = { flex: 1, minHeight: 0, padding: 16, overflow: 'auto', display: 'grid', gridTemplateColumns: `repeat(auto-fill, ${columnWidth}px)`, gap: `${rowGap}px 12px`, alignItems: 'flex-start', alignContent: 'start', justifyContent: justify ? 'space-evenly' : 'flex-start', justifyItems: 'center' };
   return <div style={style}>{children}</div>;
 }

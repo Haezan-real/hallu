@@ -1,22 +1,18 @@
 //src/modals/styles/StylesModal.tsx
-import { useState, useEffect, useRef } from 'react';
-import DraggableModal from '../../shared/ui/DraggableModal';
+import { useState, useEffect } from 'react';
 import BackButton from '../../shared/ui/BackButton';
 import { IconTile, IconTileGrid, PREVIEW_TILE_WIDTH, PreviewTile } from '../../shared/ui/IconTile';
-import { openModal } from '../../shared/modals/openModal';
-import { modalManager } from '../../shared/modals/modalManager';
-import { readModalPageState } from '../../shared/modals/modalPageState';
+import { readModalPageState, writeModalPageState } from '../../shared/modals/modalPageState';
+import { closePanel, defineToolPanel, openPanel, usePanelBack } from '../../shared/panels/openPanel';
 import { folderIcon, getPathLabel } from './styleCatalog';
 import StyleTileIcon from './StyleTileIcon';
 import { getStyleLibrary, useStyleLibrary } from './styleLibrary';
 import { getActiveStyle, setActiveStyle } from './activeStyle';
 
-// Modal dimensions for the Styles page
-const MODAL_WIDTH = '480px';
-const MODAL_HEIGHT = '72vh';
+const PAGE_STATE_KEY = 'styles';
 
 function savedStylePage(): string | null {
-  const saved = readModalPageState('styles') as { stylePage?: unknown } | undefined;
+  const saved = readModalPageState(PAGE_STATE_KEY) as { stylePage?: unknown } | undefined;
   return typeof saved?.stylePage === 'string' && saved.stylePage in getStyleLibrary().items ? saved.stylePage : null;
 }
 
@@ -24,7 +20,8 @@ function parentOf(page: string): string | null {
   return getStyleLibrary().items[page]?.parent ?? null;
 }
 
-export default function StylesModal({ modalId, onClose }: { modalId: number; onClose: () => void }) {
+/** Picks the app's style; each pick repaints the real UI and its shader right away */
+export default function Styles() {
   const library = useStyleLibrary();
   const [selectedPage, setStylePage] = useState<string | null>(savedStylePage);
   const [activeStyle, setActiveStyleState] = useState(getActiveStyle);
@@ -34,17 +31,16 @@ export default function StylesModal({ modalId, onClose }: { modalId: number; onC
   const currentFolder = selectedItem?.type === 'folder' ? selectedItem : undefined;
   const stylePage = currentFolder ? selectedPage : null;
 
-  // The exit shortcut steps back to the parent page before closing the modal
-  const stylePageRef = useRef(stylePage);
-  stylePageRef.current = stylePage;
   useEffect(() => {
-    modalManager.registerBack(modalId, () => {
-      const page = stylePageRef.current;
-      if (!page) return false;
-      setStylePage(parentOf(page));
-      return true;
-    });
-  }, [modalId]);
+    writeModalPageState(PAGE_STATE_KEY, { stylePage, activeStyle });
+  }, [stylePage, activeStyle]);
+
+  // The exit shortcut steps back to the parent page before closing the panel
+  usePanelBack(() => {
+    if (!stylePage) return false;
+    setStylePage(parentOf(stylePage));
+    return true;
+  });
 
   const selectStyle = (styleId: string) => {
     if (activeStyle === styleId) return;
@@ -70,23 +66,24 @@ export default function StylesModal({ modalId, onClose }: { modalId: number; onC
   });
 
   return (
-    <DraggableModal
-      title={getPathLabel(library, stylePage)}
-      onClose={onClose}
-      className="settings-modal"
-      style={{ width: MODAL_WIDTH, height: MODAL_HEIGHT, minHeight: MODAL_HEIGHT, maxHeight: MODAL_HEIGHT, overflow: 'hidden' }}
-      persistenceKey="styles"
-      pageState={{ stylePage, activeStyle }}
-      headerLeft={stylePage && <BackButton onClick={() => setStylePage(parentOf(stylePage))} />}
-      body={
-        currentFolder
-          ? <IconTileGrid rowGap={4} columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(currentFolder.children)}</IconTileGrid>
-          : <IconTileGrid columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(library.topLevel)}</IconTileGrid>
-      }
-    />
+    <div className="styles-root">
+      {stylePage && (
+        <div className="styles-nav">
+          <BackButton onClick={() => setStylePage(parentOf(stylePage))} />
+          <span className="panel-title">{getPathLabel(library, stylePage)}</span>
+        </div>
+      )}
+      {currentFolder
+        ? <IconTileGrid rowGap={4} columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(currentFolder.children)}</IconTileGrid>
+        : <IconTileGrid columnWidth={PREVIEW_TILE_WIDTH} justify>{renderTiles(library.topLevel)}</IconTileGrid>}
+    </div>
   );
 }
 
+defineToolPanel('styles', { title: 'Styles', component: Styles });
+
+/** Opens Styles, or focuses it if it's open */
 export function OpenStyles() {
-  return openModal('styles', (close, modalId) => <StylesModal modalId={modalId} onClose={close} />);
+  const id = openPanel('styles');
+  return id ? () => closePanel(id) : undefined;
 }

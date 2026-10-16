@@ -111,6 +111,7 @@ export class PanelRegistry {
   private host: PanelHost | null = null;
   private open = new Map<string, OpenPanel>();
   private definitions = new Map<PanelKind, ToolPanelDefinition>();
+  private backHandlers = new Map<string, () => boolean>();
   private locations: Partial<Record<PanelKind, PanelLocation>>;
   private listeners = new Set<() => void>();
   private nextId = 1;
@@ -211,14 +212,27 @@ export class PanelRegistry {
     return [...this.open.values()].map(panel => panel.kind);
   }
 
-  /** Exit shortcut: closes the focused floating tool. Returns whether one closed */
+  /**
+   * Exit shortcut: the focused floating tool steps back (e.g. out of a folder) if its back
+   * handler says it did, or else closes. Returns whether anything happened.
+   */
   closeFocusedFloating(): boolean {
     const id = this.host?.focusedFloating();
-    return !!id && this.open.has(id) && this.closePanel(id);
+    if (!id || !this.open.has(id)) return false;
+    return this.backHandlers.get(id)?.() || this.closePanel(id);
+  }
+
+  /** What the exit shortcut does first in a panel; return false to let it close. Returns an unregister function */
+  setBackHandler(id: string, back: () => boolean): () => void {
+    this.backHandlers.set(id, back);
+    return () => {
+      if (this.backHandlers.get(id) === back) this.backHandlers.delete(id);
+    };
   }
 
   /** The dock removed a panel, e.g. through its close button */
   panelRemoved(id: string) {
+    this.backHandlers.delete(id);
     if (this.open.delete(id)) this.emit();
   }
 
