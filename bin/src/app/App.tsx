@@ -18,12 +18,9 @@ import { useExportJob } from '../modals/export/useExportJob';
 import { useMediaLibrary } from '../panels/mediapool/useMediaLibrary';
 import { usePlaybackClock } from '../panels/viewer/usePlaybackClock';
 import { TRACKS, useTimelineEditor } from '../panels/timeline/useTimelineEditor';
-import { registerModalPermissions } from '../shared/modals';
 import { useBackgroundLock } from './useBackgroundLock';
 import { useSuppressContextMenu } from './useSuppressContextMenu';
 import ShaderBackground from '../features/shaders/ShaderBackground';
-
-registerModalPermissions();
 
 function AppContent() {
   useShortcutLifecycle();

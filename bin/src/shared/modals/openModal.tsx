@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { modalManager, type ModalType } from './modalManager';
-import { MULTIPLE_MENUS_DISABLED } from './modalPermissions';
+import { MULTIPLE_MENUS_DISABLED } from '../panels/panelPolicies';
 import { showToast } from '../ui/Toast';
 
 //src/shared/modals/openModal.tsx

@@ -14,6 +14,9 @@ import { SHADER_PANEL_KIND, useShaderPanel } from '../../features/shaders/shader
 import { DockPanelContext, registerPanelActionsTarget, type DockPanelHandle } from '../../shared/dock/dockPanel';
 import { initDockLayout, isCorePanel } from './dockLayout';
 import { initDockShaderLayers } from './dockShaderLayers';
+import { attachDockPanelRegistry, TOOL_COMPONENT, type ToolPanelData } from './dockPanelHost';
+import { closePanel, panelRegistry } from '../../shared/panels/openPanel';
+import './toolPanels';
 
 /** Same thickness as the splitters the dock replaced */
 const SPLITTER_SIZE = 8; //px
@@ -86,10 +89,26 @@ function TimelinePanel({ api }: IDockviewPanelProps) {
   );
 }
 
+/** Any tool from the panel registry (openPanel); a kind with no definition renders empty */
+function ToolPanel({ api, params }: IDockviewPanelProps<ToolPanelData>) {
+  const ref = useRef<HTMLDivElement>(null);
+  useShaderPanel(ref, SHADER_PANEL_KIND.tool, SHADER_FRAME);
+  const definition = panelRegistry.definition(params.kind);
+  const Tool = definition?.component;
+  return (
+    <DockPanel api={api}>
+      <div ref={ref} className="workspace-panel-tool">
+        {Tool && <Tool params={params.params} close={() => closePanel(api.id)} />}
+      </div>
+    </DockPanel>
+  );
+}
+
 const COMPONENTS = {
   mediaPool: MediaPoolPanel,
   viewer: ViewerPanel,
   timeline: TimelinePanel,
+  [TOOL_COMPONENT]: ToolPanel,
 };
 
 function DockTab({ api }: IDockviewPanelHeaderProps) {
@@ -109,7 +128,10 @@ function DockTab({ api }: IDockviewPanelHeaderProps) {
           className="dock-tab-close"
           title="Close"
           onPointerDown={event => event.preventDefault()}
-          onClick={event => { event.stopPropagation(); api.close(); }}
+          onClick={event => {
+            event.stopPropagation();
+            if (!closePanel(api.id)) api.close();
+          }}
         >
           ×
         </button>
@@ -139,7 +161,15 @@ function FloatingWindowControls({ group, panels }: Pick<IDockviewHeaderActionsPr
 
   // Core panels can't close, so closing their window puts them back into the layout
   const holdsCorePanel = panels.some(panel => isCorePanel(panel.id));
-  const close = () => (holdsCorePanel ? group.api.moveTo({ position: 'right' }) : group.api.close());
+  const close = () => {
+    if (holdsCorePanel) {
+      group.api.moveTo({ position: 'right' });
+      return;
+    }
+    // Through the registry, so each tool remembers where it was
+    for (const panel of panels) closePanel(panel.id);
+    if (!group.api.isDisposed) group.api.close();
+  };
 
   return (
     <div className="dock-window-controls">
@@ -187,7 +217,9 @@ export default function WorkspaceDock(panels: WorkspacePanels) {
     disposeLayout.current?.();
     const disposeSaving = initDockLayout(event.api);
     const disposeShaderLayers = initDockShaderLayers(event.api);
+    const disposeRegistry = attachDockPanelRegistry(event.api);
     disposeLayout.current = () => {
+      disposeRegistry();
       disposeSaving();
       disposeShaderLayers();
     };

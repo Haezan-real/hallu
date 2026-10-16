@@ -3,11 +3,18 @@
 const pageStateKey = (persistenceKey: string) => `hallu.modal.${persistenceKey}.pageState`;
 
 export function readModalPageState(persistenceKey: string): unknown {
+  let saved: string | null;
   try {
-    const saved = window.localStorage.getItem(pageStateKey(persistenceKey));
-    return saved ? JSON.parse(saved) : undefined;
+    saved = window.localStorage.getItem(pageStateKey(persistenceKey));
   } catch {
     return undefined;
+  }
+  if (!saved) return undefined;
+  try {
+    return JSON.parse(saved);
+  } catch {
+    // settings.json stores string states unquoted, and loading it back writes them as they are
+    return saved;
   }
 }
 

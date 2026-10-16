@@ -329,7 +329,8 @@ html, body, #root {
 
 .workspace-panel-mediapool,
 .workspace-panel-viewer,
-.workspace-panel-timeline {
+.workspace-panel-timeline,
+.workspace-panel-tool {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1291,12 +1292,18 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   gap: 8px;
 }
 
-.settings-modal {
-  width: 480px;
-  height: 72vh;
-  min-height: 72vh;
-  max-height: 72vh;
-  overflow: hidden;
+/* Settings fills its dock panel; its width decides where the tabs go */
+.settings-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  min-height: 0;
+  container-type: inline-size;
+  background: var(--bg-panel);
+}
+/* Dense with text, so the shader only shows faintly through it */
+.shader-background-active .shader-panel .settings-root {
+  background: color-mix(in srgb, var(--bg-panel) 85%, transparent);
 }
 
 .settings-body {
@@ -1317,7 +1324,7 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   gap: 4px;
   border-right: 1px solid var(--border);
   align-self: stretch;
-  justify-content: center; /* vertically center the tab buttons */
+  justify-content: flex-start;
   position: relative;
   z-index: 1;
   transition:
@@ -1363,6 +1370,31 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   flex-direction: column;
   gap: 12px;
   padding: 12px 16px;
+}
+
+/* Docked narrow: the tabs wrap along the top so the settings keep the full width */
+@container (max-width: 400px) {
+  .settings-body {
+    flex-direction: column;
+  }
+  .settings-tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-tab {
+    padding: 6px 8px;
+  }
+  .settings-panel {
+    height: auto;
+    flex: 1 0 0;
+  }
+  .settings-panel-content {
+    padding: 10px 12px;
+  }
 }
 
 /* Appearance sub-tabs */

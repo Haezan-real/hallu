@@ -20,6 +20,17 @@
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
+  "hallu.panels.locations": {
+    "settings": {
+      "type": "floating",
+      "box": {
+        "x": 220,
+        "y": 140,
+        "width": 480,
+        "height": 520
+      }
+    }
+  },
   "hallu.settings.viewerControlsType": "compact",
   "hallu.settings.allowMultipleMenus": true,
   "hallu.settings.playneedle_k": 103,
@@ -57,9 +68,9 @@
                     "mediaPool"
                   ],
                   "activeView": "mediaPool",
-                  "id": "7"
+                  "id": "6"
                 },
-                "size": 337
+                "size": 441
               },
               {
                 "type": "leaf",
@@ -68,12 +79,12 @@
                     "viewer"
                   ],
                   "activeView": "viewer",
-                  "id": "8"
+                  "id": "7"
                 },
-                "size": 1361
+                "size": 1257
               }
             ],
-            "size": 622.35
+            "size": 619
           },
           {
             "type": "leaf",
@@ -82,9 +93,9 @@
                 "timeline"
               ],
               "activeView": "timeline",
-              "id": "6"
+              "id": "5"
             },
-            "size": 352.65
+            "size": 356
           }
         ],
         "size": 1706
@@ -94,12 +105,6 @@
       "orientation": "VERTICAL"
     },
     "panels": {
-      "timeline": {
-        "id": "timeline",
-        "contentComponent": "timeline",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Timeline"
-      },
       "mediaPool": {
         "id": "mediaPool",
         "contentComponent": "mediaPool",
@@ -111,13 +116,19 @@
         "contentComponent": "viewer",
         "tabComponent": "props.defaultTabComponent",
         "title": "Viewer"
+      },
+      "timeline": {
+        "id": "timeline",
+        "contentComponent": "timeline",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Timeline"
       }
     },
-    "activeGroup": "8"
+    "activeGroup": "6"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
   "hallu.settings.draggableHeaderButtons": true,
-  "hallu.modal.settings.pageState": "sliders",
+  "hallu.modal.settings.pageState": "shortcuts",
   "hallu.settings.playneedle_h_b": 0.8
 }

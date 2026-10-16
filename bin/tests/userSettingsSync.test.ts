@@ -3,6 +3,7 @@ import {
   exportStorageToSettingsObject,
   importSettingsObjectToStorage,
 } from '../src/modals/settings/userSettingsSync';
+import { readModalPageState, writeModalPageState } from '../src/shared/modals/modalPageState';
 
 describe('userSettingsSync', () => {
   beforeEach(() => {
@@ -35,5 +36,15 @@ describe('userSettingsSync', () => {
     expect(window.localStorage.getItem('hallu.styles.active')).toBe('cyberpunk');
     expect(window.localStorage.getItem('hallu.settings.guiScale')).toBe('150');
     expect(JSON.parse(window.localStorage.getItem('hallu.settings.keyboardShortcuts')!)).toEqual({ redo: [['ctrl', 'y']] });
+  });
+
+  it('keeps string page states through a round trip to settings.json', () => {
+    writeModalPageState('settings', 'shortcuts');
+    writeModalPageState('styles', { stylePage: 'default', activeStyle: 'default/cyberpunk' });
+    const saved = exportStorageToSettingsObject();
+    window.localStorage.clear();
+    importSettingsObjectToStorage(saved);
+    expect(readModalPageState('settings')).toBe('shortcuts');
+    expect(readModalPageState('styles')).toEqual({ stylePage: 'default', activeStyle: 'default/cyberpunk' });
   });
 });

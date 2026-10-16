@@ -1,19 +1,15 @@
 import { onSettingChange, readSetting } from '../../modals/settings/settingsStore';
+import { canOpenPanel, type PanelKind } from '../panels/panelPolicies';
 
 //src/shared/modals/modalManager.ts
 
-export type ModalType = 'settings' | 'styles' | 'export' | 'torusMenuEditor' | 'playneedleEditor' | 'colorPicker' | 'rollDialog';
-
-export interface ModalPermission {
-  id: ModalType;
-  canOpen: (state: ModalManagerState) => { allowed: boolean; reason?: string };
-}
+/** Modals share the panel kinds and their policies (panelPolicies.ts) */
+export type ModalType = PanelKind;
 
 export interface ModalManagerState {
   openModals: ModalInstance[];
   settings: {
     allowMultipleMenus: boolean;
-    allowDuplicateMenus: boolean;
     allowEditsWhenMenuOpen: boolean;
   };
 }
@@ -40,15 +36,14 @@ class ModalManager {
     openModals: [],
     settings: {
       allowMultipleMenus: readSetting('allowMultipleMenus'),
-      allowDuplicateMenus: false,
       allowEditsWhenMenuOpen: readSetting('allowEditsWhenMenuOpen'),
     }
   };
   
-  private permissions: Map<ModalType, ModalPermission> = new Map();
   private listeners: Set<(state: ModalManagerState) => void> = new Set();
   private instances: ModalRegistration[] = [];
   private nextInstanceId = 1;
+  private openPanelKinds: () => readonly PanelKind[] = () => [];
   
   constructor() {
     (['allowMultipleMenus', 'allowEditsWhenMenuOpen'] as const).forEach(key => {
@@ -69,22 +64,25 @@ class ModalManager {
   getState(): ModalManagerState {
     return this.state;
   }
-  
-  // Register permission rules for a modal type (call once during init)
-  registerPermission(permission: ModalPermission) {
-    this.permissions.set(permission.id, permission);
+
+  /** Lets the panel registry's open tools count against the menu policy too */
+  setOpenPanelsSource(source: () => readonly PanelKind[]) {
+    this.openPanelKinds = source;
+  }
+
+  /** Kinds of every open modal, oldest first */
+  openKinds(): PanelKind[] {
+    return this.instances.map(instance => instance.type);
   }
   
   // Request to open a modal - returns whether it's allowed and optional reason
   requestOpen(modalType: ModalType): ModalRequest {
-    const permission = this.permissions.get(modalType);
-    
-    if (permission) {
-      const result = permission.canOpen(this.state);
-      if (!result.allowed) {
-        return result;
-      }
-    }
+    const result = canOpenPanel(
+      modalType,
+      [...this.openKinds(), ...this.openPanelKinds()],
+      this.state.settings.allowMultipleMenus,
+    );
+    if (!result.allowed) return result;
     
     const id = this.nextInstanceId++;
     this.instances.push({ id, type: modalType });
