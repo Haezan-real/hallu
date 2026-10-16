@@ -134,8 +134,6 @@ export function createDockPanelHost(api: DockviewApi): PanelHost {
       return neighbour && { type: 'docked', ...neighbour, size };
     },
 
-    focusedPanel: () => api.activePanel?.id ?? null,
-
     focusedFloating() {
       const group = api.activeGroup;
       return group?.api.location.type === 'floating' ? group.activePanel?.id ?? null : null;

@@ -16,9 +16,9 @@
   "hallu.settings.scrollAmount": 100,
   "hallu.settings.playneedle_t": 0.092,
   "hallu.settings.playheadTopPercent": 0,
-  "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
+  "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.panels.locations": {
     "settings": {
       "type": "floating",
@@ -94,7 +94,7 @@
                   "activeView": "mediaPool",
                   "id": "2"
                 },
-                "size": 335
+                "size": 331
               },
               {
                 "type": "leaf",
@@ -105,10 +105,10 @@
                   "activeView": "viewer",
                   "id": "3"
                 },
-                "size": 1363
+                "size": 1367
               }
             ],
-            "size": 623
+            "size": 625
           },
           {
             "type": "leaf",
@@ -119,7 +119,7 @@
               "activeView": "timeline",
               "id": "1"
             },
-            "size": 352
+            "size": 350
           }
         ],
         "size": 1706
@@ -156,9 +156,19 @@
           "params": {}
         },
         "title": "Settings"
+      },
+      "tool.torusMenuEditor": {
+        "id": "tool.torusMenuEditor",
+        "contentComponent": "tool",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {
+          "kind": "torusMenuEditor",
+          "params": {}
+        },
+        "title": "Torus Menu Editor"
       }
     },
-    "activeGroup": "4",
+    "activeGroup": "1",
     "floatingGroups": [
       {
         "data": {
@@ -173,6 +183,21 @@
           "left": 746,
           "width": 480,
           "height": 520
+        }
+      },
+      {
+        "data": {
+          "views": [
+            "tool.torusMenuEditor"
+          ],
+          "activeView": "tool.torusMenuEditor",
+          "id": "5"
+        },
+        "position": {
+          "top": 362,
+          "left": 775,
+          "width": 620,
+          "height": 540
         }
       }
     ]

@@ -245,6 +245,10 @@ html, body, #root {
     border-color var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
+/* The focused panel, which gets the keyboard first (keyRouter), has a tinted header line */
+.dockview-theme-hallu .dv-groupview.dv-active-group > .dv-tabs-and-actions-container {
+  border-bottom-color: color-mix(in srgb, var(--highlight-color) 55%, var(--border));
+}
 .dockview-theme-hallu .dv-tab {
   padding: 0;
   transition: color var(--theme-transition-duration) var(--theme-transition-timing);

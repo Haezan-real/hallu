@@ -1,5 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { isShortcutMatch } from '../../modals/settings/shortcuts';
+import { useDialogKeys } from '../keyboard/keyRouter';
 import { registerBlockingDialog } from './blockingDialogs';
 
 //src/shared/ui/BlockingDialog.tsx
@@ -12,9 +14,13 @@ interface BlockingDialogProps {
 
 /** A small popup centered over the app, for things that need an answer first (Roll, confirmations); useBackgroundLock blocks the app behind it */
 export default function BlockingDialog({ title, onClose, children }: BlockingDialogProps) {
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => registerBlockingDialog(() => closeRef.current()), []);
+  useEffect(() => registerBlockingDialog(), []);
+  // Ahead of every panel, and the newest dialog first
+  useDialogKeys(e => {
+    if (!isShortcutMatch('exitModal', e)) return false;
+    onClose();
+    return true;
+  });
 
   return createPortal(
     <div className="blocking-dialog-layer">

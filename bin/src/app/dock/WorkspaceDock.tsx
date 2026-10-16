@@ -15,7 +15,9 @@ import { DockPanelContext, registerPanelActionsTarget, type DockPanelHandle } fr
 import { initDockLayout, isCorePanel } from './dockLayout';
 import { initDockShaderLayers } from './dockShaderLayers';
 import { attachDockPanelRegistry, TOOL_COMPONENT, type ToolPanelData } from './dockPanelHost';
+import { initDockFocus } from './dockFocus';
 import { closePanel, panelRegistry } from '../../shared/panels/openPanel';
+import { keyRouter } from '../../shared/keyboard/keyRouter';
 import './toolPanels';
 
 /** Same thickness as the splitters the dock replaced */
@@ -218,7 +220,10 @@ export default function WorkspaceDock(panels: WorkspacePanels) {
     const disposeSaving = initDockLayout(event.api);
     const disposeShaderLayers = initDockShaderLayers(event.api);
     const disposeRegistry = attachDockPanelRegistry(event.api);
+    const disposeFocus = initDockFocus(event.api);
+    keyRouter.setFocusSource(() => event.api.activePanel?.id ?? null);
     disposeLayout.current = () => {
+      disposeFocus();
       disposeRegistry();
       disposeSaving();
       disposeShaderLayers();

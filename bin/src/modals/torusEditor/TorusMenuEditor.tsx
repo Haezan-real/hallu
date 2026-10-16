@@ -4,7 +4,8 @@ import GraphEditor, { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../../share
 import { handleValuesToOffsets } from '../../shared/ui/graphEditor/graphGeometry';
 import type { GraphPoint } from '../../shared/lib/graph';
 import BackButton from '../../shared/ui/BackButton';
-import { closePanel, defineToolPanel, isPanelFocused, openPanel } from '../../shared/panels/openPanel';
+import { closePanel, defineToolPanel, openPanel } from '../../shared/panels/openPanel';
+import { usePanelKeys } from '../../shared/keyboard/keyRouter';
 import TorusMenu from '../../features/torus/TorusMenu';
 import type { TorusTarget } from '../../features/torus/torusTarget';
 import {
@@ -45,16 +46,11 @@ export default function TorusMenuEditor() {
   const toggleTorus = useCallback(() => setTorusOpen(open => !open), []);
 
   // While this panel has the dock's focus, the torus shortcut previews here instead of on the timeline
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (!isShortcutMatch('toggleTorusMenu', e) || !isPanelFocused('torusMenuEditor')) return;
-      e.preventDefault();
-      e.stopPropagation();
-      toggleTorus();
-    };
-    window.addEventListener('keydown', handler, true);
-    return () => window.removeEventListener('keydown', handler, true);
-  }, [toggleTorus]);
+  usePanelKeys(e => {
+    if (!isShortcutMatch('toggleTorusMenu', e)) return false;
+    toggleTorus();
+    return true;
+  });
 
   return (
     <div className="editor-root">

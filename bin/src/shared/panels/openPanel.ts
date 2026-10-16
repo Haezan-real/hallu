@@ -31,11 +31,6 @@ export function isPanelOpen(kind: PanelKind): boolean {
   return panelRegistry.isPanelOpen(kind);
 }
 
-/** Whether the dock's focus is on a tool of this kind */
-export function isPanelFocused(kind: PanelKind): boolean {
-  return panelRegistry.focusedPanel()?.kind === kind;
-}
-
 export function closeFocusedFloatingPanel(): boolean {
   return panelRegistry.closeFocusedFloating();
 }

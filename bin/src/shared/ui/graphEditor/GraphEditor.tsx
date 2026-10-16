@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { Undo2, Redo2 } from 'lucide-react';
 import { useLocalHistory } from '../../history';
+import { usePanelKeys } from '../../keyboard/keyRouter';
 import { formatShortcutLabel, isShortcutMatch } from '../../../modals/settings/shortcuts';
 import { formatSensitivity, adjustSensitivity, DEFAULT_SENSITIVITY, DISPLAY_DURATION_MS } from './sensitivity';
 import { evaluateSegment, type GraphPoint } from '../../lib/graph';
@@ -45,11 +46,6 @@ function cloneGraphSnapshot(graph: SizeGraphPoint[], easingOffsets: number[]): G
 
 function snapshotsEqual(a: GraphSnapshot, b: GraphSnapshot): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
-}
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  const element = target as HTMLElement | null;
-  return !!element && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.isContentEditable);
 }
 
 export default function GraphEditor({
@@ -187,25 +183,18 @@ export default function GraphEditor({
     onEasingChange?.(segmentHandleValues);
   }, [segmentHandleValues, onEasingChange]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
-      if (isShortcutMatch('undo', e)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        handleUndoRef.current();
-        return;
-      }
-      if (isShortcutMatch('redo', e)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        handleRedoRef.current();
-      }
-    };
-    
-    window.addEventListener('keydown', handler, true);
-    return () => window.removeEventListener('keydown', handler, true);
-  }, []);
+  // The graph's own history, while the panel it's in has the focus
+  usePanelKeys(e => {
+    if (isShortcutMatch('undo', e)) {
+      handleUndoRef.current();
+      return true;
+    }
+    if (isShortcutMatch('redo', e)) {
+      handleRedoRef.current();
+      return true;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {

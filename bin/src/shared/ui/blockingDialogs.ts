@@ -1,7 +1,7 @@
 //src/shared/ui/blockingDialogs.ts
 
-// Open blocking dialogs, newest last: the exit shortcut closes the newest, and the background stays locked while any are open
-const closers: (() => void)[] = [];
+// How many blocking dialogs are open; the background stays locked while any are
+let open = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -9,27 +9,20 @@ function emit() {
 }
 
 /** Returns the function that unregisters it, once the dialog is gone */
-export function registerBlockingDialog(close: () => void): () => void {
-  closers.push(close);
+export function registerBlockingDialog(): () => void {
+  open++;
   emit();
+  let registered = true;
   return () => {
-    const index = closers.lastIndexOf(close);
-    if (index === -1) return;
-    closers.splice(index, 1);
+    if (!registered) return;
+    registered = false;
+    open--;
     emit();
   };
 }
 
-/** Exit shortcut: closes the newest blocking dialog. Returns whether there was one */
-export function closeTopBlockingDialog(): boolean {
-  const close = closers[closers.length - 1];
-  if (!close) return false;
-  close();
-  return true;
-}
-
 export function hasBlockingDialog(): boolean {
-  return closers.length > 0;
+  return open > 0;
 }
 
 export function subscribeBlockingDialogs(listener: () => void): () => void {

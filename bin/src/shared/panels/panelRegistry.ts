@@ -50,8 +50,6 @@ export interface PanelHost {
   focus(id: string): void;
   remove(id: string): void;
   locate(id: string): PanelLocation | null;
-  /** The panel shown in the focused group */
-  focusedPanel(): string | null;
   /** The panel shown in the focused group, if that group is floating */
   focusedFloating(): string | null;
 }
@@ -185,13 +183,6 @@ export class PanelRegistry {
 
   isPanelOpen(kind: PanelKind): boolean {
     return this.find(kind) !== undefined;
-  }
-
-  /** The tool shown in the dock's focused group, if the focus is on a tool */
-  focusedPanel(): { id: string; kind: PanelKind } | null {
-    const id = this.host?.focusedPanel();
-    const panel = id ? this.open.get(id) : undefined;
-    return panel ? { id: panel.id, kind: panel.kind } : null;
   }
 
   /**

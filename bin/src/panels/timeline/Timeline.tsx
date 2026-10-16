@@ -18,6 +18,7 @@ import { TimelineGrid, TimelineRuler } from './TimelineRuler';
 import TimelineClipView from './TimelineClipView';
 import { SHADER_PANEL_KIND, useShaderPanel } from '../../features/shaders/shaderPanels';
 import PanelHeaderActions from '../../shared/dock/PanelHeaderActions';
+import { usePanelKeys } from '../../shared/keyboard/keyRouter';
 
 interface Props {
   clips: TimelineClip[];
@@ -97,14 +98,12 @@ export default function Timeline({
     };
   }, []);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' && selectedIds.length > 0) { e.preventDefault(); onNudge(selectedIds, -1); }
-      if (e.key === 'ArrowRight' && selectedIds.length > 0) { e.preventDefault(); onNudge(selectedIds, 1); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [selectedIds, onNudge]);
+  usePanelKeys(e => {
+    const step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    if (!step || selectedIds.length === 0) return false;
+    onNudge(selectedIds, step);
+    return true;
+  });
 
   const handleTrackDrop = (e: React.DragEvent, trackIdx: number) => {
     e.preventDefault();
