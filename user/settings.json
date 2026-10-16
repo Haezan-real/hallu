@@ -14,17 +14,44 @@
     "activeStyle": "default/cyberpunk"
   },
   "hallu.settings.scrollAmount": 100,
+  "hallu.layout.corePanels": {
+    "viewer": {
+      "type": "docked",
+      "direction": "above",
+      "size": {
+        "width": 1706,
+        "height": 623
+      }
+    },
+    "mediaPool": {
+      "type": "docked",
+      "referencePanel": "viewer",
+      "direction": "left",
+      "size": {
+        "width": 335,
+        "height": 623
+      }
+    },
+    "timeline": {
+      "type": "docked",
+      "direction": "below",
+      "size": {
+        "width": 1706,
+        "height": 352
+      }
+    }
+  },
   "hallu.settings.playneedle_t": 0.092,
   "hallu.settings.playheadTopPercent": 0,
+  "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
   "hallu.settings.scrollZoomSmoothness": 70,
-  "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.panels.locations": {
     "settings": {
       "type": "floating",
       "box": {
-        "x": 746,
-        "y": 159,
+        "x": 442,
+        "y": 173,
         "width": 480,
         "height": 520
       }
@@ -81,126 +108,14 @@
     "grid": {
       "root": {
         "type": "branch",
-        "data": [
-          {
-            "type": "branch",
-            "data": [
-              {
-                "type": "leaf",
-                "data": {
-                  "views": [
-                    "mediaPool"
-                  ],
-                  "activeView": "mediaPool",
-                  "id": "2"
-                },
-                "size": 331
-              },
-              {
-                "type": "leaf",
-                "data": {
-                  "views": [
-                    "viewer"
-                  ],
-                  "activeView": "viewer",
-                  "id": "3"
-                },
-                "size": 1367
-              }
-            ],
-            "size": 625
-          },
-          {
-            "type": "leaf",
-            "data": {
-              "views": [
-                "timeline"
-              ],
-              "activeView": "timeline",
-              "id": "1"
-            },
-            "size": 350
-          }
-        ],
+        "data": [],
         "size": 1706
       },
       "width": 1706,
       "height": 983,
       "orientation": "VERTICAL"
     },
-    "panels": {
-      "mediaPool": {
-        "id": "mediaPool",
-        "contentComponent": "mediaPool",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Media Pool"
-      },
-      "viewer": {
-        "id": "viewer",
-        "contentComponent": "viewer",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Viewer"
-      },
-      "timeline": {
-        "id": "timeline",
-        "contentComponent": "timeline",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Timeline"
-      },
-      "tool.settings": {
-        "id": "tool.settings",
-        "contentComponent": "tool",
-        "tabComponent": "props.defaultTabComponent",
-        "params": {
-          "kind": "settings",
-          "params": {}
-        },
-        "title": "Settings"
-      },
-      "tool.torusMenuEditor": {
-        "id": "tool.torusMenuEditor",
-        "contentComponent": "tool",
-        "tabComponent": "props.defaultTabComponent",
-        "params": {
-          "kind": "torusMenuEditor",
-          "params": {}
-        },
-        "title": "Torus Menu Editor"
-      }
-    },
-    "activeGroup": "1",
-    "floatingGroups": [
-      {
-        "data": {
-          "views": [
-            "tool.settings"
-          ],
-          "activeView": "tool.settings",
-          "id": "4"
-        },
-        "position": {
-          "top": 159,
-          "left": 746,
-          "width": 480,
-          "height": 520
-        }
-      },
-      {
-        "data": {
-          "views": [
-            "tool.torusMenuEditor"
-          ],
-          "activeView": "tool.torusMenuEditor",
-          "id": "5"
-        },
-        "position": {
-          "top": 362,
-          "left": 775,
-          "width": 620,
-          "height": 540
-        }
-      }
-    ]
+    "panels": {}
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,

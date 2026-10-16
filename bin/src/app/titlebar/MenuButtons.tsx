@@ -1,14 +1,51 @@
 //src/app/titlebar/MenuButtons.tsx
 import { OpenSettings } from '../../modals/settings/Settings';
 import { OpenStyles } from '../../modals/styles/StylesModal';
-import { resetLayout } from '../dock/dockLayout';
+import { CORE_PANELS, resetLayout, type CorePanelId } from '../dock/dockLayout';
+import { corePanels, useCorePanelOpen } from '../dock/corePanels';
 
 const TOP_BAR_MENU_BUTTONS_SPACING = 0; //px
 
-// Buttons that reset the panel layout and open the Styles and Settings modals
+const CORE_PANEL_ICONS: Record<CorePanelId, React.ReactNode> = {
+  mediaPool: (
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+  ),
+  viewer: (
+    <>
+      <rect x="2" y="4" width="20" height="14" rx="2"/>
+      <path d="M10 8.5v5l4-2.5z M8 21h8"/>
+    </>
+  ),
+  timeline: (
+    <path d="M3 6h10 M7 12h14 M3 18h12"/>
+  ),
+};
+
+/** Opens or closes a core panel; lit while it's open */
+function CorePanelButton({ id }: { id: CorePanelId }) {
+  const open = useCorePanelOpen(id);
+  const { title } = CORE_PANELS[id];
+  return (
+    <button
+      className={`icon-btn core-panel-toggle${open ? ' is-open' : ''}`}
+      onClick={() => corePanels.toggle(id)}
+      title={open ? `Close ${title}` : `Open ${title}`}
+      aria-pressed={open}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {CORE_PANEL_ICONS[id]}
+      </svg>
+    </button>
+  );
+}
+
+// Buttons that toggle the core panels, reset the panel layout and open the Styles and Settings modals
 export default function MenuButtons({ style }: { style?: React.CSSProperties }) {
   return (
     <div style={{ display: 'flex', gap: TOP_BAR_MENU_BUTTONS_SPACING, alignItems: 'center', ...style }}>
+      <CorePanelButton id="mediaPool" />
+      <CorePanelButton id="viewer" />
+      <CorePanelButton id="timeline" />
       <button className="icon-btn" onClick={resetLayout} title="Reset layout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="1"/>

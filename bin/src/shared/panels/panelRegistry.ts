@@ -74,7 +74,7 @@ function isFiniteBox(box: unknown): box is FloatingBox {
   return !!b && [b.x, b.y, b.width, b.height].every(Number.isFinite) && b.width > 0 && b.height > 0;
 }
 
-function isLocation(value: unknown): value is PanelLocation {
+export function isLocation(value: unknown): value is PanelLocation {
   const location = value as PanelLocation | null;
   if (!location) return false;
   if (location.type === 'floating') return isFiniteBox(location.box);

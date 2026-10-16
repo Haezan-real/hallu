@@ -1885,6 +1885,10 @@ input[type="color"] {
   transition: background 0.12s, color 0.12s;
 }
 .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.core-panel-toggle { opacity: 0.45; }
+.core-panel-toggle.is-open { opacity: 1; color: var(--highlight-color); }
+.core-panel-toggle:hover { opacity: 1; }
+.core-panel-toggle.is-open:hover { color: var(--highlight-color); }
 
 .icon-btn svg {
   width: calc(16px * var(--scale));

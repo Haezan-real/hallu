@@ -15,10 +15,10 @@ export const CORE_PANELS = {
   timeline: { id: 'timeline', title: 'Timeline' },
 } as const;
 
-const CORE_PANEL_IDS: ReadonlySet<string> = new Set(Object.values(CORE_PANELS).map(panel => panel.id));
+export type CorePanelId = keyof typeof CORE_PANELS;
 
-export function isCorePanel(id: string): boolean {
-  return CORE_PANEL_IDS.has(id);
+export function isCorePanel(id: string): id is CorePanelId {
+  return Object.prototype.hasOwnProperty.call(CORE_PANELS, id);
 }
 
 function readPercent(key: string, fallback: number, min: number, max: number): number {
@@ -38,10 +38,6 @@ function readSavedLayout(): SerializedDockview | null {
   } catch {
     return null;
   }
-}
-
-function hasCorePanels(api: DockviewApi): boolean {
-  return [...CORE_PANEL_IDS].every(id => api.getPanel(id) !== undefined);
 }
 
 /** Media pool on the left, viewer on the right, timeline across the bottom */
@@ -70,7 +66,6 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function saveLayout(api: DockviewApi) {
   clearTimeout(saveTimer);
   saveTimer = undefined;
-  if (!hasCorePanels(api)) return;
   try {
     window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(api.toJSON()));
     window.localStorage.removeItem(LEGACY_LEFT_WIDTH_KEY);
@@ -87,8 +82,9 @@ export function initDockLayout(api: DockviewApi): () => void {
   let restored = false;
   if (saved) {
     try {
+      // Core panels missing from it were closed, and stay closed
       api.fromJSON(saved);
-      restored = hasCorePanels(api);
+      restored = true;
       // Saved layouts keep titles, which may predate a rename
       for (const { id, title } of Object.values(CORE_PANELS)) api.getPanel(id)?.api.setTitle(title);
     } catch (error) {

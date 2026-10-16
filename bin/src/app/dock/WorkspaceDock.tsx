@@ -12,9 +12,9 @@ import {
 import 'dockview-react/dist/styles/dockview.css';
 import { SHADER_PANEL_KIND, useShaderPanel } from '../../features/shaders/shaderPanels';
 import { DockPanelContext, registerPanelActionsTarget, type DockPanelHandle } from '../../shared/dock/dockPanel';
-import { initDockLayout, isCorePanel } from './dockLayout';
+import { initDockLayout } from './dockLayout';
 import { initDockShaderLayers } from './dockShaderLayers';
-import { attachDockPanelRegistry, TOOL_COMPONENT, type ToolPanelData } from './dockPanelHost';
+import { attachCorePanels, attachDockPanelRegistry, closeDockPanel, TOOL_COMPONENT, type ToolPanelData } from './dockPanelHost';
 import { initDockFocus } from './dockFocus';
 import { closePanel, panelRegistry } from '../../shared/panels/openPanel';
 import { keyRouter } from '../../shared/keyboard/keyRouter';
@@ -124,20 +124,18 @@ function DockTab({ api }: IDockviewPanelHeaderProps) {
   return (
     <div className="dock-tab">
       <span className="panel-title">{title}</span>
-      {!isCorePanel(api.id) && (
-        <button
-          type="button"
-          className="dock-tab-close"
-          title="Close"
-          onPointerDown={event => event.preventDefault()}
-          onClick={event => {
-            event.stopPropagation();
-            if (!closePanel(api.id)) api.close();
-          }}
-        >
-          ×
-        </button>
-      )}
+      <button
+        type="button"
+        className="dock-tab-close"
+        title="Close"
+        onPointerDown={event => event.preventDefault()}
+        onClick={event => {
+          event.stopPropagation();
+          closeDockPanel(api);
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -161,15 +159,8 @@ function FloatingWindowControls({ group, panels }: Pick<IDockviewHeaderActionsPr
     return () => floatingWindow?.classList.remove('dock-floating-minimized');
   }, [group, minimized]);
 
-  // Core panels can't close, so closing their window puts them back into the layout
-  const holdsCorePanel = panels.some(panel => isCorePanel(panel.id));
   const close = () => {
-    if (holdsCorePanel) {
-      group.api.moveTo({ position: 'right' });
-      return;
-    }
-    // Through the registry, so each tool remembers where it was
-    for (const panel of panels) closePanel(panel.id);
+    for (const panel of [...panels]) closeDockPanel(panel);
     if (!group.api.isDisposed) group.api.close();
   };
 
@@ -186,7 +177,7 @@ function FloatingWindowControls({ group, panels }: Pick<IDockviewHeaderActionsPr
         type="button"
         className="status-dot"
         data-color="red"
-        title={holdsCorePanel ? 'Dock back into the layout' : 'Close'}
+        title="Close"
         onClick={close}
       />
     </div>
@@ -220,10 +211,12 @@ export default function WorkspaceDock(panels: WorkspacePanels) {
     const disposeSaving = initDockLayout(event.api);
     const disposeShaderLayers = initDockShaderLayers(event.api);
     const disposeRegistry = attachDockPanelRegistry(event.api);
+    const disposeCorePanels = attachCorePanels(event.api);
     const disposeFocus = initDockFocus(event.api);
     keyRouter.setFocusSource(() => event.api.activePanel?.id ?? null);
     disposeLayout.current = () => {
       disposeFocus();
+      disposeCorePanels();
       disposeRegistry();
       disposeSaving();
       disposeShaderLayers();
