@@ -137,12 +137,25 @@ html, body, #root {
 /* Centred in the whole header, whatever the logo and window controls beside it take up */
 .title-menu {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  /* Over the bottom border too, so the buttons centre in the full header height on whole pixels */
+  inset: 0 0 calc(-1 * var(--border-width));
   display: flex;
   align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  --title-button-grow-transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* Kept on their own layer at rest too, so starting the grow doesn't re-snap them to the pixel grid */
+.title-menu .icon-btn {
+  pointer-events: auto;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.title-menu .icon-btn { transition: background 0.12s, color 0.12s, var(--title-button-grow-transition); }
+.title-menu .panel-toggle { transition: background 0.12s, var(--title-button-grow-transition); }
+.title-menu .icon-btn:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
 
 .app-header .app-logo {
   position: relative;

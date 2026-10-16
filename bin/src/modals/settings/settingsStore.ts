@@ -49,6 +49,7 @@ export const SETTINGS_SCHEMA: SettingSchema = {
   torusDuration: number('torusDuration', 0, 2000),
   torusDelay: number('torusDelay', -1000, 1000),
   torusHoverScale: number('torusHoverScale', 1, 1.5),
+  titleButtonHoverGrow: number('titleButtonHoverGrow', 0, 50),
 };
 
 function storageKey(key: SettingKey): string {

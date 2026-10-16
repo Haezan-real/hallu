@@ -39,6 +39,7 @@ export default function SlidersTab() {
       <SettingsCategory title="Miscellaneous">
         <SettingSlider setting="elevatedPanelDarken" label="Draggable modal background darken amount" step={1} formatValue={percent} />
         <SettingSlider setting="elevatedPanelBlur" label="Draggable modal background blur amount" step={1} formatValue={percent} />
+        <SettingSlider setting="titleButtonHoverGrow" label="Title bar button hover grow" step={1} formatValue={v => `${v}%`} />
       </SettingsCategory>
     </div>
   );

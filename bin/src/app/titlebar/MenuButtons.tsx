@@ -5,7 +5,7 @@ import { CORE_PANELS, resetLayout, type CorePanelId } from '../dock/dockLayout';
 import { corePanels, useCorePanelOpen } from '../dock/corePanels';
 import { closePanel, usePanelOpen } from '../../shared/panels/openPanel';
 
-const TOP_BAR_MENU_BUTTONS_SPACING = 7; //px
+const TOP_BAR_MENU_BUTTONS_SPACING = 0; //px
 
 const CORE_PANEL_ICONS: Record<CorePanelId, React.ReactNode> = {
   mediaPool: (

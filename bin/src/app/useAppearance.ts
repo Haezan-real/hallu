@@ -21,6 +21,10 @@ function applyOverlayBlur(pct: number) {
   setCssVar('--modal-overlay-blur', `${(pct / 100) * MAX_OVERLAY_BLUR}px`);
 }
 
+function applyTitleButtonHoverGrow(pct: number) {
+  setCssVar('--title-button-hover-scale', String(1 + pct / 100));
+}
+
 function applyGuiScale(pct: number) {
   setCssVar('--gui-scale', String(pct / 100));
 }
@@ -37,8 +41,10 @@ export function useAppearance() {
     applyTransitionDuration(readSetting('colorTransitionDuration'));
     applyOverlayDarken(readSetting('elevatedPanelDarken'));
     applyOverlayBlur(readSetting('elevatedPanelBlur'));
+    applyTitleButtonHoverGrow(readSetting('titleButtonHoverGrow'));
 
     const unsubscribers = [
+      onSettingChange('titleButtonHoverGrow', applyTitleButtonHoverGrow),
       onSettingChange('guiScale', applyGuiScale),
       onSettingChange('colorTransitionDuration', applyTransitionDuration),
       onSettingChange('elevatedPanelDarken', applyOverlayDarken),

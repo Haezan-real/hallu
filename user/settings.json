@@ -15,22 +15,22 @@
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.corePanels": {
-    "viewer": {
-      "type": "docked",
-      "referencePanel": "mediaPool",
-      "direction": "right",
-      "size": {
-        "width": 1357,
-        "height": 622
-      }
-    },
     "mediaPool": {
       "type": "docked",
       "referencePanel": "viewer",
       "direction": "left",
       "size": {
-        "width": 341,
-        "height": 622
+        "width": 339,
+        "height": 623
+      }
+    },
+    "viewer": {
+      "type": "docked",
+      "referencePanel": "mediaPool",
+      "direction": "right",
+      "size": {
+        "width": 1359,
+        "height": 623
       }
     },
     "timeline": {
@@ -38,7 +38,7 @@
       "direction": "below",
       "size": {
         "width": 1706,
-        "height": 353
+        "height": 352
       }
     }
   },
@@ -51,8 +51,8 @@
     "settings": {
       "type": "floating",
       "box": {
-        "x": 442,
-        "y": 173,
+        "x": 672,
+        "y": 176,
         "width": 480,
         "height": 520
       }
@@ -122,7 +122,7 @@
                   "activeView": "mediaPool",
                   "id": "19"
                 },
-                "size": 341
+                "size": 339
               },
               {
                 "type": "leaf",
@@ -133,10 +133,10 @@
                   "activeView": "viewer",
                   "id": "20"
                 },
-                "size": 1357
+                "size": 1359
               }
             ],
-            "size": 622
+            "size": 623
           },
           {
             "type": "leaf",
@@ -147,7 +147,7 @@
               "activeView": "timeline",
               "id": "21"
             },
-            "size": 353
+            "size": 352
           }
         ],
         "size": 1706
@@ -176,10 +176,10 @@
         "title": "Timeline"
       }
     },
-    "activeGroup": "21"
+    "activeGroup": "19"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
-  "hallu.modal.settings.pageState": "components",
+  "hallu.modal.settings.pageState": "sliders",
   "hallu.settings.playneedle_h_b": 0.8
 }
