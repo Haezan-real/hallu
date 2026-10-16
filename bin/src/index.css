@@ -144,12 +144,6 @@ html, body, #root {
   align-items: center;
 }
 
-.title-menu .icon-btn {
-  width: auto;
-  height: auto;
-  padding: 0;
-}
-
 .app-header .app-logo {
   position: relative;
   z-index: 2;
