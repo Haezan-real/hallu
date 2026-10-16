@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { isShortcutMatch } from '../modals/settings/shortcuts';
-import { modalManager } from '../shared/modals';
 import { closeFocusedFloatingPanel, isPanelFocused } from '../shared/panels/openPanel';
+import { closeTopBlockingDialog } from '../shared/ui/blockingDialogs';
 
 //src/app/useGlobalShortcuts.ts
 
@@ -37,8 +37,8 @@ export function useGlobalShortcuts({ undo, redo, togglePlaying, clearSelection }
       if (e.key === ' ') { e.preventDefault(); togglePlaying(); }
       if (isShortcutMatch('exitModal', e)) {
         if (isTypingTarget(e.target)) return;
-        // Modals sit above floating panels, so they close first
-        if (modalManager.exitTop() || closeFocusedFloatingPanel()) {
+        // Blocking dialogs sit above floating panels, so they close first
+        if (closeTopBlockingDialog() || closeFocusedFloatingPanel()) {
           e.preventDefault();
           e.stopPropagation();
           return;

@@ -94,19 +94,7 @@ function AppContent() {
     <div id="editor-container" style={{ width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
     <ShaderBackground />
     <div className="app-shell">
-      {/* Background blocking overlay: sits below modal/torus overlays (z-index 199 vs 200) */}
-      {blockBackground && (
-        <div
-          className="app-bg-lock"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 199,
-            background: 'transparent',
-            pointerEvents: 'auto',
-          }}
-        />
-      )}
+      {blockBackground && <div className="app-bg-lock" />}
       {Array.from(mediaItems.values()).map(item =>
         item.type === 'video' ? (
           <video key={item.id} id={`vid-${item.id}`} src={item.src} style={{ display: 'none' }} preload="auto" muted />

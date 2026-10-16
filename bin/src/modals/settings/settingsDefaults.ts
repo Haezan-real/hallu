@@ -18,10 +18,7 @@ export interface SettingsValues {
   torusScrollingDisabled: TorusScrollingDisabled;
   elevatedPanelDarken: number;
   elevatedPanelBlur: number;
-  draggableHeaderButtons: boolean;
-  allowMultipleMenus: boolean;
   allowEditsWhenMenuOpen: boolean;
-  executeHeaderButtonsOnDrag: boolean;
   playneedle_t: number;
   playneedle_j: number;
   playneedle_k: number;
@@ -50,10 +47,7 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   torusScrollingDisabled: 'none',
   elevatedPanelDarken: 50,
   elevatedPanelBlur: 0,
-  draggableHeaderButtons: true,
-  allowMultipleMenus: true,
   allowEditsWhenMenuOpen: true,
-  executeHeaderButtonsOnDrag: true,
   playneedle_t: 0.092,
   playneedle_j: 0.049,
   playneedle_k: 103,

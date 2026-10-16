@@ -1,7 +1,6 @@
 {
   "hallu.settings.torusDuration": 300,
   "hallu.settings.torusHoverScale": 1.08,
-  "hallu.settings.executeHeaderButtonsOnDrag": true,
   "hallu.settings.colorTransitionDuration": 0,
   "hallu.settings.torusScrollingDisabled": "whole torus menu",
   "hallu.settings.elevatedPanelDarkenAmount": 50,
@@ -58,7 +57,6 @@
     }
   },
   "hallu.settings.viewerControlsType": "compact",
-  "hallu.settings.allowMultipleMenus": true,
   "hallu.settings.playneedle_k": 103,
   "hallu.settings.playneedle_width": 24.7,
   "hallu.settings.playneedle_s": 16.4,
@@ -94,9 +92,9 @@
                     "mediaPool"
                   ],
                   "activeView": "mediaPool",
-                  "id": "6"
+                  "id": "2"
                 },
-                "size": 412
+                "size": 335
               },
               {
                 "type": "leaf",
@@ -105,12 +103,12 @@
                     "viewer"
                   ],
                   "activeView": "viewer",
-                  "id": "7"
+                  "id": "3"
                 },
-                "size": 1286
+                "size": 1363
               }
             ],
-            "size": 559
+            "size": 623
           },
           {
             "type": "leaf",
@@ -119,9 +117,9 @@
                 "timeline"
               ],
               "activeView": "timeline",
-              "id": "5"
+              "id": "1"
             },
-            "size": 416
+            "size": 352
           }
         ],
         "size": 1706
@@ -160,7 +158,7 @@
         "title": "Settings"
       }
     },
-    "activeGroup": "6",
+    "activeGroup": "4",
     "floatingGroups": [
       {
         "data": {
@@ -168,11 +166,11 @@
             "tool.settings"
           ],
           "activeView": "tool.settings",
-          "id": "1"
+          "id": "4"
         },
         "position": {
           "top": 159,
-          "right": 479.625,
+          "left": 746,
           "width": 480,
           "height": 520
         }
@@ -181,7 +179,6 @@
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
-  "hallu.settings.draggableHeaderButtons": true,
   "hallu.modal.settings.pageState": "components",
   "hallu.settings.playneedle_h_b": 0.8
 }

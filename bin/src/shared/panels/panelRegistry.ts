@@ -1,13 +1,11 @@
 //src/shared/panels/panelRegistry.ts
 import type { ComponentType } from 'react';
-import { PANEL_POLICIES, canOpenPanel, isPanelKind, type PanelKind, type PanelSize } from './panelPolicies';
+import { PANEL_POLICIES, isPanelKind, type PanelKind, type PanelSize } from './panelPolicies';
 
 /** A tool's own options, e.g. which tab to show; restorable tools must keep them JSON-safe */
 export type PanelParams = Record<string, unknown>;
 
 export interface ToolPanelProps<P extends PanelParams = PanelParams> {
-  /** This panel's id, for opening other tools from it (openPanelFrom) */
-  id: string;
   params: P;
   close: () => void;
 }
@@ -60,11 +58,6 @@ export interface PanelHost {
 
 export interface PanelRegistryOptions {
   storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
-  allowMultipleMenus?: () => boolean;
-  /** Kinds open as old-style modals, which count against the menu policy too */
-  openModalKinds?: () => readonly PanelKind[];
-  /** Tells the user why a panel didn't open */
-  notify?: (reason: string) => void;
 }
 
 interface OpenPanel {
@@ -75,8 +68,6 @@ interface OpenPanel {
 
 export const LOCATIONS_KEY = 'hallu.panels.locations';
 const ID_PREFIX = 'tool.';
-/** How far each extra window of the same kind is offset, so they don't stack exactly */
-const CASCADE = 24; //px
 
 export const isToolPanelId = (id: string) => id.startsWith(ID_PREFIX);
 
@@ -108,8 +99,8 @@ export function clampBox(box: FloatingBox, bounds: PanelSize): FloatingBox {
 }
 
 /**
- * Tool panels in the dock: opens them where they were last (floating or docked), keeps one of
- * each singleton, applies the menu policy, and remembers every tool's location for next time.
+ * Tool panels in the dock, at most one of each kind: opens them where they were last (floating
+ * or docked) and remembers every tool's location for next time.
  */
 export class PanelRegistry {
   private host: PanelHost | null = null;
@@ -118,17 +109,10 @@ export class PanelRegistry {
   private backHandlers = new Map<string, () => boolean>();
   private locations: Partial<Record<PanelKind, PanelLocation>>;
   private listeners = new Set<() => void>();
-  private nextId = 1;
   private storage: Pick<Storage, 'getItem' | 'setItem'> | null;
-  private allowMultipleMenus: () => boolean;
-  private openModalKinds: () => readonly PanelKind[];
-  private notify: (reason: string) => void;
 
   constructor(options: PanelRegistryOptions = {}) {
     this.storage = options.storage ?? null;
-    this.allowMultipleMenus = options.allowMultipleMenus ?? (() => true);
-    this.openModalKinds = options.openModalKinds ?? (() => []);
-    this.notify = options.notify ?? (() => {});
     this.locations = this.readLocations();
   }
 
@@ -155,8 +139,6 @@ export class PanelRegistry {
         continue;
       }
       this.open.set(id, { id, kind, params: (data?.params as PanelParams) ?? {} });
-      const sequence = Number(id.slice(id.lastIndexOf('.') + 1));
-      if (Number.isInteger(sequence)) this.nextId = Math.max(this.nextId, sequence + 1);
     }
     this.emit();
     return () => {
@@ -165,28 +147,22 @@ export class PanelRegistry {
   }
 
   /**
-   * Opens a tool, or focuses it if it's a singleton that's already open. New windows go where
-   * that kind was last, or float in the middle of the dock. Returns the panel id, or null when
-   * it couldn't open (not allowed by the policy, unknown kind, or no dock yet).
+   * Opens a tool, or focuses it if it's already open. New windows go where that kind was last,
+   * or float in the middle of the dock. Returns the panel id, or null when it couldn't open
+   * (unknown kind, or no dock yet).
    */
   openPanel<P extends PanelParams>(kind: PanelKind, params?: P): string | null {
     const host = this.host;
     const definition = this.definitions.get(kind);
     if (!host || !definition) return null;
-    const policy = PANEL_POLICIES[kind];
 
-    const existing = policy.singleton ? this.find(kind) : undefined;
+    const existing = this.find(kind);
     if (existing) {
       host.focus(existing.id);
       return existing.id;
     }
-    const check = canOpenPanel(kind, [...this.openModalKinds(), ...this.openKinds()], this.allowMultipleMenus());
-    if (!check.allowed) {
-      if (check.reason) this.notify(check.reason);
-      return null;
-    }
 
-    const id = policy.singleton ? `${ID_PREFIX}${kind}` : `${ID_PREFIX}${kind}.${this.nextId++}`;
+    const id = `${ID_PREFIX}${kind}`;
     const spec: ToolPanelSpec = { id, kind, title: definition.title, params: params ?? {} };
     // Registered first so the dock's add events already see it as open
     this.open.set(id, { id, kind, params: spec.params });
@@ -197,7 +173,7 @@ export class PanelRegistry {
     return id;
   }
 
-  /** Closes a panel by id, or the newest open panel of a kind. Returns whether one closed */
+  /** Closes a panel by id or kind. Returns whether one closed */
   closePanel(kindOrId: PanelKind | string): boolean {
     const panel = this.open.get(kindOrId) ?? this.find(kindOrId as PanelKind);
     if (!panel || !this.host) return false;
@@ -209,11 +185,6 @@ export class PanelRegistry {
 
   isPanelOpen(kind: PanelKind): boolean {
     return this.find(kind) !== undefined;
-  }
-
-  /** Kinds of the open tool panels, oldest first */
-  openKinds(): PanelKind[] {
-    return [...this.open.values()].map(panel => panel.kind);
   }
 
   /** The tool shown in the dock's focused group, if the focus is on a tool */
@@ -266,22 +237,13 @@ export class PanelRegistry {
   }
 
   private find(kind: PanelKind): OpenPanel | undefined {
-    return [...this.open.values()].reverse().find(panel => panel.kind === kind);
+    return [...this.open.values()].find(panel => panel.kind === kind);
   }
 
   private floatingBox(kind: PanelKind, location: PanelLocation | undefined, bounds: PanelSize): FloatingBox {
-    const cascade = this.openKinds().filter(open => open === kind).length - 1;
-    const offset = Math.max(cascade, 0) * CASCADE;
-    if (location?.type === 'floating') {
-      const { box } = location;
-      return clampBox({ ...box, x: box.x + offset, y: box.y + offset }, bounds);
-    }
+    if (location?.type === 'floating') return clampBox(location.box, bounds);
     const size = location?.type === 'docked' ? location.size : PANEL_POLICIES[kind].defaultSize;
-    return clampBox({
-      x: (bounds.width - size.width) / 2 + offset,
-      y: (bounds.height - size.height) / 2 + offset,
-      ...size,
-    }, bounds);
+    return clampBox({ x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2, ...size }, bounds);
   }
 
   private record(panel: OpenPanel, save = true): boolean {

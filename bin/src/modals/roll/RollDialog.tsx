@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TimelineClip, MediaItem } from '../../types';
 import { FPS, formatTimecode } from '../../types';
-import DraggableModal from '../../shared/ui/DraggableModal';
+import BlockingDialog from '../../shared/ui/BlockingDialog';
 
 //src/modals/roll/RollDialog.tsx
 
@@ -32,36 +32,31 @@ export default function RollDialog({ clip, media, onClose, onApply }: Props) {
   };
 
   return (
-    <DraggableModal
-      title={`Roll Edit — ${clip.name}`}
-      onClose={onClose}
-      minimizable={false}
-      body={
-        <div style={{ padding: 12 }}>
-          <p className="modal-desc">Adjust which part of the source is used. Timeline in/out points stay fixed.</p>
-          {media.type === 'video' && (
-            <video ref={videoRef} className="roll-preview" controls muted />
-          )}
-          <div className="roll-controls">
-            <label>
-              <span>Source In: {formatTimecode(srcIn)}</span>
-              <input
-                type="range" min={0} max={Math.max(0, maxSrcOut - duration)}
-                value={srcIn}
-                onChange={e => {
-                  const v = Number(e.target.value);
-                  setSrcIn(v);
-                  if (videoRef.current) videoRef.current.currentTime = v / FPS;
-                }}
-              />
-            </label>
-          </div>
-          <div className="modal-footer" style={{ justifyContent: 'flex-end', padding: '8px 0 0' }}>
-            <button className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button className="btn-primary" onClick={handleApply}>Apply</button>
-          </div>
+    <BlockingDialog title={`Roll Edit — ${clip.name}`} onClose={onClose}>
+      <div style={{ padding: 12 }}>
+        <p className="modal-desc">Adjust which part of the source is used. Timeline in/out points stay fixed.</p>
+        {media.type === 'video' && (
+          <video ref={videoRef} className="roll-preview" controls muted />
+        )}
+        <div className="roll-controls">
+          <label>
+            <span>Source In: {formatTimecode(srcIn)}</span>
+            <input
+              type="range" min={0} max={Math.max(0, maxSrcOut - duration)}
+              value={srcIn}
+              onChange={e => {
+                const v = Number(e.target.value);
+                setSrcIn(v);
+                if (videoRef.current) videoRef.current.currentTime = v / FPS;
+              }}
+            />
+          </label>
         </div>
-      }
-    />
+        <div className="modal-footer" style={{ justifyContent: 'flex-end', padding: '8px 0 0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" onClick={handleApply}>Apply</button>
+        </div>
+      </div>
+    </BlockingDialog>
   );
 }

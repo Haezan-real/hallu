@@ -3,8 +3,7 @@ import type { ReactNode } from 'react';
 import FormulaPlayneedle from '../../features/playneedle/FormulaPlayneedle';
 import { usePlayneedleParams } from '../../features/playneedle/usePlayneedleParams';
 import BackButton from '../../shared/ui/BackButton';
-import { closePanel, defineToolPanel, openPanel, openPanelFrom } from '../../shared/panels/openPanel';
-import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
+import { closePanel, defineToolPanel, openPanel } from '../../shared/panels/openPanel';
 import type { NumericSettingKey } from '../settings/settingsStore';
 import { SettingSlider } from '../settings/SettingControls';
 import { OpenSettings } from '../settings/Settings';
@@ -30,7 +29,7 @@ const SLIDERS: SliderConfig[] = [
   { key: 'playneedle_width', label: <span>Playneedle width (px)</span>, step: 1, format: v => `${Math.round(v)}px` },
 ];
 
-export default function PlayneedleEditor({ id }: ToolPanelProps) {
+export default function PlayneedleEditor() {
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewHeight, setPreviewHeight] = useState(260);
   const { params, width } = usePlayneedleParams();
@@ -49,7 +48,7 @@ export default function PlayneedleEditor({ id }: ToolPanelProps) {
   return (
     <div className="editor-root">
       <div className="tool-panel-nav">
-        <BackButton onClick={() => OpenSettings('components', id)} />
+        <BackButton onClick={() => OpenSettings('components')} />
         <span className="panel-title">Settings</span>
       </div>
       <div className="playneedle-editor-body">
@@ -73,8 +72,8 @@ export default function PlayneedleEditor({ id }: ToolPanelProps) {
 
 defineToolPanel('playneedleEditor', { title: 'Playneedle Editor', component: PlayneedleEditor });
 
-/** Opens the editor, or focuses it; opened from Settings (`from`), it replaces Settings while only one menu may be open */
-export function OpenPlayneedleEditor(from?: string) {
-  const id = from ? openPanelFrom(from, 'playneedleEditor') : openPanel('playneedleEditor');
+/** Opens the editor, or focuses it */
+export function OpenPlayneedleEditor() {
+  const id = openPanel('playneedleEditor');
   return id ? () => closePanel(id) : undefined;
 }

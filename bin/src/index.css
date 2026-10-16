@@ -1189,24 +1189,29 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   pointer-events: none;
 }
 
-/* Roll Dialog / Modal */
-.modal-overlay {
+/* Blocking dialogs (Roll, confirmations): the layer only centers them; .app-bg-lock dims and blocks the app behind them */
+.app-bg-lock {
   position: fixed;
   inset: 0;
+  z-index: 199;
   background: var(--modal-overlay-bg, rgba(0,0,0,0.7));
   backdrop-filter: blur(var(--modal-overlay-blur, 0px));
   -webkit-backdrop-filter: blur(var(--modal-overlay-blur, 0px));
+}
+.blocking-dialog-layer {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
-  pointer-events: auto;
+  pointer-events: none;
 }
-.modal-overlay > .modal-box {
+.blocking-dialog-layer > .modal-box {
   pointer-events: auto;
 }
 
-/* Keep header above modal overlay so it isn't blurred/darkened */
+/* Keep header above the background lock so it isn't blurred/darkened */
 .app-header {
   z-index: 201;
 }

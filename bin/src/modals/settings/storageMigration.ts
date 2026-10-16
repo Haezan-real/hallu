@@ -35,12 +35,15 @@ const RENAMED_KEYS: { from: string; to: string; convert?: (value: string) => str
   },
 ];
 
-// The active style now decides the shader, and the dock layout replaced the splitter layout
+// The active style now decides the shader, the dock layout replaced the splitter layout, and dock panels replaced the draggable modals
 const REMOVED_KEYS = [
   'hallu.shaders.active',
   'hallu.modal.shaderSelector.pageState',
   'hallu.settings.includeResizeInUndo',
   'hallu.layout.leftCollapsed',
+  'hallu.settings.allowMultipleMenus',
+  'hallu.settings.draggableHeaderButtons',
+  'hallu.settings.executeHeaderButtonsOnDrag',
 ];
 
 // Must run after user/settings.json is imported, since the file can still hold the old keys

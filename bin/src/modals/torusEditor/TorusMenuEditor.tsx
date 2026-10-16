@@ -4,8 +4,7 @@ import GraphEditor, { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../../share
 import { handleValuesToOffsets } from '../../shared/ui/graphEditor/graphGeometry';
 import type { GraphPoint } from '../../shared/lib/graph';
 import BackButton from '../../shared/ui/BackButton';
-import { closePanel, defineToolPanel, openPanel, openPanelFrom, panelRegistry } from '../../shared/panels/openPanel';
-import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
+import { closePanel, defineToolPanel, isPanelFocused, openPanel } from '../../shared/panels/openPanel';
 import TorusMenu from '../../features/torus/TorusMenu';
 import type { TorusTarget } from '../../features/torus/torusTarget';
 import {
@@ -26,7 +25,7 @@ const TORUS_GRAPH_CONFIG: GraphConfig = {
 
 const PREVIEW_TARGET: TorusTarget = { kind: 'inside', clipId: '__preview__', frame: 0 };
 
-export default function TorusMenuEditor({ id }: ToolPanelProps) {
+export default function TorusMenuEditor() {
   const [torusOpen, setTorusOpen] = useState(false);
   const [sizeGraph, setSizeGraph] = useState<GraphPoint[]>(getSavedSizeGraph);
   const [segmentHandleValues, setSegmentHandleValues] = useState<number[]>(getSavedSegmentHandleValues);
@@ -48,19 +47,19 @@ export default function TorusMenuEditor({ id }: ToolPanelProps) {
   // While this panel has the dock's focus, the torus shortcut previews here instead of on the timeline
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isShortcutMatch('toggleTorusMenu', e) || panelRegistry.focusedPanel()?.id !== id) return;
+      if (!isShortcutMatch('toggleTorusMenu', e) || !isPanelFocused('torusMenuEditor')) return;
       e.preventDefault();
       e.stopPropagation();
       toggleTorus();
     };
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [toggleTorus, id]);
+  }, [toggleTorus]);
 
   return (
     <div className="editor-root">
       <div className="tool-panel-nav">
-        <BackButton onClick={() => OpenSettings('components', id)} />
+        <BackButton onClick={() => OpenSettings('components')} />
         <span className="panel-title">Settings</span>
       </div>
       <div className="torus-editor-body">
@@ -145,8 +144,8 @@ export default function TorusMenuEditor({ id }: ToolPanelProps) {
 
 defineToolPanel('torusMenuEditor', { title: 'Torus Menu Editor', component: TorusMenuEditor });
 
-/** Opens the editor, or focuses it; opened from Settings (`from`), it replaces Settings while only one menu may be open */
-export function OpenTorusMenuEditor(from?: string) {
-  const id = from ? openPanelFrom(from, 'torusMenuEditor') : openPanel('torusMenuEditor');
+/** Opens the editor, or focuses it */
+export function OpenTorusMenuEditor() {
+  const id = openPanel('torusMenuEditor');
   return id ? () => closePanel(id) : undefined;
 }

@@ -1,8 +1,7 @@
 //src/modals/settings/Settings.tsx
 import { useEffect, useState } from 'react';
 import { readModalPageState, writeModalPageState } from '../../shared/modals/modalPageState';
-import { closePanel, defineToolPanel, openPanel, openPanelFrom } from '../../shared/panels/openPanel';
-import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
+import { closePanel, defineToolPanel, openPanel } from '../../shared/panels/openPanel';
 import SlidersTab from './tabs/SlidersTab';
 import SwitchesTab from './tabs/SwitchesTab';
 import ShortcutsTab from './tabs/ShortcutsTab';
@@ -31,7 +30,7 @@ function savedTab(): SettingsTab {
   return isSettingsTab(saved) ? saved : 'sliders';
 }
 
-export default function Settings({ id }: ToolPanelProps) {
+export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>(savedTab);
 
   useEffect(() => {
@@ -65,7 +64,7 @@ export default function Settings({ id }: ToolPanelProps) {
           {activeTab === 'checkboxes' && <SwitchesTab />}
           {activeTab === 'multiselects' && <MultiselectsTab />}
           {activeTab === 'shortcuts' && <ShortcutsTab />}
-          {activeTab === 'components' && <ComponentsTab settingsId={id} />}
+          {activeTab === 'components' && <ComponentsTab />}
         </div>
       </div>
     </div>
@@ -74,15 +73,12 @@ export default function Settings({ id }: ToolPanelProps) {
 
 defineToolPanel('settings', { title: 'Settings', component: Settings });
 
-/**
- * Opens Settings, or focuses it if it's open; `initialTab` switches it to that tab either way.
- * Opened from another tool panel (`from`), it replaces that panel while only one menu may be open.
- */
-export function OpenSettings(initialTab?: SettingsTab, from?: string) {
+/** Opens Settings, or focuses it if it's open; `initialTab` switches it to that tab either way */
+export function OpenSettings(initialTab?: SettingsTab) {
   if (initialTab) {
     writeModalPageState(PAGE_STATE_KEY, initialTab);
     tabRequests.forEach(request => request(initialTab));
   }
-  const id = from ? openPanelFrom(from, 'settings') : openPanel('settings');
+  const id = openPanel('settings');
   return id ? () => closePanel(id) : undefined;
 }

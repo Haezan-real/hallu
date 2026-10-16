@@ -46,4 +46,18 @@ describe('renamed settings', () => {
     expect(window.localStorage.getItem('hallu.shaders.active')).toBeNull();
     expect(window.localStorage.getItem('hallu.modal.shaderSelector.pageState')).toBeNull();
   });
+
+  it('drops the draggable modal settings, and keeps the one that still applies to dialogs', () => {
+    window.localStorage.setItem('hallu.settings.allowMultipleMenus', 'false');
+    window.localStorage.setItem('hallu.settings.draggableHeaderButtons', 'true');
+    window.localStorage.setItem('hallu.settings.executeHeaderButtonsOnDrag', 'false');
+    window.localStorage.setItem('hallu.settings.allowEditsWhenMenuOpen', 'false');
+
+    migrateRenamedKeys();
+
+    expect(window.localStorage.getItem('hallu.settings.allowMultipleMenus')).toBeNull();
+    expect(window.localStorage.getItem('hallu.settings.draggableHeaderButtons')).toBeNull();
+    expect(window.localStorage.getItem('hallu.settings.executeHeaderButtonsOnDrag')).toBeNull();
+    expect(window.localStorage.getItem('hallu.settings.allowEditsWhenMenuOpen')).toBe('false');
+  });
 });
