@@ -1,15 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, ReactNode } from 'react';
-import { readSetting } from '../modals/settings/settingsStore';
 
 //src/shared/history.tsx
 
 export type AppSnapshot = Record<string, unknown>; // opaque snapshot type (App decides structure)
-
-function snapshotMeta(snapshot: AppSnapshot): { type?: string } | undefined {
-  return typeof snapshot.__meta === 'object' && snapshot.__meta !== null
-    ? snapshot.__meta as { type?: string }
-    : undefined;
-}
 
 export type HistoryAction = 'push' | 'undo' | 'redo' | 'clear';
 
@@ -33,13 +26,7 @@ type HistoryStack<T> = {
   canRedo: boolean;
 };
 
-interface HistoryOptions<T> {
-  max?: number;
-  // Snapshots matching this are stepped over (and carried to the other stack) on undo/redo
-  shouldSkip?: (snapshot: T) => boolean;
-}
-
-function useHistoryStack<T>(scope: string, { max = 200, shouldSkip }: HistoryOptions<T> = {}): HistoryStack<T> {
+function useHistoryStack<T>(scope: string, max = 200): HistoryStack<T> {
   const [undoStack, setUndoStack] = useState<T[]>([]);
   const [redoStack, setRedoStack] = useState<T[]>([]);
   const undoStackRef = useRef<T[]>([]);
@@ -59,12 +46,11 @@ function useHistoryStack<T>(scope: string, { max = 200, shouldSkip }: HistoryOpt
     logHistoryAction(scope, 'push', {
       undoDepthBefore: previous.length,
       undoDepthAfter: nextUndoStack.length,
-      meta: (snapshot as AppSnapshot | undefined)?.__meta,
     });
     setStacks(nextUndoStack, []);
   }, [scope, max, setStacks]);
 
-  // Pops the newest restorable snapshot from `from`, moving skipped ones and the current snapshot onto `to`
+  // Pops the newest snapshot from `from` and moves the current snapshot onto `to`
   const step = useCallback((action: 'undo' | 'redo', currentSnapshot: T, restore: (snap: T) => void) => {
     const from = action === 'undo' ? undoStackRef.current : redoStackRef.current;
     const to = action === 'undo' ? redoStackRef.current : undoStackRef.current;
@@ -72,22 +58,14 @@ function useHistoryStack<T>(scope: string, { max = 200, shouldSkip }: HistoryOpt
       logHistoryAction(scope, action, { result: 'noop', reason: `empty ${action} stack` });
       return;
     }
-    const remaining = [...from];
-    const skipped: T[] = [];
-    while (remaining.length > 0 && shouldSkip?.(remaining[remaining.length - 1])) {
-      skipped.push(remaining.pop()!);
-    }
-    if (remaining.length === 0) {
-      logHistoryAction(scope, action, { result: 'noop', reason: 'only skipped snapshots remaining' });
-      return;
-    }
-    const toRestore = remaining.pop()!;
-    const nextTo = to.concat([currentSnapshot], skipped.reverse());
-    logHistoryAction(scope, action, { depthAfter: remaining.length, skippedSnapshots: skipped.length });
+    const remaining = from.slice(0, -1);
+    const toRestore = from[from.length - 1];
+    const nextTo = to.concat([currentSnapshot]);
+    logHistoryAction(scope, action, { depthAfter: remaining.length });
     if (action === 'undo') setStacks(remaining, nextTo);
     else setStacks(nextTo, remaining);
     restore(toRestore);
-  }, [scope, shouldSkip, setStacks]);
+  }, [scope, setStacks]);
 
   const undo = useCallback((currentSnapshot: T, restore: (snap: T) => void) => step('undo', currentSnapshot, restore), [step]);
   const redo = useCallback((currentSnapshot: T, restore: (snap: T) => void) => step('redo', currentSnapshot, restore), [step]);
@@ -111,18 +89,15 @@ function useHistoryStack<T>(scope: string, { max = 200, shouldSkip }: HistoryOpt
 }
 
 export function useLocalHistory<T>(scope: string, max = 200): HistoryStack<T> {
-  return useHistoryStack<T>(scope, { max });
+  return useHistoryStack<T>(scope, max);
 }
 
 type HistoryContextType = HistoryStack<AppSnapshot>;
 
 const HistoryContext = createContext<HistoryContextType | null>(null);
 
-const isSkippedResize = (snapshot: AppSnapshot) =>
-  !readSetting('includeResizeInUndo') && snapshotMeta(snapshot)?.type === 'resize';
-
 export function HistoryProvider({ children }: { children: ReactNode }) {
-  const value = useHistoryStack<AppSnapshot>('app', { shouldSkip: isSkippedResize });
+  const value = useHistoryStack<AppSnapshot>('app');
   return <HistoryContext.Provider value={value}>{children}</HistoryContext.Provider>;
 }
 

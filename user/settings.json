@@ -6,7 +6,6 @@
   "hallu.settings.torusScrollingDisabled": "whole torus menu",
   "hallu.settings.elevatedPanelDarkenAmount": 50,
   "hallu.settings.zoomEpicenter": "playneedle",
-  "hallu.layout.leftWidthPct": 49.140284405224214,
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
@@ -16,10 +15,7 @@
     "activeStyle": "default/cyberpunk"
   },
   "hallu.settings.scrollAmount": 100,
-  "hallu.layout.timelineHeightPct": 42.33562615481624,
   "hallu.settings.playneedle_t": 0.092,
-  "hallu.layout.leftCollapsed": false,
-  "hallu.settings.includeResizeInUndo": true,
   "hallu.settings.playheadTopPercent": 0,
   "hallu.settings.allowEditsWhenMenuOpen": true,
   "hallu.settings.scrollZoomAmount": 25,
@@ -46,6 +42,85 @@
   ],
   "hallu.settings.torusDelay": 81,
   "hallu.settings.timecodePanel": "both",
+  "hallu.layout.dock": {
+    "grid": {
+      "root": {
+        "type": "branch",
+        "data": [
+          {
+            "type": "branch",
+            "data": [
+              {
+                "type": "branch",
+                "data": [
+                  {
+                    "type": "leaf",
+                    "data": {
+                      "views": [
+                        "mediaPool"
+                      ],
+                      "activeView": "mediaPool",
+                      "id": "2"
+                    },
+                    "size": 599
+                  },
+                  {
+                    "type": "leaf",
+                    "data": {
+                      "views": [
+                        "viewer"
+                      ],
+                      "activeView": "viewer",
+                      "id": "3"
+                    },
+                    "size": 1099
+                  }
+                ],
+                "size": 551
+              },
+              {
+                "type": "leaf",
+                "data": {
+                  "views": [
+                    "timeline"
+                  ],
+                  "activeView": "timeline",
+                  "id": "1"
+                },
+                "size": 424
+              }
+            ],
+            "size": 1706
+          }
+        ],
+        "size": 983
+      },
+      "width": 1706,
+      "height": 983,
+      "orientation": "HORIZONTAL"
+    },
+    "panels": {
+      "mediaPool": {
+        "id": "mediaPool",
+        "contentComponent": "mediaPool",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Media Pool (0)"
+      },
+      "viewer": {
+        "id": "viewer",
+        "contentComponent": "viewer",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Viewer"
+      },
+      "timeline": {
+        "id": "timeline",
+        "contentComponent": "timeline",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Timeline"
+      }
+    },
+    "activeGroup": "3"
+  },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
   "hallu.settings.draggableHeaderButtons": true,

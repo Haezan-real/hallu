@@ -164,13 +164,6 @@ html, body, #root {
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: var(--left-width, 260px) var(--vsplit-width, 8px) 1fr;
-  grid-template-rows: 1fr 8px var(--timeline-height, 220px);
-  grid-template-areas:
-    "mediapool vsplit viewer"
-    "hsplit hsplit hsplit"
-    "timeline timeline timeline";
   flex: 1;
   min-height: 0;
   border-bottom: 1px solid var(--border);
@@ -179,64 +172,187 @@ html, body, #root {
     border-color var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
-/* MediaPool full-height left, Viewer + Timeline stacked on the right */
-.workspace.workspace--stacked {
-  grid-template-areas:
-    "mediapool vsplit viewer"
-    "mediapool vsplit hsplit"
-    "mediapool vsplit timeline";
+.workspace-dock {
+  height: 100%;
 }
 
-.workspace-panel-mediapool {
-  grid-area: mediapool;
+/* Dockview reads these; pointing them at our theme variables lets theme switches and fades reach the dock */
+.dockview-theme-hallu {
+  --dv-background-color: transparent;
+  --dv-group-view-background-color: transparent;
+  --dv-tabs-and-actions-container-background-color: var(--bg-base);
+  --dv-tabs-and-actions-container-height: var(--bar-height-md);
+  --dv-tabs-and-actions-container-font-size: inherit;
+  --dv-tab-font-size: inherit;
+  --dv-tab-margin: 0;
+  --dv-tab-divider-color: var(--border);
+  --dv-activegroup-visiblepanel-tab-background-color: transparent;
+  --dv-activegroup-visiblepanel-tab-color: var(--text-primary);
+  --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-activegroup-hiddenpanel-tab-color: var(--text-muted);
+  --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
+  --dv-inactivegroup-visiblepanel-tab-color: var(--text-secondary);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--text-muted);
+  --dv-separator-border: transparent;
+  --dv-paneview-header-border-color: var(--border);
+  --dv-paneview-active-outline-color: var(--highlight-color);
+  --dv-drag-over-background-color: color-mix(in srgb, var(--highlight-color) 18%, transparent);
+  --dv-drag-over-border-color: var(--highlight-color);
+  --dv-drag-over-border: var(--border-width) solid var(--highlight-color);
+  --dv-edge-dock-indicator-color: var(--highlight-color);
+  --dv-tabs-container-scrollbar-color: var(--border-mid);
+  --dv-scrollbar-background-color: var(--border-mid);
+  --dv-icon-hover-background-color: var(--bg-hover);
+  --dv-context-menu-background-color: var(--bg-elevated);
+  --dv-context-menu-color: var(--text-primary);
+  --dv-sash-color: var(--splitter);
+  --dv-active-sash-color: var(--bg-hover);
+  --dv-active-sash-transition-duration: 0s;
+  --dv-active-sash-transition-delay: 0s;
+  --dv-border-radius: 0px;
+  --dv-tab-border-radius: 0px;
+  --dv-sash-border-radius: 0px;
+  --dv-dropdown-border-radius: var(--radius-sm);
+  --dv-spacing-padding: 0px;
+  --dv-floating-border: var(--border-width) solid var(--border-mid);
+  --dv-floating-group-border: none;
+  --dv-floating-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --dv-floating-group-dragging-opacity: 0.85;
+  --dv-floating-titlebar-height: 0px;
+}
+
+/* Resize handles fill the gap between groups, like the splitters did. Dockview places them
+   for its 4px width, so the 8px ones (the theme's gap in WorkspaceDock) shift back by 2px */
+.dockview-theme-hallu .dv-split-view-container .dv-sash-container .dv-sash {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+.dockview-theme-hallu .dv-split-view-container.dv-horizontal > .dv-sash-container > .dv-sash {
+  width: 8px;
+  margin-left: -2px;
+}
+.dockview-theme-hallu .dv-split-view-container.dv-vertical > .dv-sash-container > .dv-sash {
+  height: 8px;
+  margin-top: -2px;
+}
+
+/* Group headers look like our panel headers: title on the left, the panel's controls on the right */
+.dockview-theme-hallu .dv-tabs-and-actions-container {
+  position: relative;
+  border-bottom: var(--border-width) solid var(--border);
+  transition:
+    background-color var(--theme-transition-duration) var(--theme-transition-timing),
+    border-color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+.dockview-theme-hallu .dv-tab {
+  padding: 0;
+  transition: color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+.dock-tab {
   display: flex;
-  flex-direction: column;
-  min-height: 0;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 100%;
+  padding: 0 var(--space-lg);
+}
+
+/* With several panels the titles become tabs; a lone panel keeps the plain header */
+.dockview-theme-hallu .dv-tabs-and-actions-container:not(.dv-single-tab) .dock-tab .panel-title {
+  color: inherit;
+}
+.dockview-theme-hallu .dv-tabs-and-actions-container:not(.dv-single-tab) .dv-tab.dv-active-tab {
+  box-shadow: inset 0 -2px 0 var(--highlight-color);
+}
+.dockview-theme-hallu .dv-single-tab .dv-tab {
+  cursor: grab;
+}
+
+.dock-tab-close {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: calc(14px * var(--scale));
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+.dock-tab-close:hover {
+  color: var(--text-primary);
+}
+
+.dock-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  height: 100%;
+  padding-right: var(--space-lg);
+}
+
+.dock-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--scale));
+}
+.dock-panel-actions:empty {
+  display: none;
+}
+
+/* Floating groups: an opaque window whose header is the title bar. It stays under the
+   background lock (199) and modal overlays (200) */
+.dockview-theme-hallu .dv-resize-container {
+  --dv-overlay-z-index: 150;
+  background-color: var(--bg-panel);
+  transition:
+    background-color var(--theme-transition-duration) var(--theme-transition-timing),
+    border-color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+.dock-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dock-window-controls .status-dot {
+  width: 12px;
+  height: 12px;
+}
+
+.dv-resize-container.dock-floating-minimized {
+  height: calc(var(--bar-height-md) + 2 * var(--border-width)) !important;
   overflow: hidden;
 }
+.dock-floating-minimized .dv-content-container {
+  display: none;
+}
 
-.workspace-panel-viewer {
-  grid-area: viewer;
+.workspace-panel-mediapool,
+.workspace-panel-viewer,
+.workspace-panel-timeline {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
 /* Shader packs know where these are (shaderPanels.ts) and may draw behind them; let it show through the bars */
-.shader-background-active .shader-panel .viewer-header,
+.shader-background-active .dockview-theme-hallu .dv-groupview > .dv-tabs-and-actions-container,
 .shader-background-active .shader-panel .viewer-controls,
 .shader-background-active .shader-panel .empty-drop {
   background: color-mix(in srgb, var(--bg-base) 45%, transparent);
 }
-.shader-background-active .timeline.shader-panel,
+.shader-background-active .shader-panel .timeline,
 .shader-background-active .tl-labels.shader-panel {
   background: transparent;
 }
+/* Floating windows sit over other panels, so their title bar stays solid */
+.dockview-theme-hallu .dv-resize-container .dv-groupview > .dv-tabs-and-actions-container {
+  background: var(--bg-elevated);
+}
 .shader-background-active .shader-panel .tl-ruler {
   background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
-}
-
-.workspace-vsplit {
-  grid-area: vsplit;
-  display: flex;
-  min-height: 0;
-}
-
-.workspace-vsplit [role="separator"] {
-  flex: 1;
-  height: 100%;
-}
-
-.workspace-hsplit {
-  grid-area: hsplit;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.workspace-hsplit [role="separator"] {
-  width: 100%;
 }
 
 .layout-toggle {
@@ -416,20 +532,6 @@ html, body, #root {
   min-height: 0;
   padding: 8px;
   transition: background var(--theme-transition-duration) var(--theme-transition-timing);
-}
-
-.viewer-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: 0 var(--space-lg);
-  height: var(--bar-height-md);
-  border-bottom: var(--border-width) solid var(--border);
-  background: var(--bg-base);
-  flex-shrink: 0;
-  transition:
-    background var(--theme-transition-duration) var(--theme-transition-timing),
-    border-color var(--theme-transition-duration) var(--theme-transition-timing);
 }
 
 .timecode {
@@ -676,7 +778,6 @@ html, body, #root {
 
 /* Timeline */
 .timeline {
-  grid-area: timeline;
   display: flex;
   flex-direction: column;
   background: var(--bg-panel);
@@ -684,20 +785,6 @@ html, body, #root {
   min-height: 0;
   position: relative;
   overflow: hidden;
-  transition:
-    background var(--theme-transition-duration) var(--theme-transition-timing),
-    border-color var(--theme-transition-duration) var(--theme-transition-timing);
-}
-
-.tl-toolbar {
-  display: flex;
-  align-items: center;
-  gap: calc(10px * var(--scale));
-  padding: 0 var(--space-lg);
-  height: var(--bar-height-md);
-  border-bottom: var(--border-width) solid var(--border);
-  flex-shrink: 0;
-  position: relative;
   transition:
     background var(--theme-transition-duration) var(--theme-transition-timing),
     border-color var(--theme-transition-duration) var(--theme-transition-timing);

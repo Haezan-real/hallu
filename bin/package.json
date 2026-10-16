@@ -20,6 +20,7 @@
   "dependencies": {
     "@browserbasehq/mcp": "^3.0.0",
     "@supabase/supabase-js": "^2.57.4",
+    "dockview-react": "^8.5.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

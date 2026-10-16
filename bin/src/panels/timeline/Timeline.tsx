@@ -17,6 +17,7 @@ import { useTimelineTorus } from './useTimelineTorus';
 import { TimelineGrid, TimelineRuler } from './TimelineRuler';
 import TimelineClipView from './TimelineClipView';
 import { SHADER_PANEL, useShaderPanel } from '../../features/shaders/shaderPanels';
+import PanelHeaderActions from '../../shared/dock/PanelHeaderActions';
 
 interface Props {
   clips: TimelineClip[];
@@ -49,9 +50,7 @@ export default function Timeline({
   mediaItems
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
-  useShaderPanel(rootRef, SHADER_PANEL.timeline);
   useShaderPanel(labelsRef, SHADER_PANEL.timelineLabels);
   const playheadRef = useRef(playhead);
   useEffect(() => { playheadRef.current = playhead; }, [playhead]);
@@ -120,9 +119,8 @@ export default function Timeline({
   const joinPairs = getJoinPairs(clips);
 
   return (
-    <div ref={rootRef} className="timeline">
-      <div className="tl-toolbar">
-        <span className="panel-title">Timeline</span>
+    <div className="timeline">
+      <PanelHeaderActions>
         <div className="zoom-ctrl">
           <button className="icon-btn" onClick={() => setZoom(z => clampZoom(z - 0.25))}>-</button>
           <span className="zoom-label">{Math.round(zoom * 100)}%</span>
@@ -131,7 +129,7 @@ export default function Timeline({
         {timecodePanel === 'timeline' || timecodePanel === 'both' ? (
           <span className="timecode">{formatTimecode(playhead)}</span>
         ) : null}
-      </div>
+      </PanelHeaderActions>
 
       <div className="tl-main">
         <div ref={labelsRef} className="tl-labels">

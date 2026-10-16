@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SETTINGS_CHANGED_EVENT, getSettingsChangedDetail } from './settingsEvents';
 import { DEFAULT_LAYOUT } from './settingsDefaults';
-import { useSetting } from './settingsStore';
 
 //src/modals/settings/useLayoutSettings.ts
 
@@ -17,42 +16,12 @@ function readNumber(key: string, fallback: number, min?: number, max?: number): 
   }
 }
 
-function readBoolean(key: string, fallback: boolean): boolean {
-  try {
-    const value = window.localStorage.getItem(key);
-    return value === null ? fallback : value === 'true';
-  } catch {
-    return fallback;
-  }
-}
-
 export function useLayoutSettings() {
   const [playheadTop, setPlayheadTop] = useState(() => {
     const stored = readNumber('hallu.settings.playheadTopPercent', DEFAULT_LAYOUT.playheadTop, 0, 100);
     if (stored !== DEFAULT_LAYOUT.playheadTop) return stored;
     return readNumber('hallu.settings.playheadTop', DEFAULT_LAYOUT.playheadTop, 0, 100);
   });
-  const [includeResizeInUndo, setIncludeResizeInUndo] = useSetting('includeResizeInUndo');
-  const [leftWidthPct, setLeftWidthPct] = useState(() =>
-    readNumber('hallu.layout.leftWidthPct', DEFAULT_LAYOUT.leftWidthPct, 5, 50),
-  );
-  const [leftCollapsed] = useState(() =>
-    readBoolean('hallu.layout.leftCollapsed', DEFAULT_LAYOUT.leftCollapsed),
-  );
-  const [timelineHeightPct, setTimelineHeightPct] = useState(() =>
-    readNumber('hallu.layout.timelineHeightPct', DEFAULT_LAYOUT.timelineHeightPct, 15, 60),
-  );
-  useEffect(() => {
-    try { window.localStorage.setItem('hallu.layout.leftCollapsed', String(leftCollapsed)); } catch {}
-  }, [leftCollapsed]);
-
-  useEffect(() => {
-    try { window.localStorage.setItem('hallu.layout.leftWidthPct', String(leftWidthPct)); } catch {}
-  }, [leftWidthPct]);
-
-  useEffect(() => {
-    try { window.localStorage.setItem('hallu.layout.timelineHeightPct', String(timelineHeightPct)); } catch {}
-  }, [timelineHeightPct]);
 
   useEffect(() => {
     try { window.localStorage.setItem('hallu.settings.playheadTopPercent', String(playheadTop)); } catch {}
@@ -70,15 +39,5 @@ export function useLayoutSettings() {
     return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, handleSettingsChange);
   }, []);
 
-  return {
-    playheadTop,
-    setPlayheadTop,
-    includeResizeInUndo,
-    setIncludeResizeInUndo,
-    leftWidthPct,
-    setLeftWidthPct,
-    leftCollapsed,
-    timelineHeightPct,
-    setTimelineHeightPct,
-  };
+  return { playheadTop, setPlayheadTop };
 }

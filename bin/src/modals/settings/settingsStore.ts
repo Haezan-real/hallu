@@ -24,7 +24,6 @@ const oneOf = (key: SettingKey, values: readonly string[]): EnumSetting<string> 
 
 export const SETTINGS_SCHEMA: SettingSchema = {
   guiScale: number('guiScale', 50, 200),
-  includeResizeInUndo: boolean('includeResizeInUndo'),
   zoomEpicenter: oneOf('zoomEpicenter', ['playneedle', 'middle', 'cursor']),
   scrollSmooth: number('scrollSmooth', 0, 100),
   scrollAmount: number('scrollAmount', 1, 400),

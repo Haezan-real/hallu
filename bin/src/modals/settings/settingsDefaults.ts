@@ -7,7 +7,6 @@ export type TorusScrollingDisabled = 'whole torus menu' | 'annular sectors only'
 
 export interface SettingsValues {
   guiScale: number;
-  includeResizeInUndo: boolean;
   zoomEpicenter: ZoomEpicenter;
   scrollSmooth: number;
   scrollAmount: number;
@@ -40,7 +39,6 @@ export interface SettingsValues {
 
 export const DEFAULT_SETTINGS: SettingsValues = {
   guiScale: 100,
-  includeResizeInUndo: true,
   zoomEpicenter: 'playneedle',
   scrollSmooth: 50,
   scrollAmount: 100,
@@ -74,6 +72,5 @@ export const DEFAULT_SETTINGS: SettingsValues = {
 export const DEFAULT_LAYOUT = {
   playheadTop: 15,
   leftWidthPct: 20,
-  leftCollapsed: false,
   timelineHeightPct: 35,
 };

@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { Film, Music, Image as ImageIcon, Trash2, List, Layout } from 'lucide-react';
 import type { MediaItem } from '../../types';
+import PanelHeaderActions from '../../shared/dock/PanelHeaderActions';
+import { usePanelTitle } from '../../shared/dock/dockPanel';
 
 //src/panels/mediapool/MediaPool.tsx
 
@@ -15,6 +17,7 @@ interface Props {
 export default function MediaPool({ items, selectedMediaId, onSelect, onAdd, onRemove }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<'list' | 'icon'>('list');
+  usePanelTitle(`Media Pool (${items.length})`);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -176,21 +179,10 @@ export default function MediaPool({ items, selectedMediaId, onSelect, onAdd, onR
         onChange={handleFileChange}
       />
       <div className="media-list">
-        {/* Header with view mode toggle */}
-        <div className="media-header" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          padding: '4px 8px',
-          marginBottom: '4px',
-          borderBottom: '1px solid var(--border-mid)'
-        }}>
-          <span className="panel-title" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-            Media Pool ({items.length})
-          </span>
+        <PanelHeaderActions>
           <ViewModeButton />
-        </div>
-        
+        </PanelHeaderActions>
+
         {items.length === 0 && (
           <div 
             className="empty-drop" 

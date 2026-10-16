@@ -7,7 +7,7 @@ import Timeline from '../panels/timeline/Timeline';
 import RollDialog from '../modals/roll/RollDialog';
 import { OpenExport } from '../modals/export/ExportModal';
 import TitleBar from './titlebar/TitleBar';
-import Splitter from '../shared/ui/Splitter';
+import WorkspaceDock from './dock/WorkspaceDock';
 import type { MediaItem, TimelineClip } from '../types';
 import { HistoryProvider, useHistory, type AppSnapshot } from '../shared/history';
 import { useShortcutLifecycle } from '../modals/settings/shortcuts';
@@ -22,7 +22,6 @@ import { registerModalPermissions } from '../shared/modals';
 import { useBackgroundLock } from './useBackgroundLock';
 import { useSuppressContextMenu } from './useSuppressContextMenu';
 import ShaderBackground from '../features/shaders/ShaderBackground';
-import { SHADER_PANEL, useShaderPanel } from '../features/shaders/shaderPanels';
 
 registerModalPermissions();
 
@@ -32,10 +31,6 @@ function AppContent() {
   useSuppressContextMenu();
   const history = useHistory();
   const blockBackground = useBackgroundLock();
-  const mediaPoolPanelRef = useRef<HTMLDivElement>(null);
-  const viewerPanelRef = useRef<HTMLDivElement>(null);
-  useShaderPanel(mediaPoolPanelRef, SHADER_PANEL.mediaPool);
-  useShaderPanel(viewerPanelRef, SHADER_PANEL.viewer);
 
   const [mediaItems, setMediaItems] = useState<Map<string, MediaItem>>(new Map());
   const [clips, setClips] = useState<TimelineClip[]>([]);
@@ -46,26 +41,15 @@ function AppContent() {
   const totalFrames = clips.reduce((max, c) => Math.max(max, c.endFrame), 0);
   const { playhead, setPlayhead, playing, setPlaying } = usePlaybackClock(totalFrames);
 
-  const {
-    playheadTop,
-    setPlayheadTop,
-    includeResizeInUndo,
-    setIncludeResizeInUndo,
-    leftWidthPct,
-    setLeftWidthPct,
-    leftCollapsed,
-    timelineHeightPct,
-    setTimelineHeightPct,
-  } = useLayoutSettings();
+  const { playheadTop, setPlayheadTop } = useLayoutSettings();
 
   const snapshot = useCallback(() => ({
     clips: JSON.parse(JSON.stringify(clips)),
     mediaItems: Array.from(mediaItems.entries()),
     selectedIds: [...selectedIds],
     playhead,
-    settings: { playheadTop, includeResizeInUndo },
-    layout: { leftWidthPct, timelineHeightPct }
-  }), [clips, mediaItems, selectedIds, playhead, playheadTop, includeResizeInUndo, leftWidthPct, timelineHeightPct]);
+    settings: { playheadTop },
+  }), [clips, mediaItems, selectedIds, playhead, playheadTop]);
 
   const restore = useCallback((snap: AppSnapshot) => {
     try {
@@ -77,22 +61,14 @@ function AppContent() {
       setSelectedIds(selectedValue);
       setPlayhead(typeof snap.playhead === 'number' ? snap.playhead : 0);
       const settings = typeof snap.settings === 'object' && snap.settings !== null ? snap.settings as Record<string, unknown> : {};
-      const layout = typeof snap.layout === 'object' && snap.layout !== null ? snap.layout as Record<string, unknown> : {};
-      if (settings) {
-        if (typeof settings.playheadTop === 'number') {
-          const v = settings.playheadTop;
-          setPlayheadTop(v >= 0 && v <= 100 ? v : 15);
-        }
-        setIncludeResizeInUndo(typeof settings.includeResizeInUndo === 'boolean' ? settings.includeResizeInUndo : includeResizeInUndo);
-      }
-      if (layout) {
-        setLeftWidthPct(typeof layout.leftWidthPct === 'number' ? layout.leftWidthPct : leftWidthPct);
-        setTimelineHeightPct(typeof layout.timelineHeightPct === 'number' ? layout.timelineHeightPct : timelineHeightPct);
+      if (typeof settings.playheadTop === 'number') {
+        const v = settings.playheadTop;
+        setPlayheadTop(v >= 0 && v <= 100 ? v : 15);
       }
     } catch (err) {
       console.warn('Failed to restore snapshot', err);
     }
-  }, [setClips, setMediaItems, setSelectedIds, setPlayhead, playheadTop, includeResizeInUndo, leftWidthPct, timelineHeightPct]);
+  }, [setClips, setMediaItems, setSelectedIds, setPlayhead, setPlayheadTop]);
 
   const undo = useCallback(() => history.undo(snapshot(), restore), [history, snapshot, restore]);
   const redo = useCallback(() => history.redo(snapshot(), restore), [history, snapshot, restore]);
@@ -144,53 +120,30 @@ function AppContent() {
         ) : null
       )}
       <TitleBar />
-      <div
-        className="workspace"
-        style={{
-          '--timeline-height': `${timelineHeightPct}vh`,
-          '--left-width': leftCollapsed ? '36px' : `${leftWidthPct}vw`,
-          '--vsplit-width': leftCollapsed ? '0px' : '8px',
-        } as React.CSSProperties}
-      >
-        <div ref={mediaPoolPanelRef} className="workspace-panel-mediapool" onDrop={handleDropMediaPool} onDragOver={handleDragOverMediaPool}>
-          {!leftCollapsed && (
+      <div className="workspace">
+        <WorkspaceDock
+          onDropMediaPool={handleDropMediaPool}
+          onDragOverMediaPool={handleDragOverMediaPool}
+          mediaPool={
             <MediaPool items={Array.from(mediaItems.values())} selectedMediaId={selectedMediaId} onSelect={setSelectedMediaId} onAdd={handleAddMedia} onRemove={handleRemoveMedia} />
-          )}
-        </div>
-
-        {!leftCollapsed && (
-          <div className="workspace-vsplit">
-             <Splitter orientation="vertical" onChange={(dx) => {
-               const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-               const dxPct = dx / viewportWidth * 100;
-               setLeftWidthPct(w => Math.max(5, Math.min(50, w + dxPct)));
-             }} onDragEnd={() => { history.push({ ...snapshot(), __meta: { type: 'resize' } }); }} />
-          </div>
-        )}
-
-        <div ref={viewerPanelRef} className="workspace-panel-viewer">
-          <Viewer clips={clips} mediaItems={mediaItems} playhead={playhead} playing={playing} totalFrames={totalFrames} onExport={openExport} />
-          <ViewerControls
-            style={{ marginTop: 'auto' }}
-            clips={clips}
-            mediaItems={mediaItems}
-            playhead={playhead}
-            playing={playing}
-            totalFrames={totalFrames}
-            onPlayPause={togglePlaying}
-            onSeek={setPlayhead}
-          />
-        </div>
-
-        <div className="workspace-hsplit">
-          <Splitter orientation="horizontal" thickness={8} onChange={(dy) => {
-            const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-            const dyPct = dy / viewportHeight * 100;
-            setTimelineHeightPct(h => Math.max(15, Math.min(60, h - dyPct)));
-          }} onDragEnd={() => { history.push({ ...snapshot(), __meta: { type: 'resize' } }); }} />
-        </div>
-
-        <Timeline clips={clips} tracks={TRACKS} mediaItems={mediaItems} playhead={playhead} selectedIds={selectedIds} onSeek={setPlayhead} onDropMedia={handleDropMedia} onSelectClip={handleSelectClip} onSplitClip={handleSplitClip} onTrimLatter={handleTrimLatter} onTrimFormer={handleTrimFormer} onNudge={handleNudge} onJoin={handleJoin} onFadeChange={handleFadeChange} onFadeDragStart={handleFadeDragStart} onFadeDragEnd={handleFadeDragEnd} onRoll={setRollClipId} onStepEdge={handleStepEdge} totalFrames={totalFrames} />
+          }
+          viewer={<>
+            <Viewer clips={clips} mediaItems={mediaItems} playhead={playhead} playing={playing} totalFrames={totalFrames} onExport={openExport} />
+            <ViewerControls
+              style={{ marginTop: 'auto' }}
+              clips={clips}
+              mediaItems={mediaItems}
+              playhead={playhead}
+              playing={playing}
+              totalFrames={totalFrames}
+              onPlayPause={togglePlaying}
+              onSeek={setPlayhead}
+            />
+          </>}
+          timeline={
+            <Timeline clips={clips} tracks={TRACKS} mediaItems={mediaItems} playhead={playhead} selectedIds={selectedIds} onSeek={setPlayhead} onDropMedia={handleDropMedia} onSelectClip={handleSelectClip} onSplitClip={handleSplitClip} onTrimLatter={handleTrimLatter} onTrimFormer={handleTrimFormer} onNudge={handleNudge} onJoin={handleJoin} onFadeChange={handleFadeChange} onFadeDragStart={handleFadeDragStart} onFadeDragEnd={handleFadeDragEnd} onRoll={setRollClipId} onStepEdge={handleStepEdge} totalFrames={totalFrames} />
+          }
+        />
       </div>
       {rollClip && rollMedia && (
         <RollDialog clip={rollClip} media={rollMedia} onClose={() => setRollClipId(null)} onApply={handleRollApply} />

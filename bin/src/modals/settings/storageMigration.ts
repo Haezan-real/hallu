@@ -35,8 +35,13 @@ const RENAMED_KEYS: { from: string; to: string; convert?: (value: string) => str
   },
 ];
 
-// The active style now decides the shader
-const REMOVED_KEYS = ['hallu.shaders.active', 'hallu.modal.shaderSelector.pageState'];
+// The active style now decides the shader, and the dock layout replaced the splitter layout
+const REMOVED_KEYS = [
+  'hallu.shaders.active',
+  'hallu.modal.shaderSelector.pageState',
+  'hallu.settings.includeResizeInUndo',
+  'hallu.layout.leftCollapsed',
+];
 
 // Must run after user/settings.json is imported, since the file can still hold the old keys
 export function migrateRenamedKeys(): void {
