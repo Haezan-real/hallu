@@ -4,7 +4,7 @@ import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from '../../shared/platform/
 import halluTextImage from '@assets/icons/app/hallu_text.webp';
 import { useFrameRate } from './useFrameRate';
 import MenuButtons from './MenuButtons';
-import WindowControls, { WINDOW_BUTTONS_SPACING } from './WindowControls';
+import WindowControls from './WindowControls';
 
 const HEADER_FONT_SIZE = 15;
 const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
@@ -51,7 +51,7 @@ export default function TitleBar() {
           }}>| fps: {fps ?? '--'}</span>
       </div>
 
-      <MenuButtons style={{ marginLeft: WINDOW_BUTTONS_SPACING }} />
+      <MenuButtons />
       <WindowControls />
     </header>
   );

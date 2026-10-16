@@ -20,7 +20,7 @@
       "referencePanel": "mediaPool",
       "direction": "right",
       "size": {
-        "width": 1361,
+        "width": 1357,
         "height": 622
       }
     },
@@ -29,7 +29,7 @@
       "referencePanel": "viewer",
       "direction": "left",
       "size": {
-        "width": 337,
+        "width": 341,
         "height": 622
       }
     },
@@ -114,61 +114,49 @@
             "type": "branch",
             "data": [
               {
-                "type": "branch",
-                "data": [
-                  {
-                    "type": "leaf",
-                    "data": {
-                      "views": [
-                        "mediaPool"
-                      ],
-                      "activeView": "mediaPool",
-                      "id": "7"
-                    },
-                    "size": 337
-                  },
-                  {
-                    "type": "leaf",
-                    "data": {
-                      "views": [
-                        "viewer"
-                      ],
-                      "activeView": "viewer",
-                      "id": "8"
-                    },
-                    "size": 1361
-                  }
-                ],
-                "size": 622
+                "type": "leaf",
+                "data": {
+                  "views": [
+                    "mediaPool"
+                  ],
+                  "activeView": "mediaPool",
+                  "id": "19"
+                },
+                "size": 341
               },
               {
                 "type": "leaf",
                 "data": {
                   "views": [
-                    "timeline"
+                    "viewer"
                   ],
-                  "activeView": "timeline",
-                  "id": "6"
+                  "activeView": "viewer",
+                  "id": "20"
                 },
-                "size": 353
+                "size": 1357
               }
             ],
-            "size": 1706
+            "size": 622
+          },
+          {
+            "type": "leaf",
+            "data": {
+              "views": [
+                "timeline"
+              ],
+              "activeView": "timeline",
+              "id": "21"
+            },
+            "size": 353
           }
         ],
-        "size": 983
+        "size": 1706
       },
       "width": 1706,
       "height": 983,
-      "orientation": "HORIZONTAL"
+      "orientation": "VERTICAL"
     },
     "panels": {
-      "timeline": {
-        "id": "timeline",
-        "contentComponent": "timeline",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Timeline"
-      },
       "mediaPool": {
         "id": "mediaPool",
         "contentComponent": "mediaPool",
@@ -180,9 +168,15 @@
         "contentComponent": "viewer",
         "tabComponent": "props.defaultTabComponent",
         "title": "Viewer"
+      },
+      "timeline": {
+        "id": "timeline",
+        "contentComponent": "timeline",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Timeline"
       }
     },
-    "activeGroup": "6"
+    "activeGroup": "21"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,

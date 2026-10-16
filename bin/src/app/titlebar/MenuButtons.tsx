@@ -5,7 +5,7 @@ import { CORE_PANELS, resetLayout, type CorePanelId } from '../dock/dockLayout';
 import { corePanels, useCorePanelOpen } from '../dock/corePanels';
 import { closePanel, usePanelOpen } from '../../shared/panels/openPanel';
 
-const TOP_BAR_MENU_BUTTONS_SPACING = 0; //px
+const TOP_BAR_MENU_BUTTONS_SPACING = 7; //px
 
 const CORE_PANEL_ICONS: Record<CorePanelId, React.ReactNode> = {
   mediaPool: (
@@ -45,7 +45,7 @@ export default function MenuButtons({ style }: { style?: React.CSSProperties }) 
   const stylesOpen = usePanelOpen('styles');
   const settingsOpen = usePanelOpen('settings');
   return (
-    <div style={{ display: 'flex', gap: TOP_BAR_MENU_BUTTONS_SPACING, alignItems: 'center', ...style }}>
+    <div className="title-menu" style={{ gap: TOP_BAR_MENU_BUTTONS_SPACING, ...style }}>
       <CorePanelButton id="mediaPool" />
       <CorePanelButton id="viewer" />
       <CorePanelButton id="timeline" />
