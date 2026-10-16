@@ -1,6 +1,6 @@
 //src/shared/panels/openPanel.ts
 // The app's panel registry
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useSyncExternalStore } from 'react';
 import { DockPanelContext } from '../dock/dockPanel';
 import type { PanelKind } from './panelPolicies';
 import { PanelRegistry, type PanelParams, type ToolPanelDefinition } from './panelRegistry';
@@ -29,6 +29,13 @@ export function closePanel(kindOrId: PanelKind | string): boolean {
 
 export function isPanelOpen(kind: PanelKind): boolean {
   return panelRegistry.isPanelOpen(kind);
+}
+
+export function usePanelOpen(kind: PanelKind): boolean {
+  return useSyncExternalStore(
+    listener => panelRegistry.subscribe(listener),
+    () => panelRegistry.isPanelOpen(kind),
+  );
 }
 
 export function closeFocusedFloatingPanel(): boolean {
