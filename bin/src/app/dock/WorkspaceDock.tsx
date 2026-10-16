@@ -98,7 +98,7 @@ function ToolPanel({ api, params }: IDockviewPanelProps<ToolPanelData>) {
   return (
     <DockPanel api={api}>
       <div ref={ref} className="workspace-panel-tool">
-        {Tool && <Tool params={params.params} close={() => closePanel(api.id)} />}
+        {Tool && <Tool id={api.id} params={params.params} close={() => closePanel(api.id)} />}
       </div>
     </DockPanel>
   );

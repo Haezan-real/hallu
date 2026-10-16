@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { isShortcutMatch } from '../modals/settings/shortcuts';
 import { modalManager } from '../shared/modals';
-import { closeFocusedFloatingPanel } from '../shared/panels/openPanel';
+import { closeFocusedFloatingPanel, isPanelFocused } from '../shared/panels/openPanel';
 
 //src/app/useGlobalShortcuts.ts
 
@@ -47,8 +47,8 @@ export function useGlobalShortcuts({ undo, redo, togglePlaying, clearSelection }
       if (isShortcutMatch('toggleTorusMenu', e)) {
         if (isTypingTarget(e.target)) return;
         e.preventDefault();
-        // TorusMenuEditor handles this shortcut itself while it's open
-        if (modalManager.isOpen('torusMenuEditor')) return;
+        // The Torus Menu Editor handles this shortcut itself while it has the dock's focus
+        if (isPanelFocused('torusMenuEditor')) return;
         window.dispatchEvent(new CustomEvent('hallu-torus-toggle'));
       }
     };

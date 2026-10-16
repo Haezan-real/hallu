@@ -68,7 +68,7 @@ export default function Styles() {
   return (
     <div className="styles-root">
       {stylePage && (
-        <div className="styles-nav">
+        <div className="tool-panel-nav">
           <BackButton onClick={() => setStylePage(parentOf(stylePage))} />
           <span className="panel-title">{getPathLabel(library, stylePage)}</span>
         </div>

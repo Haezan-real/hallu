@@ -24,8 +24,8 @@
     "settings": {
       "type": "floating",
       "box": {
-        "x": 569,
-        "y": 135,
+        "x": 746,
+        "y": 159,
         "width": 480,
         "height": 520
       }
@@ -36,6 +36,24 @@
       "size": {
         "width": 334,
         "height": 983
+      }
+    },
+    "playneedleEditor": {
+      "type": "floating",
+      "box": {
+        "x": 132,
+        "y": 175,
+        "width": 480,
+        "height": 560
+      }
+    },
+    "torusMenuEditor": {
+      "type": "floating",
+      "box": {
+        "x": 775,
+        "y": 362,
+        "width": 620,
+        "height": 540
       }
     }
   },
@@ -78,7 +96,7 @@
                   "activeView": "mediaPool",
                   "id": "6"
                 },
-                "size": 432
+                "size": 418
               },
               {
                 "type": "leaf",
@@ -89,10 +107,10 @@
                   "activeView": "viewer",
                   "id": "7"
                 },
-                "size": 1266
+                "size": 1280
               }
             ],
-            "size": 627
+            "size": 556
           },
           {
             "type": "leaf",
@@ -103,7 +121,7 @@
               "activeView": "timeline",
               "id": "5"
             },
-            "size": 348
+            "size": 419
           }
         ],
         "size": 1706
@@ -130,13 +148,90 @@
         "contentComponent": "timeline",
         "tabComponent": "props.defaultTabComponent",
         "title": "Timeline"
+      },
+      "tool.settings": {
+        "id": "tool.settings",
+        "contentComponent": "tool",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {
+          "kind": "settings",
+          "params": {}
+        },
+        "title": "Settings"
+      },
+      "tool.playneedleEditor": {
+        "id": "tool.playneedleEditor",
+        "contentComponent": "tool",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {
+          "kind": "playneedleEditor",
+          "params": {}
+        },
+        "title": "Playneedle Editor"
+      },
+      "tool.torusMenuEditor": {
+        "id": "tool.torusMenuEditor",
+        "contentComponent": "tool",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {
+          "kind": "torusMenuEditor",
+          "params": {}
+        },
+        "title": "Torus Menu Editor"
       }
     },
-    "activeGroup": "6"
+    "activeGroup": "3",
+    "floatingGroups": [
+      {
+        "data": {
+          "views": [
+            "tool.settings"
+          ],
+          "activeView": "tool.settings",
+          "id": "1"
+        },
+        "position": {
+          "top": 159,
+          "right": 479.656,
+          "width": 480,
+          "height": 520
+        }
+      },
+      {
+        "data": {
+          "views": [
+            "tool.playneedleEditor"
+          ],
+          "activeView": "tool.playneedleEditor",
+          "id": "2"
+        },
+        "position": {
+          "top": 174.823,
+          "left": 131.656,
+          "width": 480,
+          "height": 560
+        }
+      },
+      {
+        "data": {
+          "views": [
+            "tool.torusMenuEditor"
+          ],
+          "activeView": "tool.torusMenuEditor",
+          "id": "3"
+        },
+        "position": {
+          "bottom": 80.8229,
+          "right": 311,
+          "width": 620,
+          "height": 540
+        }
+      }
+    ]
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
   "hallu.settings.draggableHeaderButtons": true,
-  "hallu.modal.settings.pageState": "shortcuts",
+  "hallu.modal.settings.pageState": "components",
   "hallu.settings.playneedle_h_b": 0.8
 }

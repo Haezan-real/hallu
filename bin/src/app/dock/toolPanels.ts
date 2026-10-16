@@ -3,3 +3,5 @@
 // defined before the dock restores its saved layout, so restorable tools come back
 import '../../modals/settings/Settings';
 import '../../modals/styles/StylesModal';
+import '../../modals/torusEditor/TorusMenuEditor';
+import '../../modals/playneedleEditor/PlayneedleEditor';

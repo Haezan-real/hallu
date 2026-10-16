@@ -2,19 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import FormulaPlayneedle from '../../features/playneedle/FormulaPlayneedle';
 import { usePlayneedleParams } from '../../features/playneedle/usePlayneedleParams';
-import DraggableModal from '../../shared/ui/DraggableModal';
 import BackButton from '../../shared/ui/BackButton';
-import { openModal } from '../../shared/modals/openModal';
+import { closePanel, defineToolPanel, openPanel, openPanelFrom } from '../../shared/panels/openPanel';
+import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
 import type { NumericSettingKey } from '../settings/settingsStore';
 import { SettingSlider } from '../settings/SettingControls';
+import { OpenSettings } from '../settings/Settings';
 
 //src/modals/playneedleEditor/PlayneedleEditor.tsx
-
-// Playneedle Editor modal caps
-const EDITOR_MAX_WIDTH = '480px';
-const EDITOR_MAX_HEIGHT = '72vh';
-// Left padding for the sliders column
-const PADDING_LEFT = 10;
 
 interface SliderConfig {
   key: Extract<NumericSettingKey, `playneedle_${string}`>;
@@ -35,23 +30,12 @@ const SLIDERS: SliderConfig[] = [
   { key: 'playneedle_width', label: <span>Playneedle width (px)</span>, step: 1, format: v => `${Math.round(v)}px` },
 ];
 
-export function OpenPlayneedleEditor(onBack?: () => void) {
-  return openModal('playneedleEditor', close => (
-    <PlayneedleEditorModal onClose={close} onBack={() => { close(); onBack?.(); }} />
-  ));
-}
-
-export interface PlayneedleEditorModalProps {
-  onClose: () => void;
-  onBack: () => void;
-}
-
-export default function PlayneedleEditorModal({ onClose, onBack }: PlayneedleEditorModalProps) {
+export default function PlayneedleEditor({ id }: ToolPanelProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewHeight, setPreviewHeight] = useState(260);
   const { params, width } = usePlayneedleParams();
 
-  // Watch the preview container height to make the playneedle fill the modal
+  // The playneedle fills the preview's height, however the panel is sized
   useEffect(() => {
     const el = previewRef.current;
     if (!el) return;
@@ -63,42 +47,34 @@ export default function PlayneedleEditorModal({ onClose, onBack }: PlayneedleEdi
   }, []);
 
   return (
-    <DraggableModal
-      title="Playneedle Editor"
-      onClose={onClose}
-      headerLeft={<BackButton onClick={onBack} />}
-      style={{ width: EDITOR_MAX_WIDTH, maxHeight: EDITOR_MAX_HEIGHT, minHeight: 0, overflow: 'hidden' }}
-      body={
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: 16, padding: `4px 0 12px ${PADDING_LEFT}px`, flex: 1, minHeight: 0, overflow: 'hidden', height: '100%' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, width: 260, overflowY: 'scroll', overflowX: 'hidden', paddingRight: 4, flexShrink: 0, minHeight: 0, flex: 3 }}>
-            {SLIDERS.map(({ key, label, step, logScale, format }) => (
-              <SettingSlider key={key} setting={key} label={label} step={step} logScale={logScale} formatValue={format} />
-            ))}
-          </div>
-
-          <div
-            ref={previewRef}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: 260,
-              flex: 1,
-              alignSelf: 'stretch',
-              minHeight: 0,
-              overflow: 'hidden',
-            }}
-          >
-            <FormulaPlayneedle
-              height={previewHeight}
-              maxWidth={width}
-              color="var(--playneedle)"
-              params={params}
-            />
-          </div>
+    <div className="editor-root">
+      <div className="tool-panel-nav">
+        <BackButton onClick={() => OpenSettings('components', id)} />
+        <span className="panel-title">Settings</span>
+      </div>
+      <div className="playneedle-editor-body">
+        <div className="playneedle-editor-sliders">
+          {SLIDERS.map(({ key, label, step, logScale, format }) => (
+            <SettingSlider key={key} setting={key} label={label} step={step} logScale={logScale} formatValue={format} />
+          ))}
         </div>
-      }
-    />
+        <div ref={previewRef} className="playneedle-editor-preview">
+          <FormulaPlayneedle
+            height={previewHeight}
+            maxWidth={width}
+            color="var(--playneedle)"
+            params={params}
+          />
+        </div>
+      </div>
+    </div>
   );
+}
+
+defineToolPanel('playneedleEditor', { title: 'Playneedle Editor', component: PlayneedleEditor });
+
+/** Opens the editor, or focuses it; opened from Settings (`from`), it replaces Settings while only one menu may be open */
+export function OpenPlayneedleEditor(from?: string) {
+  const id = from ? openPanelFrom(from, 'playneedleEditor') : openPanel('playneedleEditor');
+  return id ? () => closePanel(id) : undefined;
 }

@@ -48,6 +48,9 @@ class FakeDock implements PanelHost {
   locate(id: string) {
     return this.panels.get(id)?.location ?? null;
   }
+  focusedPanel() {
+    return this.focused;
+  }
   focusedFloating() {
     return this.focusedIsFloating ? this.focused : null;
   }
@@ -172,6 +175,17 @@ describe('panel registry', () => {
     dock.focusedIsFloating = true;
     expect(registry.closeFocusedFloating()).toBe(true);
     expect(registry.isPanelOpen('styles')).toBe(false);
+  });
+
+  it('reports which tool has the focus, wherever it is', () => {
+    const { registry, dock } = setup({}, ['settings', 'torusMenuEditor']);
+    const id = registry.openPanel('torusMenuEditor')!;
+    dock.focusedIsFloating = false;
+    expect(registry.focusedPanel()).toEqual({ id, kind: 'torusMenuEditor' });
+    dock.focused = 'timeline';
+    expect(registry.focusedPanel()).toBeNull();
+    registry.openPanel('settings');
+    expect(registry.focusedPanel()?.kind).toBe('settings');
   });
 
   it('lets the focused tool step back before the exit shortcut closes it', () => {

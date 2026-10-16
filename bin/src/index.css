@@ -1317,7 +1317,8 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
 .shader-background-active .shader-panel .styles-root {
   background: color-mix(in srgb, var(--bg-panel) 70%, transparent);
 }
-.styles-nav {
+/* A tool panel's back button and where it leads, along its top */
+.tool-panel-nav {
   position: relative;
   display: flex;
   align-items: center;
@@ -1325,6 +1326,95 @@ html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .
   height: 36px;
   padding-left: 42px;
   border-bottom: 1px solid var(--border);
+}
+
+/* Torus Menu Editor and Playneedle Editor */
+.editor-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 0;
+  min-height: 0;
+  container-type: inline-size;
+  background: var(--bg-panel);
+}
+.shader-background-active .shader-panel .editor-root {
+  background: color-mix(in srgb, var(--bg-panel) 85%, transparent);
+}
+
+/* Controls beside the preview, or above it once the panel is too narrow for both */
+.torus-editor-body {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  align-content: flex-start;
+  gap: 16px;
+  padding: 12px 16px;
+  flex: 1 0 0;
+  min-height: 0;
+  overflow: auto;
+}
+.torus-editor-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 420px;
+}
+.torus-editor-preview {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+  width: 260px;
+  height: 260px;
+}
+
+.playneedle-editor-body {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0 12px 10px;
+  flex: 1 0 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.playneedle-editor-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 3 1 260px;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.playneedle-editor-preview {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1 1 120px;
+  min-width: 100px;
+  min-height: 0;
+  overflow: hidden;
+}
+/* Docked narrow: the preview goes below the sliders so they keep the width */
+@container (max-width: 440px) {
+  .playneedle-editor-body {
+    flex-direction: column;
+    padding: 8px 10px 12px;
+  }
+  .playneedle-editor-sliders {
+    flex: 3 1 0;
+  }
+  .playneedle-editor-preview {
+    flex: 2 1 0;
+    min-height: 160px;
+  }
 }
 
 .settings-body {

@@ -6,6 +6,8 @@ import { PANEL_POLICIES, canOpenPanel, isPanelKind, type PanelKind, type PanelSi
 export type PanelParams = Record<string, unknown>;
 
 export interface ToolPanelProps<P extends PanelParams = PanelParams> {
+  /** This panel's id, for opening other tools from it (openPanelFrom) */
+  id: string;
   params: P;
   close: () => void;
 }
@@ -50,6 +52,8 @@ export interface PanelHost {
   focus(id: string): void;
   remove(id: string): void;
   locate(id: string): PanelLocation | null;
+  /** The panel shown in the focused group */
+  focusedPanel(): string | null;
   /** The panel shown in the focused group, if that group is floating */
   focusedFloating(): string | null;
 }
@@ -210,6 +214,13 @@ export class PanelRegistry {
   /** Kinds of the open tool panels, oldest first */
   openKinds(): PanelKind[] {
     return [...this.open.values()].map(panel => panel.kind);
+  }
+
+  /** The tool shown in the dock's focused group, if the focus is on a tool */
+  focusedPanel(): { id: string; kind: PanelKind } | null {
+    const id = this.host?.focusedPanel();
+    const panel = id ? this.open.get(id) : undefined;
+    return panel ? { id: panel.id, kind: panel.kind } : null;
   }
 
   /**

@@ -9,7 +9,9 @@ export function useBackgroundLock(): boolean {
   const [allowEditsWhenMenuOpen] = useSetting('allowEditsWhenMenuOpen');
 
   useEffect(() => {
-    const checkModals = () => setHasModalOpen(!!document.querySelector('.modal-overlay, .torus-overlay'));
+    // A torus previewed inside a tool panel (the Torus Menu Editor's) isn't a menu over the app
+    const checkModals = () => setHasModalOpen([...document.querySelectorAll('.modal-overlay, .torus-overlay')]
+      .some(element => !element.closest('.workspace-panel-tool')));
     checkModals();
     const observer = new MutationObserver(checkModals);
     observer.observe(document.body, { childList: true, subtree: false });

@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import GraphEditor, { DEFAULT_GRAPH_CONFIG, type GraphConfig } from '../../shared/ui/graphEditor/GraphEditor';
 import { handleValuesToOffsets } from '../../shared/ui/graphEditor/graphGeometry';
 import type { GraphPoint } from '../../shared/lib/graph';
-import DraggableModal from '../../shared/ui/DraggableModal';
 import BackButton from '../../shared/ui/BackButton';
-import { openModal } from '../../shared/modals/openModal';
+import { closePanel, defineToolPanel, openPanel, openPanelFrom, panelRegistry } from '../../shared/panels/openPanel';
+import type { ToolPanelProps } from '../../shared/panels/panelRegistry';
 import TorusMenu from '../../features/torus/TorusMenu';
 import type { TorusTarget } from '../../features/torus/torusTarget';
 import {
@@ -14,11 +14,8 @@ import {
 import { isShortcutMatch } from '../settings/shortcuts';
 import { ShortcutEditor } from '../settings/ShortcutEditor';
 import { SettingSlider } from '../settings/SettingControls';
+import { OpenSettings } from '../settings/Settings';
 import { DELAY_SCALE } from './delayScale';
-
-// Torus Menu Editor modal dimensions
-const EDITOR_WIDTH = 620;
-const EDITOR_HEIGHT = 370;
 
 const TORUS_GRAPH_CONFIG: GraphConfig = {
   ...DEFAULT_GRAPH_CONFIG,
@@ -29,18 +26,7 @@ const TORUS_GRAPH_CONFIG: GraphConfig = {
 
 const PREVIEW_TARGET: TorusTarget = { kind: 'inside', clipId: '__preview__', frame: 0 };
 
-export function OpenTorusMenuEditor(onBack?: () => void) {
-  return openModal('torusMenuEditor', close => (
-    <TorusMenuEditorModal onClose={close} onBack={() => { close(); onBack?.(); }} />
-  ));
-}
-
-export interface TorusMenuEditorModalProps {
-  onClose: () => void;
-  onBack: () => void;
-}
-
-export default function TorusMenuEditorModal({ onClose, onBack }: TorusMenuEditorModalProps) {
+export default function TorusMenuEditor({ id }: ToolPanelProps) {
   const [torusOpen, setTorusOpen] = useState(false);
   const [sizeGraph, setSizeGraph] = useState<GraphPoint[]>(getSavedSizeGraph);
   const [segmentHandleValues, setSegmentHandleValues] = useState<number[]>(getSavedSegmentHandleValues);
@@ -59,127 +45,108 @@ export default function TorusMenuEditorModal({ onClose, onBack }: TorusMenuEdito
 
   const toggleTorus = useCallback(() => setTorusOpen(open => !open), []);
 
+  // While this panel has the dock's focus, the torus shortcut previews here instead of on the timeline
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (isShortcutMatch('toggleTorusMenu', e)) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleTorus();
-      }
+      if (!isShortcutMatch('toggleTorusMenu', e) || panelRegistry.focusedPanel()?.id !== id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTorus();
     };
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [toggleTorus]);
+  }, [toggleTorus, id]);
 
   return (
-    <DraggableModal
-      title="Torus Menu Editor"
-      onClose={onClose}
-      headerLeft={<BackButton onClick={onBack} />}
-      style={{ width: EDITOR_WIDTH, minHeight: EDITOR_HEIGHT }}
-      body={
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '4px 0 12px 0' }}>
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 12, width: 260 }}>
-              <SettingSlider setting="torusDuration" label="Duration" step={10} formatValue={v => `${v}ms`} />
-              <ShortcutEditor action="toggleTorusMenu" />
-              <GraphEditor
-                graph={sizeGraph}
-                onChange={setSizeGraph}
-                onEasingChange={setSegmentHandleValues}
-                config={TORUS_GRAPH_CONFIG}
-                Y_label="size"
-                X_label="time"
-                initialEasingOffsets={initialEasingOffsets}
-              />
-              <SettingSlider
-                setting="torusDelay"
-                label="Delay"
-                step={1}
-                scale={DELAY_SCALE}
-                formatValue={v => `${v}ms`}
-                rangeLabels={['-1000ms', '0ms', '1000ms']}
-              />
-              <SettingSlider
-                setting="torusHoverScale"
-                label="Hover Scale"
-                step={0.01}
-                formatValue={v => `${v.toFixed(2)}x`}
-                rangeLabels={['1.00x', '1.08x', '1.50x']}
-              />
-            </div>
-
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: 260,
-                height: 260,
-              }}
-            >
-              {torusOpen && (
-                <div style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: '100%',
-                  height: '100%',
-                  zIndex: 5,
-                  pointerEvents: 'none',
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    pointerEvents: 'auto',
-                  }}>
-                    <TorusMenu
-                      pos={{ x: 0, y: 0 }}
-                      target={PREVIEW_TARGET}
-                      onClose={toggleTorus}
-                      showCloseButton
-                      sizeGraph={sortedSizeGraph}
-                      segmentHandleValues={segmentHandleValues}
-                      closeOnBackgroundClick={false}
-                    />
-                  </div>
-                </div>
-              )}
-              <button
-                type="button"
-                className="torus-toggle-btn"
-                onClick={toggleTorus}
-                title="Toggle torus menu"
-                style={{
-                  position: 'absolute',
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: 36,
-                  height: 36,
-                  borderRadius: '50%',
-                  border: '1px solid var(--border-mid)',
-                  background: 'var(--bg-elevated)',
-                  color: 'var(--text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 3000,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                }}
-              >
-                •••
-              </button>
-            </div>
-          </div>
+    <div className="editor-root">
+      <div className="tool-panel-nav">
+        <BackButton onClick={() => OpenSettings('components', id)} />
+        <span className="panel-title">Settings</span>
+      </div>
+      <div className="torus-editor-body">
+        <div className="torus-editor-controls">
+          <SettingSlider setting="torusDuration" label="Duration" step={10} formatValue={v => `${v}ms`} />
+          <ShortcutEditor action="toggleTorusMenu" />
+          <GraphEditor
+            graph={sizeGraph}
+            onChange={setSizeGraph}
+            onEasingChange={setSegmentHandleValues}
+            config={TORUS_GRAPH_CONFIG}
+            Y_label="size"
+            X_label="time"
+            initialEasingOffsets={initialEasingOffsets}
+          />
+          <SettingSlider
+            setting="torusDelay"
+            label="Delay"
+            step={1}
+            scale={DELAY_SCALE}
+            formatValue={v => `${v}ms`}
+            rangeLabels={['-1000ms', '0ms', '1000ms']}
+          />
+          <SettingSlider
+            setting="torusHoverScale"
+            label="Hover Scale"
+            step={0.01}
+            formatValue={v => `${v.toFixed(2)}x`}
+            rangeLabels={['1.00x', '1.08x', '1.50x']}
+          />
         </div>
-      }
-    />
+
+        <div className="torus-editor-preview">
+          {torusOpen && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 5, pointerEvents: 'none' }}>
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'auto' }}>
+                <TorusMenu
+                  pos={{ x: 0, y: 0 }}
+                  target={PREVIEW_TARGET}
+                  onClose={toggleTorus}
+                  showCloseButton
+                  sizeGraph={sortedSizeGraph}
+                  segmentHandleValues={segmentHandleValues}
+                  closeOnBackgroundClick={false}
+                />
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
+            className="torus-toggle-btn"
+            onClick={toggleTorus}
+            title="Toggle torus menu"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              border: '1px solid var(--border-mid)',
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 3000,
+              fontSize: 14,
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            •••
+          </button>
+        </div>
+      </div>
+    </div>
   );
+}
+
+defineToolPanel('torusMenuEditor', { title: 'Torus Menu Editor', component: TorusMenuEditor });
+
+/** Opens the editor, or focuses it; opened from Settings (`from`), it replaces Settings while only one menu may be open */
+export function OpenTorusMenuEditor(from?: string) {
+  const id = from ? openPanelFrom(from, 'torusMenuEditor') : openPanel('torusMenuEditor');
+  return id ? () => closePanel(id) : undefined;
 }
