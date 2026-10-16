@@ -89,6 +89,8 @@ export function initDockLayout(api: DockviewApi): () => void {
     try {
       api.fromJSON(saved);
       restored = hasCorePanels(api);
+      // Saved layouts keep titles, which may predate a rename
+      for (const { id, title } of Object.values(CORE_PANELS)) api.getPanel(id)?.api.setTitle(title);
     } catch (error) {
       console.warn('Could not restore the saved panel layout, using the default:', error);
     }

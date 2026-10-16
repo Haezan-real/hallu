@@ -8,6 +8,7 @@ import type {
 } from '../../shared/platform/electronApi';
 import { THEME_FLOATS, ThemeColorFade } from './themeColorFade';
 import { MAX_SHADER_PANELS, measureShaderPanels } from './shaderPanels';
+import { shaderMirrors } from './shaderMirrors';
 
 // Hallu owns the vertex stage: one triangle that covers the whole target
 export const VERTEX_WGSL = `
@@ -23,7 +24,8 @@ const CHANNEL_RESOLUTION_OFFSET = 16;
 export const PIXEL_RATIO_OFFSET = 11;
 export const THEME_OFFSET = 32;
 const PANELS_OFFSET = THEME_OFFSET + THEME_FLOATS;
-const PANEL_COUNT_OFFSET = PANELS_OFFSET + MAX_SHADER_PANELS * 4;
+const PANEL_INFO_OFFSET = PANELS_OFFSET + MAX_SHADER_PANELS * 4;
+const PANEL_COUNT_OFFSET = PANEL_INFO_OFFSET + MAX_SHADER_PANELS * 4;
 // The struct's size rounds up to its 16-byte alignment
 export const UNIFORM_FLOATS = Math.ceil((PANEL_COUNT_OFFSET + 1) / 4) * 4;
 export const CHANNEL_COUNT = 4;
@@ -125,6 +127,8 @@ export class ShaderBackgroundRenderer {
   private uniforms = new Float32Array(UNIFORM_FLOATS);
   private uniformInts = new Int32Array(this.uniforms.buffer);
   private panels = new Float32Array(MAX_SHADER_PANELS * 4);
+  private panelInfo = new Int32Array(MAX_SHADER_PANELS * 4);
+  private mirrorContexts = new Map<HTMLCanvasElement, GPUCanvasContext>();
   private program: Program | null = null;
   private rafId = 0;
   private latestProgram = 0;
@@ -142,7 +146,12 @@ export class ShaderBackgroundRenderer {
     this.context = context;
     this.filterable = filterable;
     this.format = navigator.gpu.getPreferredCanvasFormat();
-    context.configure({ device, format: this.format, alphaMode: 'premultiplied' });
+    context.configure({
+      device,
+      format: this.format,
+      alphaMode: 'premultiplied',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+    });
     this.vertexModule = device.createShaderModule({ code: VERTEX_WGSL });
     this.bindGroupLayout = this.createBindGroupLayout(false);
     this.pipelineLayout = device.createPipelineLayout({ bindGroupLayouts: [this.bindGroupLayout] });
@@ -225,6 +234,8 @@ export class ShaderBackgroundRenderer {
     this.theme.disconnect();
     if (this.program) this.destroyProgram(this.program);
     this.program = null;
+    for (const context of this.mirrorContexts.values()) context.unconfigure();
+    this.mirrorContexts.clear();
     this.context.unconfigure();
     this.device.destroy();
   }
@@ -409,10 +420,56 @@ export class ShaderBackgroundRenderer {
 
     const encoder = this.device.createCommandEncoder();
     for (const pass of program.passes) this.encodePass(encoder, program, pass);
+    this.copyToMirrors(encoder);
     this.device.queue.submit([encoder.finish()]);
     this.mouse.clicked = false;
     this.frame++;
   };
+
+  private copyToMirrors(encoder: GPUCommandEncoder) {
+    const mirrors = shaderMirrors();
+    for (const [canvas, context] of this.mirrorContexts) {
+      if (!mirrors.has(canvas)) {
+        context.unconfigure();
+        this.mirrorContexts.delete(canvas);
+      }
+    }
+    if (mirrors.size === 0) return;
+    const bounds = this.canvas.getBoundingClientRect();
+    if (bounds.width === 0) return;
+    const scale = this.canvas.width / bounds.width;
+    const source = this.context.getCurrentTexture();
+    for (const mirror of mirrors) {
+      const rect = mirror.getBoundingClientRect();
+      const width = Math.round(rect.width * scale);
+      const height = Math.round(rect.height * scale);
+      if (width < 1 || height < 1 || mirror.ownerDocument !== this.canvas.ownerDocument) continue;
+      if (mirror.width !== width || mirror.height !== height) {
+        mirror.width = width;
+        mirror.height = height;
+      }
+      let context = this.mirrorContexts.get(mirror);
+      if (!context) {
+        context = mirror.getContext('webgpu') ?? undefined;
+        if (!context) continue;
+        context.configure({ device: this.device, format: this.format, alphaMode: 'premultiplied', usage: GPUTextureUsage.COPY_DST });
+        this.mirrorContexts.set(mirror, context);
+      }
+      // Only the part of the mirror that lies over the background canvas gets copied
+      const x = Math.round((rect.left - bounds.left) * scale);
+      const y = Math.round((rect.top - bounds.top) * scale);
+      const left = Math.max(x, 0);
+      const top = Math.max(y, 0);
+      const copyWidth = Math.min(x + width, this.canvas.width) - left;
+      const copyHeight = Math.min(y + height, this.canvas.height) - top;
+      if (copyWidth < 1 || copyHeight < 1) continue;
+      encoder.copyTextureToTexture(
+        { texture: source, origin: [left, top] },
+        { texture: context.getCurrentTexture(), origin: [left - x, top - y] },
+        [copyWidth, copyHeight],
+      );
+    }
+  }
 
   private channelInput(program: Program, channel: ShaderChannel | null): TextureInput | null {
     if (!channel) return null;
@@ -549,8 +606,9 @@ export class ShaderBackgroundRenderer {
     u[14] = date.getDate();
     u[15] = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds() + date.getMilliseconds() / 1000;
     u.set(this.theme.sample(now), THEME_OFFSET);
-    this.uniformInts[PANEL_COUNT_OFFSET] = measureShaderPanels(this.canvas, this.panels);
+    this.uniformInts[PANEL_COUNT_OFFSET] = measureShaderPanels(this.canvas, this.panels, this.panelInfo);
     u.set(this.panels, PANELS_OFFSET);
+    this.uniformInts.set(this.panelInfo, PANEL_INFO_OFFSET);
   }
 
   // Mouse in canvas pixels with a bottom-left origin, like fragCoord

@@ -347,9 +347,23 @@ html, body, #root {
 .shader-background-active .tl-labels.shader-panel {
   background: transparent;
 }
-/* Floating windows sit over other panels, so their title bar stays solid */
-.dockview-theme-hallu .dv-resize-container .dv-groupview > .dv-tabs-and-actions-container {
+/* Without a shader, floating windows sit opaquely over other panels with a solid title bar */
+html:not(.shader-background-active) .dockview-theme-hallu .dv-resize-container .dv-groupview > .dv-tabs-and-actions-container {
   background: var(--bg-elevated);
+}
+/* With one, the background is mirrored into the window (dockShaderLayers.ts) so it shows through
+   like it does for docked panels, instead of the panels underneath */
+.dock-shader-mirror {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.shader-background-active .dock-shader-mirror {
+  display: block;
 }
 .shader-background-active .shader-panel .tl-ruler {
   background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);

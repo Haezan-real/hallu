@@ -14,6 +14,7 @@ import {
   wgslPreludeLines,
   wrapGlsl,
   wrapWgsl,
+  MAX_PANELS,
 } from '../shaderPacks.cjs';
 
 const MAIN_IMAGE = 'void mainImage(out vec4 fragColor, in vec2 fragCoord) {\n  fragColor = vec4(fragCoord / iResolution.xy, 0.5 + 0.5 * sin(iTime), 1.0);\n}\n';
@@ -67,6 +68,14 @@ describe('shader boilerplate', () => {
       .toBe('@group(0u) @binding(10u) var<storage, read_write> v : Stats;');
     expect(allowStorageWrites('@group(0) @binding(10) var<storage, read_write> v : Stats;'))
       .toBe('@group(0) @binding(10) var<storage, read_write> v : Stats;');
+  });
+
+  it('declares sixteen panel rects with their kind and floating flags', () => {
+    expect(MAX_PANELS).toBe(16);
+    const glsl = wrapGlsl(MAIN_IMAGE);
+    expect(glsl).toContain('vec4 iPanels[16];\n  ivec4 iPanelInfo[16];\n  int iPanelCount;');
+    const wgsl = wrapWgsl('fn mainImage(fragCoord : vec2f) -> vec4f { return vec4f(1.0); }');
+    expect(wgsl).toContain('iPanels : array<vec4f, 16>,\n  iPanelInfo : array<vec4i, 16>,\n  iPanelCount : i32,');
   });
 
   it('reads literal workgroup sizes from WGSL', () => {
@@ -250,6 +259,20 @@ describe.skipIf(!toolsInstalled)('glslang + tint translation', () => {
     const result = await translateGlsl(source);
     expect(result.ok).toBe(true);
     expect(wrapWgsl('fn mainImage(fragCoord : vec2f) -> vec4f { return hallu.iTheme.highlightColor; }')).toContain('iTheme : HalluTheme');
+  });
+
+  it('lets packs find panels by kind and stacking order', async () => {
+    const source = [
+      'void mainImage(out vec4 fragColor, in vec2 fragCoord) {',
+      '  fragColor = vec4(0.0);',
+      '  for (int i = 0; i < iPanelCount; i++) {',
+      '    if (iPanelInfo[i].x == 2 && iPanelInfo[i].y == 0) fragColor = vec4(iPanels[i].xy, 0.0, 1.0);',
+      '  }',
+      '}',
+    ].join('\n');
+    const result = await translateGlsl(source);
+    expect(result.ok).toBe(true);
+    expect(result.wgsl).toMatch(/iPanelInfo\s*:\s*array<vec4<i32>, 16u?>/);
   });
 
   it('translates compute passes with storage buffers, atomics and shared memory', async () => {

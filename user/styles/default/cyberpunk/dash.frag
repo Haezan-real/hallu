@@ -1,10 +1,14 @@
-// The car's dashboard, under the timeline (iPanels[2]): dark soft-touch plastic washed by the
-// passing street lights, a neon trim strip along its top edge, the street's reflection where it
-// meets the windshield, and down the timeline's right edge an LED tachometer with a speed
-// readout, in a column the size of the track labels (iPanels[3]) mirrored across. It stays dark
-// and calm so clips are easy to see and drag.
-// Writes alpha 1 over the timeline and 0 everywhere else.
+// The car's dashboard, under the timeline wherever it is docked: dark soft-touch plastic washed
+// by the passing street lights, a neon trim strip along its top edge, the street's reflection
+// where it meets the windshield, and down the timeline's right edge an LED tachometer with a
+// speed readout, in a column the size of the track labels mirrored across. It stays dark and
+// calm so clips are easy to see and drag.
+// Writes alpha 1 over the timeline and 0 everywhere else; glass.frag hides it behind panels in front.
 // iChannel0: the street, heavily blurred
+
+// iPanelInfo kinds, see shaderPacks.cjs
+const int KIND_TIMELINE = 2;
+const int KIND_TIMELINE_LABELS = 3;
 
 // Lengths in CSS pixels
 const float TRIM_WIDTH = 1.5;        // the neon strip along the dash's top edge
@@ -148,10 +152,18 @@ vec3 speedReadout(vec2 p, vec4 column, float px) {
   return iTheme.borderMid.rgb * (on + glow + off * 0.06) * GAUGE_BRIGHTNESS;
 }
 
+// The first panel of this kind that is shown, or all zeros
+vec4 findPanel(int kind) {
+  for (int i = 0; i < iPanelCount; i++) {
+    if (iPanelInfo[i].x == kind && iPanels[i].z >= 1.0) return iPanels[i];
+  }
+  return vec4(0.0);
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 p = fragCoord;
-  vec4 dash = iPanels[2];
-  if (iPanelCount < 3 || dash.z < 1.0 || p.x < dash.x || p.x > dash.x + dash.z || p.y < dash.y || p.y > dash.y + dash.w) {
+  vec4 dash = findPanel(KIND_TIMELINE);
+  if (dash.z < 1.0 || p.x < dash.x || p.x > dash.x + dash.z || p.y < dash.y || p.y > dash.y + dash.w) {
     fragColor = vec4(0.0);
     return;
   }
@@ -192,8 +204,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   float trim = linearstep((TRIM_WIDTH + 0.5) * px, (TRIM_WIDTH - 0.5) * px, fromTop);
   col = mix(col, trimColor, trim * 0.85) + trimColor * exp(-fromTop / (TRIM_GLOW * px)) * 0.12;
 
-  vec4 labels = iPanels[3];
-  if (iPanelCount > 3 && labels.z >= 1.0) {
+  vec4 labels = findPanel(KIND_TIMELINE_LABELS);
+  if (labels.z >= 1.0) {
     vec4 column = vec4(2.0 * dash.x + dash.z - labels.x - labels.z, labels.yzw);
     col += tachometer(p, column, px) + speedReadout(p, column, px);
   }

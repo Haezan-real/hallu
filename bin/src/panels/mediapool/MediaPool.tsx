@@ -2,8 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import { Film, Music, Image as ImageIcon, Trash2, List, Layout } from 'lucide-react';
 import type { MediaItem } from '../../types';
 import PanelHeaderActions from '../../shared/dock/PanelHeaderActions';
-import { usePanelTitle } from '../../shared/dock/dockPanel';
-
 //src/panels/mediapool/MediaPool.tsx
 
 interface Props {
@@ -17,8 +15,6 @@ interface Props {
 export default function MediaPool({ items, selectedMediaId, onSelect, onAdd, onRemove }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<'list' | 'icon'>('list');
-  usePanelTitle(`Media Pool (${items.length})`);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       onAdd(e.target.files);

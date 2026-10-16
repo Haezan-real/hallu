@@ -1,10 +1,9 @@
 //src/shared/dock/dockPanel.ts
-import { createContext, useContext, useEffect } from 'react';
+import { createContext } from 'react';
 
-/** What a docked panel can change about its group header */
+/** The docked panel a component is rendered in */
 export interface DockPanelHandle {
   id: string;
-  setTitle: (title: string) => void;
 }
 
 export const DockPanelContext = createContext<DockPanelHandle | null>(null);
@@ -34,10 +33,4 @@ export function registerPanelActionsTarget(panelId: string, element: HTMLElement
     actionTargets.delete(panelId);
     notify();
   };
-}
-
-/** Shows a title in the panel's dock header, e.g. one that includes a count */
-export function usePanelTitle(title: string) {
-  const panel = useContext(DockPanelContext);
-  useEffect(() => { panel?.setTitle(title); }, [panel, title]);
 }

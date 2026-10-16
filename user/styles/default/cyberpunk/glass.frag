@@ -1,10 +1,14 @@
-// Glass over the media pool and viewer (iPanels[0] and [1]): the street behind each pane is
-// frosted, more so toward its corners, bent by a curved rim and a fisheye lens, beaded with rain,
-// flared by bright lights and framed by ceramic frit in the splitter colour. The dashboard sits
-// under the timeline, and everywhere else the street shows as it is.
+// Glass over every panel but the timeline: the street behind each pane is frosted, more so
+// toward its corners, bent by a curved rim and a fisheye lens, beaded with rain, flared by bright
+// lights and framed by ceramic frit in the splitter colour. The dashboard sits under the
+// timeline, and everywhere else the street shows as it is. Floating panels are layered in the
+// order iPanels lists them, so the one in front wins where they overlap and casts its shadow on
+// whatever is behind it.
 // iChannel0: the street, iChannel1: lightly blurred, iChannel2: heavily blurred, iChannel3: the dash
 
-const int GLASS_PANELS = 2;
+// iPanelInfo kinds, see shaderPacks.cjs
+const int KIND_TIMELINE = 2;
+const int KIND_TIMELINE_LABELS = 3;
 
 // Lengths in CSS pixels
 const float CORNER_RADIUS = 0.0;
@@ -186,46 +190,33 @@ float frit(vec2 p, vec4 rect, float px) {
   return max(solid, spot * step(fade, 1.0));
 }
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 p = fragCoord;
-  float px = max(iPixelRatio, 1e-3);
-  vec3 base = textureLod(iChannel0, p / iResolution.xy, 0.0).rgb;
-  vec4 dash = textureLod(iChannel3, p / iResolution.xy, 0.0);
-  base = mix(base, dash.rgb, dash.a);
-  vec3 ldir = normalize(vec3(-0.6, 0.8, LIGHT_HEIGHT));
+bool isGlass(int i) {
+  int kind = iPanelInfo[i].x;
+  return kind != KIND_TIMELINE && kind != KIND_TIMELINE_LABELS;
+}
 
-  // The nearest pane gets drawn; every pane casts a shadow, falling away from the light
-  int nearest = -1;
-  float sdf = 1e9;
+bool isFloating(int i) {
+  return i >= 0 && iPanelInfo[i].y != 0;
+}
+
+// Shade over the layer at index `layer` (-1 for the street) from the panes in front of it,
+// falling away from the light. Docked panes all shadow one another, as they sit side by side
+float shadowOn(vec2 p, int layer, vec3 ldir, float px) {
   float shadow = 1.0;
   float shadowBlur = SHADOW_BLUR * px;
-  for (int i = 0; i < iPanelCount && i < GLASS_PANELS; i++) {
-    if (iPanels[i].z < 1.0) continue;
-    float d = panelSdf(p, iPanels[i]);
-    if (d < sdf) {
-      sdf = d;
-      nearest = i;
-    }
-    float s = abs(panelSdf(p + normalize(ldir.xy) * SHADOW_OFFSET * px, iPanels[i])) - 0.33 * shadowBlur;
+  vec2 offset = normalize(ldir.xy) * SHADOW_OFFSET * px;
+  for (int j = 0; j < iPanelCount; j++) {
+    if (!isGlass(j) || iPanels[j].z < 1.0) continue;
+    if (j < layer && (isFloating(j) || isFloating(layer))) continue;
+    float s = abs(panelSdf(p + offset, iPanels[j])) - 0.33 * shadowBlur;
     shadow *= mix(SHADOW_LIGHTNESS, 1.0, linearstep(-shadowBlur, shadowBlur, s));
   }
-  if (nearest < 0) {
-    fragColor = vec4(base, 1.0);
-    return;
-  }
+  return shadow;
+}
 
-  // The solid frit runs a little past the pane, over the seam with whatever borders it
+// The pane at its fullest: the street seen through the glass at p, with its frit printed on
+vec3 pane(vec2 p, vec4 rect, float sdf, float px, float shadow, vec3 ldir) {
   vec3 fritColor = iTheme.splitter.rgb;
-  float edge = EDGE * linearstep(px, -px, abs(sdf) - px);
-  float bleed = linearstep(0.5 * px, -0.5 * px, sdf - FRIT_BLEED * px);
-  vec3 outside = mix(base * shadow + edge, fritColor, bleed);
-  float mask = linearstep(0.75 * px, -0.75 * px, sdf);
-  if (mask <= 0.0) {
-    fragColor = vec4(outside, 1.0);
-    return;
-  }
-
-  vec4 rect = iPanels[nearest];
   float bevel = BEVEL * px;
   float thickness = THICKNESS * px;
   float h = droplet(-sdf, thickness, bevel);
@@ -272,7 +263,50 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   // The frit is printed on the glass, so the rim's sheen still catches on its dots; the solid band
   // stays flat so the pane's border reads as one clean edge
   float sheen = RIM_SHARP * 0.4 * pow(rim, RIM_SHARP_POWER) * linearstep(FRIT_SOLID * px, (FRIT_SOLID + 2.0) * px, -sdf);
-  col = mix(col, fritColor + sheen, frit(p, rect, px));
+  return mix(col, fritColor + sheen, frit(p, rect, px));
+}
 
-  fragColor = vec4(mix(outside, col, mask), 1.0);
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 p = fragCoord;
+  float px = max(iPixelRatio, 1e-3);
+  vec3 street = textureLod(iChannel0, p / iResolution.xy, 0.0).rgb;
+  vec4 dash = textureLod(iChannel3, p / iResolution.xy, 0.0);
+  vec3 base = mix(street, dash.rgb, dash.a);
+  vec3 ldir = normalize(vec3(-0.6, 0.8, LIGHT_HEIGHT));
+
+  // Everything behind the front-most panel that fully covers p is hidden
+  int first = -1;
+  for (int i = 0; i < iPanelCount; i++) {
+    if (iPanelInfo[i].x == KIND_TIMELINE_LABELS || iPanels[i].z < 1.0) continue;
+    if (panelSdf(p, iPanels[i]) <= -0.75 * px) first = i;
+  }
+
+  vec3 col;
+  if (first >= 0 && isGlass(first)) {
+    vec4 rect = iPanels[first];
+    col = pane(p, rect, panelSdf(p, rect), px, shadowOn(p, first, ldir, px), ldir);
+  } else {
+    col = base * shadowOn(p, first, ldir, px);
+  }
+
+  // Then the panels in front, where their edges reach p. The solid frit runs a little past each
+  // pane, over the seam with whatever borders it
+  vec3 fritColor = iTheme.splitter.rgb;
+  for (int i = first + 1; i < iPanelCount; i++) {
+    if (iPanelInfo[i].x == KIND_TIMELINE_LABELS || iPanels[i].z < 1.0) continue;
+    vec4 rect = iPanels[i];
+    float sdf = panelSdf(p, rect);
+    if (sdf > (FRIT_BLEED + 1.0) * px) continue;
+    float mask = linearstep(0.75 * px, -0.75 * px, sdf);
+    if (!isGlass(i)) {
+      col = mix(col, base * shadowOn(p, i, ldir, px), mask);
+      continue;
+    }
+    float edge = EDGE * linearstep(px, -px, abs(sdf) - px);
+    float bleed = linearstep(0.5 * px, -0.5 * px, sdf - FRIT_BLEED * px);
+    col = mix(col + edge, fritColor, bleed);
+    if (mask > 0.0) col = mix(col, pane(p, rect, sdf, px, shadowOn(p, i, ldir, px), ldir), mask);
+  }
+
+  fragColor = vec4(col, 1.0);
 }

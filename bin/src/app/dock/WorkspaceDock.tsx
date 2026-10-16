@@ -10,9 +10,10 @@ import {
   type IDockviewPanelProps,
 } from 'dockview-react';
 import 'dockview-react/dist/styles/dockview.css';
-import { SHADER_PANEL, useShaderPanel } from '../../features/shaders/shaderPanels';
+import { SHADER_PANEL_KIND, useShaderPanel } from '../../features/shaders/shaderPanels';
 import { DockPanelContext, registerPanelActionsTarget, type DockPanelHandle } from '../../shared/dock/dockPanel';
 import { initDockLayout, isCorePanel } from './dockLayout';
+import { initDockShaderLayers } from './dockShaderLayers';
 
 /** Same thickness as the splitters the dock replaced */
 const SPLITTER_SIZE = 8; //px
@@ -46,14 +47,14 @@ function usePanels(): WorkspacePanels {
 }
 
 function DockPanel({ api, children }: { api: IDockviewPanelProps['api']; children: ReactNode }) {
-  const handle = useMemo<DockPanelHandle>(() => ({ id: api.id, setTitle: title => api.setTitle(title) }), [api]);
+  const handle = useMemo<DockPanelHandle>(() => ({ id: api.id }), [api]);
   return <DockPanelContext.Provider value={handle}>{children}</DockPanelContext.Provider>;
 }
 
 function MediaPoolPanel({ api }: IDockviewPanelProps) {
   const { mediaPool, onDropMediaPool, onDragOverMediaPool } = usePanels();
   const ref = useRef<HTMLDivElement>(null);
-  useShaderPanel(ref, SHADER_PANEL.mediaPool, SHADER_FRAME);
+  useShaderPanel(ref, SHADER_PANEL_KIND.mediaPool, SHADER_FRAME);
   return (
     <DockPanel api={api}>
       <div ref={ref} className="workspace-panel-mediapool" onDrop={onDropMediaPool} onDragOver={onDragOverMediaPool}>
@@ -66,7 +67,7 @@ function MediaPoolPanel({ api }: IDockviewPanelProps) {
 function ViewerPanel({ api }: IDockviewPanelProps) {
   const { viewer } = usePanels();
   const ref = useRef<HTMLDivElement>(null);
-  useShaderPanel(ref, SHADER_PANEL.viewer, SHADER_FRAME);
+  useShaderPanel(ref, SHADER_PANEL_KIND.viewer, SHADER_FRAME);
   return (
     <DockPanel api={api}>
       <div ref={ref} className="workspace-panel-viewer">{viewer}</div>
@@ -77,7 +78,7 @@ function ViewerPanel({ api }: IDockviewPanelProps) {
 function TimelinePanel({ api }: IDockviewPanelProps) {
   const { timeline } = usePanels();
   const ref = useRef<HTMLDivElement>(null);
-  useShaderPanel(ref, SHADER_PANEL.timeline, SHADER_FRAME);
+  useShaderPanel(ref, SHADER_PANEL_KIND.timeline, SHADER_FRAME);
   return (
     <DockPanel api={api}>
       <div ref={ref} className="workspace-panel-timeline">{timeline}</div>
@@ -184,7 +185,12 @@ export default function WorkspaceDock(panels: WorkspacePanels) {
 
   const onReady = (event: DockviewReadyEvent) => {
     disposeLayout.current?.();
-    disposeLayout.current = initDockLayout(event.api);
+    const disposeSaving = initDockLayout(event.api);
+    const disposeShaderLayers = initDockShaderLayers(event.api);
+    disposeLayout.current = () => {
+      disposeSaving();
+      disposeShaderLayers();
+    };
   };
 
   return (

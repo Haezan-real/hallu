@@ -16,7 +16,7 @@ import { useTimelinePointer } from './useTimelinePointer';
 import { useTimelineTorus } from './useTimelineTorus';
 import { TimelineGrid, TimelineRuler } from './TimelineRuler';
 import TimelineClipView from './TimelineClipView';
-import { SHADER_PANEL, useShaderPanel } from '../../features/shaders/shaderPanels';
+import { SHADER_PANEL_KIND, useShaderPanel } from '../../features/shaders/shaderPanels';
 import PanelHeaderActions from '../../shared/dock/PanelHeaderActions';
 
 interface Props {
@@ -51,7 +51,7 @@ export default function Timeline({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
-  useShaderPanel(labelsRef, SHADER_PANEL.timelineLabels);
+  useShaderPanel(labelsRef, SHADER_PANEL_KIND.timelineLabels);
   const playheadRef = useRef(playhead);
   useEffect(() => { playheadRef.current = playhead; }, [playhead]);
 

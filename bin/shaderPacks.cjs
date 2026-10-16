@@ -32,10 +32,13 @@
 // iTheme holds the active theme's colors as vec4s (iTheme.bgBase, iTheme.border, ...; in WGSL
 // hallu.iTheme.bgBase), exactly matching the UI and fading along with theme transitions.
 // iPanels are the UI panels drawn over the background as (x, y, width, height) in screen pixels,
-// from the bottom-left corner like fragCoord: [0] the media pool, [1] the viewer, [2] the
-// timeline, [3] the timeline's track-label column. A hidden panel is all zeros, and iPanelCount
-// is one past the last one shown. iPixelRatio is screen pixels per CSS pixel, for sizes that
-// should match the UI.
+// from the bottom-left corner like fragCoord. They follow the dock layout, so find a panel by
+// its kind rather than its index: iPanelInfo[i] is ivec4(kind, floating, 0, 0) for iPanels[i],
+// where kind is 0 the media pool, 1 the viewer, 2 the timeline, 3 the timeline's track-label
+// column (inside the timeline) or 4 a tool panel, and floating is 1 for a panel in a floating
+// window. Entries run back to front, so where panels overlap the later one is drawn on top.
+// Only the first iPanelCount entries are used; hidden panels are left out. iPixelRatio is screen
+// pixels per CSS pixel, for sizes that should match the UI.
 const { execFile } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -50,9 +53,9 @@ const GLSLANG = path.join(TOOLS_DIR, 'glslang.exe');
 const TINT = path.join(TOOLS_DIR, 'tint.exe');
 
 // Bump whenever the boilerplate or the translation flags change, so cached WGSL is rebuilt
-const BOILERPLATE_VERSION = 5;
+const BOILERPLATE_VERSION = 6;
 const LANGUAGES = ['glsl', 'wgsl'];
-const MAX_PANELS = 8;
+const MAX_PANELS = 16;
 const SURFACES = ['background'];
 const PASS_TYPES = ['fragment', 'compute', 'geometry'];
 const BLEND_MODES = ['replace', 'add', 'alpha'];
@@ -85,6 +88,7 @@ layout(set = 0, binding = 0, std140) uniform HalluGlobals {
   vec3 iChannelResolution[4];
   HalluTheme iTheme;
   vec4 iPanels[${MAX_PANELS}];
+  ivec4 iPanelInfo[${MAX_PANELS}];
   int iPanelCount;
 };
 layout(set = 0, binding = 1) uniform sampler2D iChannel0;
@@ -153,6 +157,7 @@ struct HalluGlobals {
   iChannelResolution : array<vec3f, 4>,
   iTheme : HalluTheme,
   iPanels : array<vec4f, ${MAX_PANELS}>,
+  iPanelInfo : array<vec4i, ${MAX_PANELS}>,
   iPanelCount : i32,
 }
 @group(0) @binding(0) var<uniform> hallu : HalluGlobals;
