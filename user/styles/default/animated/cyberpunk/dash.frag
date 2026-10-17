@@ -15,7 +15,11 @@ const float TRIM_WIDTH = 1.5;        // the neon strip along the dash's top edge
 const float TRIM_GLOW = 14.0;        // how far its glow reaches down
 const float HORIZON_GLOW = 55.0;     // the soft synthwave haze under the trim
 const float REFLECTION = 0.15;       // the street reflected where the dash meets the windshield
-const float REFLECTION_REACH = 0.65; // how far down it fades out, as a fraction of the dash's height
+// How far down the reflection fades out, as a fraction of the dash's height: 0 is none, 1 reaches
+// the bottom. Set in manifest.json's "constants"
+#ifndef REFLECTION_REACH
+#define REFLECTION_REACH 0.65
+#endif
 const float SPILL = 0.07;            // how bright the passing street lights wash over the dash
 const float SPILL_SPEED = 0.18;      // lights passing per second, per side of the street
 const float GRAIN = 0.01;
@@ -191,7 +195,8 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   // The street above, mirrored in the dash's top where it meets the windshield
   vec2 mirrored = vec2(p.x, dash.y + dash.w + fromTop * 1.2);
-  float reflectionFade = 1.0 - smoothstep(0.0, REFLECTION_REACH * dash.w, fromTop);
+  float reach = clamp(float(REFLECTION_REACH), 0.0, 1.0) * dash.w;
+  float reflectionFade = reach > 0.0 ? 1.0 - smoothstep(0.0, reach, fromTop) : 0.0;
   col += textureLod(iChannel0, mirrored / iResolution.xy, 0.0).rgb * REFLECTION * reflectionFade * reflectionFade;
 
   // Darker toward the sides and down into the footwell

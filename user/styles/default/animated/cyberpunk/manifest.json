@@ -1,6 +1,9 @@
 {
   "name": "cyberpunk",
   "language": "glsl",
+  "constants": {
+    "REFLECTION_REACH": 10
+  },
   "surfaces": {
     "background": {
       "storage": 512,

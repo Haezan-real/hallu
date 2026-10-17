@@ -11,6 +11,7 @@ import {
   parseWorkgroupSize,
   translateGlsl,
   validateManifest,
+  defineConstants,
   wgslPreludeLines,
   wrapGlsl,
   wrapWgsl,
@@ -165,6 +166,23 @@ describe('shader pack manifest', () => {
     expect(validateManifest({ language: 'hlsl', surfaces: {} })).toMatch(/language/);
     expect(validateManifest({ language: 'glsl', surfaces: { timeline: 'a.frag' } })).toMatch(/unknown surface/);
     expect(validateManifest({ language: 'glsl', surfaces: { background: '../../evil.frag' } })).toMatch(/inside the pack/);
+  });
+
+  it('checks "constants" are named numbers', () => {
+    const problem = (constants: unknown) => validateManifest({ language: 'glsl', surfaces: { background: 'bg.frag' }, constants });
+    expect(problem({ GLOW: 0.5, _count: 3 })).toBeNull();
+    expect(problem([1])).toMatch(/constants/);
+    expect(problem({ '1st': 1 })).toMatch(/1st/);
+    expect(problem({ gl_Thing: 1 })).toMatch(/gl_/);
+    expect(problem({ halluSecret: 1 })).toMatch(/hallu/);
+    expect(problem({ GLOW: '0.5' })).toMatch(/must be a number/);
+    expect(problem({ GLOW: Infinity })).toMatch(/must be a number/);
+  });
+
+  it('turns constants into float defines, keeping error lines on the author\'s file', () => {
+    expect(defineConstants('glsl', {})).toBe('');
+    expect(defineConstants('glsl', { A: 1, B: 0.25 })).toBe('#define A 1.0\n#define B 0.25\n#line 1\n');
+    expect(defineConstants('wgsl', { A: -2 })).toBe('const A : f32 = -2.0;\n');
   });
 
   it('accepts paintsPanelHeaders only as true or false', () => {

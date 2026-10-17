@@ -7,7 +7,10 @@
 //
 // manifest.json:
 //   { "name": "...", "language": "glsl" | "wgsl", "surfaces": { "background": <surface> },
-//     "paintsPanelHeaders": true }
+//     "paintsPanelHeaders": true, "constants": { "GLOW": 0.5 } }
+// "constants" are numbers the pack's shaders can use by name, so they can be tuned here without
+// editing code: each becomes a float #define in GLSL (use #ifndef to give it a default) or a
+// const f32 in WGSL, in every file of the pack.
 // Panel title bars are solid --bg-base unless the pack sets "paintsPanelHeaders", which makes
 // them transparent so the pack draws them (see iPanelInfo below).
 // A surface is either one mainImage file ("background": "image.frag") or a list of passes
@@ -66,6 +69,7 @@ const PASS_TYPES = ['fragment', 'compute', 'geometry'];
 const BLEND_MODES = ['replace', 'add', 'alpha'];
 const MAX_DRAW_COUNT = 16 * 1024 * 1024;
 const PASS_NAME = /^[A-Za-z_][\w-]*$/;
+const CONSTANT_NAME = /^(?!gl_|hallu)[A-Za-z_]\w*$/i;
 const MAX_CHANNELS = 4;
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif'];
 const MAX_STORAGE_BYTES = 1024 ** 3;
@@ -401,6 +405,13 @@ function validateManifest(manifest) {
   if (!LANGUAGES.includes(manifest.language)) return `"language" must be one of: ${LANGUAGES.join(', ')}`;
   if (!manifest.surfaces || typeof manifest.surfaces !== 'object') return '"surfaces" must map surface names to shaders';
   if (manifest.paintsPanelHeaders !== undefined && typeof manifest.paintsPanelHeaders !== 'boolean') return '"paintsPanelHeaders" must be true or false';
+  if (manifest.constants !== undefined) {
+    if (!manifest.constants || typeof manifest.constants !== 'object' || Array.isArray(manifest.constants)) return '"constants" must map names to numbers';
+    for (const [name, value] of Object.entries(manifest.constants)) {
+      if (!CONSTANT_NAME.test(name)) return `constant "${name}" must be a name of letters, digits and _, not starting with a digit, gl_ or hallu`;
+      if (typeof value !== 'number' || !Number.isFinite(value)) return `constant "${name}" must be a number`;
+    }
+  }
   for (const [surface, spec] of Object.entries(manifest.surfaces)) {
     if (!SURFACES.includes(surface)) return `unknown surface "${surface}" (supported: ${SURFACES.join(', ')})`;
     try {
@@ -458,7 +469,7 @@ async function translateGlsl(source, kind = 'image') {
  * Returns WGSL for one pass. lineOffset is how many boilerplate lines precede the author's
  * WGSL; it is null for GLSL, whose translated line numbers don't match the author's file.
  */
-async function compileFile(packId, language, fileName, kind) {
+async function compileFile(packId, language, fileName, kind, constants = {}) {
   const file = `${packId}/${fileName}`;
   let source;
   try {
@@ -470,19 +481,33 @@ async function compileFile(packId, language, fileName, kind) {
     return { ok: false, file, stage: 'source', errors: [{ line: null, message: `missing ${entryPointSignature(language, kind)}` }] };
   }
 
+  const defined = defineConstants(language, constants);
   if (language === 'wgsl') {
-    return { ok: true, file, wgsl: wrapWgsl(source, kind), lineOffset: wgslPreludeLines(kind), cached: false };
+    const lineOffset = wgslPreludeLines(kind) + defined.split('\n').length - 1;
+    return { ok: true, file, wgsl: wrapWgsl(defined + source, kind), lineOffset, cached: false };
   }
 
-  const result = await translateGlslCached(source, kind);
+  const result = await translateGlslCached(defined + source, kind);
   return result.ok ? { ...result, file, lineOffset: null } : { ...result, file };
 }
 
+/**
+ * The manifest's "constants" as source lines to put before a file: #defines in GLSL, followed by
+ * a #line so errors still point at the author's lines, or consts in WGSL. Always floats.
+ */
+function defineConstants(language, constants) {
+  const entries = Object.entries(constants);
+  if (entries.length === 0) return '';
+  const float = value => (Number.isInteger(value) ? `${value}.0` : String(value));
+  if (language === 'wgsl') return entries.map(([name, value]) => `const ${name} : f32 = ${float(value)};\n`).join('');
+  return `${entries.map(([name, value]) => `#define ${name} ${float(value)}\n`).join('')}#line 1\n`;
+}
+
 // Geometry passes also compile their vertex file
-async function compilePass(packId, language, pass) {
+async function compilePass(packId, language, pass, constants) {
   const [fragment, vertex] = await Promise.all([
-    compileFile(packId, language, pass.file, pass.kind),
-    pass.geometry ? compileFile(packId, language, pass.geometry.vertexFile, 'vertex') : null,
+    compileFile(packId, language, pass.file, pass.kind, constants),
+    pass.geometry ? compileFile(packId, language, pass.geometry.vertexFile, 'vertex', constants) : null,
   ]);
   if (!fragment.ok || !vertex) return fragment;
   if (!vertex.ok) return vertex;
@@ -515,7 +540,7 @@ async function compileSurface(packId, surface) {
   }
 
   const { passes, storage } = normalizeSurface(manifest.surfaces[surface]);
-  const compiled = await Promise.all(passes.map(pass => compilePass(packId, manifest.language, pass)));
+  const compiled = await Promise.all(passes.map(pass => compilePass(packId, manifest.language, pass, manifest.constants ?? {})));
   const failed = compiled.find(result => !result.ok);
   if (failed) return failed;
 
@@ -576,6 +601,7 @@ module.exports = {
   cacheKey,
   normalizeSurface,
   validateManifest,
+  defineConstants,
   translateGlsl,
   translateGlslCached,
   isPackId,
