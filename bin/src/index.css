@@ -299,15 +299,7 @@ html, body, #root {
 /* Group headers look like our panel headers: title on the left, the panel's controls on the right */
 .dockview-theme-hallu .dv-tabs-and-actions-container {
   position: relative;
-  border-bottom: var(--border-width) solid var(--border);
-  transition:
-    background-color var(--theme-transition-duration) var(--theme-transition-timing),
-    border-color var(--theme-transition-duration) var(--theme-transition-timing);
-}
-
-/* The focused panel, which gets the keyboard first (keyRouter), has a tinted header line */
-.dockview-theme-hallu .dv-groupview.dv-active-group > .dv-tabs-and-actions-container {
-  border-bottom-color: color-mix(in srgb, var(--highlight-color) 55%, var(--border));
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing);
 }
 .dockview-theme-hallu .dv-tab {
   padding: 0;

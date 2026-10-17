@@ -9,7 +9,7 @@ import { resetLayout } from '../dock/dockLayout';
 
 const HEADER_FONT_SIZE = 15;
 /** Added to the title bar colour's HSV value (0-1) for the line under it; 0 matches the title bar */
-const WINDOW_DASHBAR_UNDERLINE_BRIGHTEN_AMOUNT = 0.08;
+const WINDOW_DASHBAR_UNDERLINE_BRIGHTEN_AMOUNT = 0.0; //default is 0.08
 const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
 const HALLU_TEXT_MARGIN_LEFT = -5; //px between the webp's left edge and the app icon; negative overlaps
 const HALLU_TEXT_MARGIN_RIGHT = -4; //px between the webp's right edge and the fps counter; negative overlaps
