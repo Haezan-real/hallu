@@ -197,18 +197,26 @@ vec4 contentRect(int i) {
   return rect;
 }
 
-// How much of p a panel's title bar covers. The UI draws it solid unless the manifest sets
-// "paintsPanelHeaders"; painting it the same here keeps the look either way
-float headerMask(vec2 p, int i, float px) {
-  float header = float(iPanelInfo[i].z);
-  if (header < 1.0) return 0.0;
+// A panel's title bar strip along the top of its rect
+vec4 headerRect(int i) {
   vec4 rect = iPanels[i];
-  return linearstep(0.75 * px, -0.75 * px, panelSdf(p, vec4(rect.x, rect.y + rect.w - header, rect.z, header)));
+  float header = float(iPanelInfo[i].z);
+  return vec4(rect.x, rect.y + rect.w - header, rect.z, header);
 }
 
-// Matches the UI: the timeline's title bar is bgPanel like its body, the rest bgBase
-vec3 headerColor(int i) {
-  return iPanelInfo[i].x == KIND_TIMELINE ? iTheme.bgPanel.rgb : iTheme.bgBase.rgb;
+// How much of p a panel's title bar covers. The manifest sets "paintsPanelHeaders", so the UI
+// leaves them all transparent: the timeline's stays that way, so the dashboard's trim and
+// reflection show through it
+float headerMask(vec2 p, int i, float px) {
+  if (float(iPanelInfo[i].z) < 1.0 || iPanelInfo[i].x == KIND_TIMELINE) return 0.0;
+  return linearstep(0.75 * px, -0.75 * px, panelSdf(p, headerRect(i)));
+}
+
+// Title bars run from bgPanel at the top down into the frit and splitter colour below them
+vec3 headerColor(vec2 p, int i) {
+  vec4 rect = headerRect(i);
+  float down = clamp((rect.y + rect.w - p.y) / rect.w, 0.0, 1.0);
+  return mix(iTheme.bgPanel.rgb, iTheme.splitter.rgb, down);
 }
 
 bool isGlass(int i) {
@@ -309,7 +317,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   } else {
     col = base * shadowOn(p, first, ldir, px);
   }
-  if (first >= 0) col = mix(col, headerColor(first), headerMask(p, first, px));
+  if (first >= 0) col = mix(col, headerColor(p, first), headerMask(p, first, px));
 
   // Then the panels in front, where their edges reach p. The solid frit runs a little past each
   // pane, over the seam with whatever borders it
@@ -328,7 +336,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       col = mix(col + edge, fritColor, bleed);
       if (mask > 0.0) col = mix(col, pane(p, rect, sdf, px, shadowOn(p, i, ldir, px), ldir), mask);
     }
-    col = mix(col, headerColor(i), headerMask(p, i, px));
+    col = mix(col, headerColor(p, i), headerMask(p, i, px));
   }
 
   fragColor = vec4(col, 1.0);

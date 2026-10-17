@@ -7,12 +7,15 @@
 //
 // manifest.json:
 //   { "name": "...", "language": "glsl" | "wgsl", "surfaces": { "background": <surface> },
-//     "paintsPanelHeaders": true, "constants": { "GLOW": 0.5 } }
+//     "paintsPanelHeaders": true, "PaintHalluMasterTitleBar": true, "constants": { "GLOW": 0.5 } }
 // "constants" are numbers the pack's shaders can use by name, so they can be tuned here without
 // editing code: each becomes a float #define in GLSL (use #ifndef to give it a default) or a
 // const f32 in WGSL, in every file of the pack.
 // Panel title bars are solid --bg-base unless the pack sets "paintsPanelHeaders", which makes
 // them transparent so the pack draws them (see iPanelInfo below).
+// Hallu's own title bar along the top of the window is solid --bg-panel unless the pack sets
+// "PaintHalluMasterTitleBar", which makes it and its underline transparent and adds it to iPanels
+// as kind 10 so the pack can draw it. Its logo, buttons and window controls stay on top.
 // A surface is either one mainImage file ("background": "image.frag") or a list of passes
 // that run in order every frame, the last one drawing to the screen:
 //   { "storage": 1048576,                    optional storage buffer in bytes, shared by all passes
@@ -42,7 +45,8 @@
 // its kind rather than its index: iPanelInfo[i] is ivec4(kind, floating, header, 0) for iPanels[i],
 // where kind is 0 the media pool, 1 the viewer, 2 the timeline, 3 the timeline's track-label
 // column (inside the timeline), 4 Settings, 5 Styles, 6 Export, 7 the torus menu editor,
-// 8 the playneedle editor or 9 the color picker, floating is 1 for a panel in a floating
+// 8 the playneedle editor, 9 the color picker or 10 Hallu's title bar (only for packs that set
+// "PaintHalluMasterTitleBar"; always last, as the UI keeps it above every panel), floating is 1 for a panel in a floating
 // window, and header is the height in screen pixels of the title bar along the top of the rect
 // (0 for panels without one). The panel's content is the rect below it.
 // Entries run back to front, so where panels overlap the later one is drawn on top.
@@ -406,6 +410,7 @@ function validateManifest(manifest) {
   if (!LANGUAGES.includes(manifest.language)) return `"language" must be one of: ${LANGUAGES.join(', ')}`;
   if (!manifest.surfaces || typeof manifest.surfaces !== 'object') return '"surfaces" must map surface names to shaders';
   if (manifest.paintsPanelHeaders !== undefined && typeof manifest.paintsPanelHeaders !== 'boolean') return '"paintsPanelHeaders" must be true or false';
+  if (manifest.PaintHalluMasterTitleBar !== undefined && typeof manifest.PaintHalluMasterTitleBar !== 'boolean') return '"PaintHalluMasterTitleBar" must be true or false';
   if (manifest.constants !== undefined) {
     if (!manifest.constants || typeof manifest.constants !== 'object' || Array.isArray(manifest.constants)) return '"constants" must map names to numbers';
     for (const [name, value] of Object.entries(manifest.constants)) {
@@ -549,6 +554,7 @@ async function compileSurface(packId, surface) {
     ok: true,
     storage,
     paintsPanelHeaders: manifest.paintsPanelHeaders === true,
+    paintsMasterTitleBar: manifest.PaintHalluMasterTitleBar === true,
     cached: compiled.every(result => result.cached),
     passes: passes.map((pass, index) => ({
       ...pass,

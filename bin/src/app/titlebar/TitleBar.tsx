@@ -1,4 +1,5 @@
 //src/app/titlebar/TitleBar.tsx
+import { useEffect, useRef } from 'react';
 import { useDayNightIcon } from '../../shared/platform/useDayNightIcon';
 import { ICON_BASE_SIZE_PX, ICON_CORNER_RADIUS_PX } from '../../shared/platform/appIcon';
 import halluTextImage from '@assets/icons/app/hallu_text.webp';
@@ -6,6 +7,8 @@ import { useFrameRate } from './useFrameRate';
 import MenuButtons from './MenuButtons';
 import WindowControls from './WindowControls';
 import { resetLayout } from '../dock/dockLayout';
+import { registerShaderPanel, SHADER_PANEL_KIND } from '../../features/shaders/shaderPanels';
+import { useShaderPaintsMasterTitleBar } from '../../features/shaders/shaderOptIns';
 
 const HEADER_FONT_SIZE = 15;
 /** Added to the title bar colour's HSV value (0-1) for the line under it; 0 matches the title bar */
@@ -23,9 +26,19 @@ function randomizePressDirection(event: React.PointerEvent) {
 export default function TitleBar() {
   const fps = useFrameRate();
   const appIcon = useDayNightIcon();
+  const headerRef = useRef<HTMLElement>(null);
+  const shaderPaintsTitleBar = useShaderPaintsMasterTitleBar();
+
+  // Only packs that opted in see it, so the rest never draw a panel under the opaque bar
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!shaderPaintsTitleBar || !header) return;
+    return registerShaderPanel(header, SHADER_PANEL_KIND.masterTitleBar);
+  }, [shaderPaintsTitleBar]);
 
   return (
     <header
+      ref={headerRef}
       className="app-header"
       onPointerDownCapture={randomizePressDirection}
       style={{ '--window-dashbar-underline-brighten': WINDOW_DASHBAR_UNDERLINE_BRIGHTEN_AMOUNT } as React.CSSProperties}

@@ -1277,6 +1277,11 @@ html, body, #root {
 .app-header {
   z-index: 201;
 }
+/* The pack paints it, underline included ("PaintHalluMasterTitleBar" in its manifest) */
+.shader-paints-master-title-bar .app-header {
+  background: transparent;
+  border-bottom-color: transparent;
+}
 
 .modal-box {
   background: var(--bg-elevated);

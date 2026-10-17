@@ -4,15 +4,20 @@ import { showToast } from '../../shared/ui/Toast';
 import type { ShaderCompileError } from '../../shared/platform/electronApi';
 import { SHADER_CHANGE_EVENT, getActiveShader } from './shaderRegistry';
 import { ShaderBackgroundRenderer } from './shaderBackgroundRenderer';
+import { setShaderPaintsMasterTitleBar } from './shaderOptIns';
 
 const SURFACE = 'background';
 /** On <html> while a shader is drawing, so panels only turn see-through when there's something behind them */
 const ACTIVE_CLASS = 'shader-background-active';
 /** On <html> while the drawing pack paints the panels' title bars itself, so they turn transparent */
 const PAINTS_HEADERS_CLASS = 'shader-paints-panel-headers';
-const setActive = (active: boolean, paintsPanelHeaders = false) => {
+/** On <html> while the drawing pack paints Hallu's own title bar, so it turns transparent */
+const PAINTS_MASTER_TITLE_BAR_CLASS = 'shader-paints-master-title-bar';
+const setActive = (active: boolean, paintsPanelHeaders = false, paintsMasterTitleBar = false) => {
   document.documentElement.classList.toggle(ACTIVE_CLASS, active);
   document.documentElement.classList.toggle(PAINTS_HEADERS_CLASS, active && paintsPanelHeaders);
+  document.documentElement.classList.toggle(PAINTS_MASTER_TITLE_BAR_CLASS, active && paintsMasterTitleBar);
+  setShaderPaintsMasterTitleBar(active && paintsMasterTitleBar);
 };
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
@@ -59,7 +64,7 @@ export default function ShaderBackground() {
       const failure = await renderer.setProgram(result, file => api.readShaderAsset(packId, file));
       if (disposed) return;
       if (failure) reportShaderErrors(failure.file, failure.errors);
-      else setActive(true, result.paintsPanelHeaders);
+      else setActive(true, result.paintsPanelHeaders, result.paintsMasterTitleBar);
     };
 
     const start = async () => {

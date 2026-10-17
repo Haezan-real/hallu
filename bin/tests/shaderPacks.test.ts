@@ -193,6 +193,14 @@ describe('shader pack manifest', () => {
     expect(problem('yes')).toMatch(/paintsPanelHeaders/);
   });
 
+  it('accepts PaintHalluMasterTitleBar only as true or false', () => {
+    const problem = (PaintHalluMasterTitleBar: unknown) => validateManifest({ language: 'glsl', surfaces: { background: 'bg.frag' }, PaintHalluMasterTitleBar });
+    expect(problem(true)).toBeNull();
+    expect(problem(false)).toBeNull();
+    expect(problem(undefined)).toBeNull();
+    expect(problem(1)).toMatch(/PaintHalluMasterTitleBar/);
+  });
+
   it('rejects broken pass lists', () => {
     const problem = (passes: unknown[], storage?: number) => validateManifest({ language: 'glsl', surfaces: { background: { passes, storage } } });
     expect(problem([])).toMatch(/non-empty/);

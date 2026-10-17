@@ -35,7 +35,7 @@ export interface CompiledShaderPass {
   geometry: ShaderGeometry | null;
 }
 
-export type CompiledShaderSurface = { ok: true; passes: CompiledShaderPass[]; storage: number; paintsPanelHeaders: boolean; cached: boolean };
+export type CompiledShaderSurface = { ok: true; passes: CompiledShaderPass[]; storage: number; paintsPanelHeaders: boolean; paintsMasterTitleBar: boolean; cached: boolean };
 
 export type ShaderCompileResult =
   | CompiledShaderSurface

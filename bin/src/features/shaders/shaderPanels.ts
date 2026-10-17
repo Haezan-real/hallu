@@ -22,6 +22,7 @@ export const SHADER_PANEL_KIND = {
   timeline: 2,
   timelineLabels: 3,
   ...TOOL_SHADER_PANEL_KIND,
+  masterTitleBar: 10,
 } as const;
 
 export type ShaderPanelKind = typeof SHADER_PANEL_KIND[keyof typeof SHADER_PANEL_KIND];
@@ -43,6 +44,8 @@ interface ShaderPanel {
 }
 
 const GRID_LAYER: ShaderPanelLayer = { floating: false, depth: 0 };
+/** Hallu's title bar is drawn above every panel, floating windows included */
+const MASTER_TITLE_BAR_LAYER: ShaderPanelLayer = { floating: false, depth: Number.MAX_SAFE_INTEGER };
 
 const panels: ShaderPanel[] = [];
 let layerOf: (element: HTMLElement) => ShaderPanelLayer | undefined = () => undefined;
@@ -50,7 +53,7 @@ let layerOf: (element: HTMLElement) => ShaderPanelLayer | undefined = () => unde
 /** Recomputes every panel's layer and sorts them back to front */
 export function refreshShaderPanelLayers() {
   for (const panel of panels) {
-    panel.layer = layerOf(panel.element) ?? GRID_LAYER;
+    panel.layer = panel.kind === SHADER_PANEL_KIND.masterTitleBar ? MASTER_TITLE_BAR_LAYER : layerOf(panel.element) ?? GRID_LAYER;
     panel.nesting = panels.filter((other) => other !== panel && other.element.contains(panel.element)).length;
   }
   panels.sort((a, b) => a.layer.depth - b.layer.depth || a.nesting - b.nesting);
