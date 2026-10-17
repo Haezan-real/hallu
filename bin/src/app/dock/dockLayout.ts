@@ -31,10 +31,40 @@ function readPercent(key: string, fallback: number, min: number, max: number): n
   }
 }
 
+interface SerializedNode {
+  type: 'branch' | 'leaf';
+  data: SerializedNode[] | { views?: string[] };
+}
+
+/**
+ * Every group holds at least one panel and every panel is in a group. A dock caught mid-teardown
+ * (e.g. while hot reloading) serializes empty groups with all its panels left over; saving that
+ * would come back as empty groups with every panel closed.
+ */
+export function isConsistentLayout(layout: SerializedDockview): boolean {
+  const groups: { views?: string[] }[] = [];
+  const walk = (node: SerializedNode) => {
+    if (node.type === 'leaf') groups.push(node.data as { views?: string[] });
+    else (node.data as SerializedNode[]).forEach(walk);
+  };
+  try {
+    walk(layout.grid.root as unknown as SerializedNode);
+    for (const floating of layout.floatingGroups ?? []) groups.push(floating.data);
+    for (const popout of layout.popoutGroups ?? []) groups.push(popout.data);
+  } catch {
+    return false;
+  }
+  const placed = new Set(groups.flatMap(group => group.views ?? []));
+  const isEmptyRoot = groups.length === 1 && placed.size === 0;
+  return (isEmptyRoot || groups.every(group => (group.views?.length ?? 0) > 0))
+    && Object.keys(layout.panels ?? {}).every(id => placed.has(id));
+}
+
 function readSavedLayout(): SerializedDockview | null {
   try {
     const raw = window.localStorage.getItem(LAYOUT_KEY);
-    return raw ? JSON.parse(raw) as SerializedDockview : null;
+    const layout = raw ? JSON.parse(raw) as SerializedDockview : null;
+    return layout && isConsistentLayout(layout) ? layout : null;
   } catch {
     return null;
   }
@@ -66,8 +96,10 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function saveLayout(api: DockviewApi) {
   clearTimeout(saveTimer);
   saveTimer = undefined;
+  const layout = api.toJSON();
+  if (!isConsistentLayout(layout)) return;
   try {
-    window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(api.toJSON()));
+    window.localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
     window.localStorage.removeItem(LEGACY_LEFT_WIDTH_KEY);
     window.localStorage.removeItem(LEGACY_TIMELINE_HEIGHT_KEY);
   } catch (error) {
