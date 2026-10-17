@@ -8,6 +8,8 @@ import WindowControls from './WindowControls';
 import { resetLayout } from '../dock/dockLayout';
 
 const HEADER_FONT_SIZE = 15;
+/** Added to the title bar colour's HSV value (0-1) for the line under it; 0 matches the title bar */
+const WINDOW_DASHBAR_UNDERLINE_BRIGHTEN_AMOUNT = 0.08;
 const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
 const HALLU_TEXT_MARGIN_LEFT = -5; //px between the webp's left edge and the app icon; negative overlaps
 const HALLU_TEXT_MARGIN_RIGHT = -4; //px between the webp's right edge and the fps counter; negative overlaps
@@ -23,7 +25,11 @@ export default function TitleBar() {
   const appIcon = useDayNightIcon();
 
   return (
-    <header className="app-header" onPointerDownCapture={randomizePressDirection}>
+    <header
+      className="app-header"
+      onPointerDownCapture={randomizePressDirection}
+      style={{ '--window-dashbar-underline-brighten': WINDOW_DASHBAR_UNDERLINE_BRIGHTEN_AMOUNT } as React.CSSProperties}
+    >
       {/* gap is 0 so the hallu_text margins are the only spacing around it */}
       <div className="app-logo" style={{ gap: 0 }}>
         <img
@@ -43,13 +49,15 @@ export default function TitleBar() {
           draggable={false}
           style={{
             width: HALLU_TEXT_SIZE,
-            height: HALLU_TEXT_SIZE,
+            // Cropped to the header: overflowing it put the image's layer over the dock and
+            // shader canvas below, which made it flash. Cover keeps it drawn at 64x64, centred.
+            height: `min(${HALLU_TEXT_SIZE}px, var(--bar-height-lg))`,
+            objectFit: 'cover',
             marginLeft: HALLU_TEXT_MARGIN_LEFT,
             marginRight: HALLU_TEXT_MARGIN_RIGHT,
             flexShrink: 0,
             alignSelf: 'center',
             transformOrigin: 'center',
-            // The image is taller than the header; its transparent overflow must not block clicks below.
             pointerEvents: 'none',
           }}
         />

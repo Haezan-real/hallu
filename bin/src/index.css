@@ -116,12 +116,23 @@ html, body, #root {
   padding: 0 var(--space-lg);
   height: var(--bar-height-lg);
   background: var(--bg-panel);
-  border-bottom: var(--border-width) solid var(--border);
+  /* The title bar colour with its HSV value raised: scaling every channel by newV / V keeps hue
+     and saturation. The 0.001s keep black from dividing by zero, brightening it to grey instead */
+  --window-dashbar-underline: rgb(from var(--bg-panel)
+    calc((r + 0.001) * min(255, max(r, g, b) + var(--window-dashbar-underline-brighten, 0) * 255) / (max(r, g, b) + 0.001))
+    calc((g + 0.001) * min(255, max(r, g, b) + var(--window-dashbar-underline-brighten, 0) * 255) / (max(r, g, b) + 0.001))
+    calc((b + 0.001) * min(255, max(r, g, b) + var(--window-dashbar-underline-brighten, 0) * 255) / (max(r, g, b) + 0.001))
+    / alpha);
+  border-bottom: var(--border-width) solid var(--window-dashbar-underline);
   flex-shrink: 0;
   touch-action: none;
   -webkit-app-region: drag;
   -webkit-user-select: none;
   position: relative;
+  /* Its own stable compositing layer: otherwise the buttons' press transforms can regroup the
+     header's layers for a frame, flashing it against the shader canvas behind */
+  isolation: isolate;
+  will-change: transform;
   transition:
     background var(--theme-transition-duration) var(--theme-transition-timing),
     border-color var(--theme-transition-duration) var(--theme-transition-timing);
@@ -179,6 +190,13 @@ html, body, #root {
 .app-header .app-logo {
   position: relative;
   z-index: 2;
+  isolation: isolate;
+}
+
+/* Kept on layers of their own: the icon's hover and press transforms change what overlaps it,
+   which would otherwise move the hallu text and fps counter on and off layers, flashing them */
+.app-header .app-logo > * {
+  will-change: transform;
 }
 
 .app-logo {

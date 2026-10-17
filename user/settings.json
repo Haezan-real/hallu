@@ -8,10 +8,10 @@
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
-  "hallu.styles.active": "default/cyberpunk",
+  "hallu.styles.active": "default/animated/cyberpunk",
   "hallu.modal.styles.pageState": {
-    "stylePage": "default",
-    "activeStyle": "default/cyberpunk"
+    "stylePage": "default/animated",
+    "activeStyle": "default/animated/cyberpunk"
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.corePanels": {
@@ -21,7 +21,7 @@
       "direction": "left",
       "size": {
         "width": 337,
-        "height": 622
+        "height": 312.6666666666667
       }
     },
     "viewer": {
@@ -30,7 +30,7 @@
       "direction": "right",
       "size": {
         "width": 1361,
-        "height": 622
+        "height": 312.6666666666667
       }
     },
     "timeline": {
@@ -38,7 +38,7 @@
       "direction": "below",
       "size": {
         "width": 1706,
-        "height": 353
+        "height": 94.66666666666667
       }
     }
   },
@@ -51,9 +51,9 @@
     "settings": {
       "type": "floating",
       "box": {
-        "x": 672,
-        "y": 176,
-        "width": 480,
+        "x": 600,
+        "y": 203,
+        "width": 449,
         "height": 520
       }
     },
@@ -62,7 +62,7 @@
       "direction": "above",
       "size": {
         "width": 1706,
-        "height": 622
+        "height": 559.6666666666666
       }
     },
     "playneedleEditor": {
@@ -111,56 +111,61 @@
         "type": "branch",
         "data": [
           {
+            "type": "leaf",
+            "data": {
+              "views": [
+                "tool.styles"
+              ],
+              "activeView": "tool.styles",
+              "id": "87"
+            },
+            "size": 559.6666666666666
+          },
+          {
             "type": "branch",
             "data": [
               {
-                "type": "branch",
-                "data": [
-                  {
-                    "type": "leaf",
-                    "data": {
-                      "views": [
-                        "mediaPool"
-                      ],
-                      "activeView": "mediaPool",
-                      "id": "43"
-                    },
-                    "size": 337
-                  },
-                  {
-                    "type": "leaf",
-                    "data": {
-                      "views": [
-                        "viewer"
-                      ],
-                      "activeView": "viewer",
-                      "id": "44"
-                    },
-                    "size": 1361
-                  }
-                ],
-                "size": 622
+                "type": "leaf",
+                "data": {
+                  "views": [
+                    "mediaPool"
+                  ],
+                  "activeView": "mediaPool",
+                  "id": "76"
+                },
+                "size": 337
               },
               {
                 "type": "leaf",
                 "data": {
                   "views": [
-                    "timeline"
+                    "viewer"
                   ],
-                  "activeView": "timeline",
-                  "id": "42"
+                  "activeView": "viewer",
+                  "id": "77"
                 },
-                "size": 353
+                "size": 1361
               }
             ],
-            "size": 1706
+            "size": 312.6666666666667
+          },
+          {
+            "type": "leaf",
+            "data": {
+              "views": [
+                "timeline"
+              ],
+              "activeView": "timeline",
+              "id": "75"
+            },
+            "size": 94.66666666666667
           }
         ],
-        "size": 983
+        "size": 1706
       },
       "width": 1706,
       "height": 983,
-      "orientation": "HORIZONTAL"
+      "orientation": "VERTICAL"
     },
     "panels": {
       "timeline": {
@@ -180,9 +185,19 @@
         "contentComponent": "viewer",
         "tabComponent": "props.defaultTabComponent",
         "title": "Viewer"
+      },
+      "tool.styles": {
+        "id": "tool.styles",
+        "contentComponent": "tool",
+        "tabComponent": "props.defaultTabComponent",
+        "params": {
+          "kind": "styles",
+          "params": {}
+        },
+        "title": "Styles"
       }
     },
-    "activeGroup": "44"
+    "activeGroup": "75"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,
