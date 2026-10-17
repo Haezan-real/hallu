@@ -5,6 +5,7 @@ import halluTextImage from '@assets/icons/app/hallu_text.webp';
 import { useFrameRate } from './useFrameRate';
 import MenuButtons from './MenuButtons';
 import WindowControls from './WindowControls';
+import { resetLayout } from '../dock/dockLayout';
 
 const HEADER_FONT_SIZE = 15;
 const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
@@ -19,7 +20,15 @@ export default function TitleBar() {
     <header className="app-header">
       {/* gap is 0 so the hallu_text margins are the only spacing around it */}
       <div className="app-logo" style={{ gap: 0 }}>
-        <img src={appIcon} alt="Hallu" style={{ width: ICON_BASE_SIZE_PX, height: ICON_BASE_SIZE_PX, borderRadius: ICON_CORNER_RADIUS_PX, transform: 'translateY(0px)', }} />
+        <img
+          src={appIcon}
+          alt="Hallu"
+          className="title-app-icon"
+          title="Double-click to reset the layout"
+          draggable={false}
+          onDoubleClick={resetLayout}
+          style={{ width: ICON_BASE_SIZE_PX, height: ICON_BASE_SIZE_PX, borderRadius: ICON_CORNER_RADIUS_PX }}
+        />
 
         {/*Hallu title*/}
         <img

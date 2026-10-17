@@ -157,6 +157,16 @@ html, body, #root {
 .title-menu .panel-toggle { transition: background 0.12s, var(--title-button-grow-transition); }
 .title-menu .icon-btn:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
 
+/* Out of the window's drag region, which would swallow the double-click and maximize the window instead */
+.title-app-icon {
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.title-app-icon:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
+
 .app-header .app-logo {
   position: relative;
   z-index: 2;

@@ -1,7 +1,7 @@
 //src/app/titlebar/MenuButtons.tsx
 import { OpenSettings } from '../../modals/settings/Settings';
 import { OpenStyles } from '../../modals/styles/StylesModal';
-import { CORE_PANELS, resetLayout, type CorePanelId } from '../dock/dockLayout';
+import { CORE_PANELS, type CorePanelId } from '../dock/dockLayout';
 import { corePanels, useCorePanelOpen } from '../dock/corePanels';
 import { closePanel, usePanelOpen } from '../../shared/panels/openPanel';
 
@@ -40,7 +40,7 @@ function CorePanelButton({ id }: { id: CorePanelId }) {
   );
 }
 
-// Buttons that toggle the core panels, reset the panel layout and open the Styles and Settings modals
+// Buttons that toggle the core panels and the Styles and Settings modals
 export default function MenuButtons({ style }: { style?: React.CSSProperties }) {
   const stylesOpen = usePanelOpen('styles');
   const settingsOpen = usePanelOpen('settings');
@@ -49,12 +49,6 @@ export default function MenuButtons({ style }: { style?: React.CSSProperties }) 
       <CorePanelButton id="mediaPool" />
       <CorePanelButton id="viewer" />
       <CorePanelButton id="timeline" />
-      <button className="icon-btn" onClick={resetLayout} title="Reset layout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="1"/>
-          <path d="M3 15h18 M9 3v12"/>
-        </svg>
-      </button>
       <button
         className={`icon-btn panel-toggle${stylesOpen ? ' is-open' : ''}`}
         onClick={() => (stylesOpen ? closePanel('styles') : OpenStyles())}
