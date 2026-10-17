@@ -1,8 +1,19 @@
 //src/features/shaders/shaderPanels.ts
 import { useEffect, type RefObject } from 'react';
+import type { PanelKind } from '../../shared/panels/panelPolicies';
 
 /** Mirrors MAX_PANELS in shaderPacks.cjs */
 export const MAX_SHADER_PANELS = 16;
+
+// Adding a tool PanelKind without a number here is a compile-time error
+const TOOL_SHADER_PANEL_KIND = {
+  settings: 4,
+  styles: 5,
+  export: 6,
+  torusMenuEditor: 7,
+  playneedleEditor: 8,
+  colorPicker: 9,
+} as const satisfies Record<PanelKind, number>;
 
 /** The kind packs read from iPanelInfo[i].x; documented in shaderPacks.cjs, so keep the numbers stable */
 export const SHADER_PANEL_KIND = {
@@ -10,7 +21,7 @@ export const SHADER_PANEL_KIND = {
   viewer: 1,
   timeline: 2,
   timelineLabels: 3,
-  tool: 4,
+  ...TOOL_SHADER_PANEL_KIND,
 } as const;
 
 export type ShaderPanelKind = typeof SHADER_PANEL_KIND[keyof typeof SHADER_PANEL_KIND];

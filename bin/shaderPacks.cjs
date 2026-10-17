@@ -41,7 +41,8 @@
 // from the bottom-left corner like fragCoord. They follow the dock layout, so find a panel by
 // its kind rather than its index: iPanelInfo[i] is ivec4(kind, floating, header, 0) for iPanels[i],
 // where kind is 0 the media pool, 1 the viewer, 2 the timeline, 3 the timeline's track-label
-// column (inside the timeline) or 4 a tool panel, floating is 1 for a panel in a floating
+// column (inside the timeline), 4 Settings, 5 Styles, 6 Export, 7 the torus menu editor,
+// 8 the playneedle editor or 9 the color picker, floating is 1 for a panel in a floating
 // window, and header is the height in screen pixels of the title bar along the top of the rect
 // (0 for panels without one). The panel's content is the rect below it.
 // Entries run back to front, so where panels overlap the later one is drawn on top.

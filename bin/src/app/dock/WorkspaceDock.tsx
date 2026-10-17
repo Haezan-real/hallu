@@ -94,7 +94,7 @@ function TimelinePanel({ api }: IDockviewPanelProps) {
 /** Any tool from the panel registry (openPanel); a kind with no definition renders empty */
 function ToolPanel({ api, params }: IDockviewPanelProps<ToolPanelData>) {
   const ref = useRef<HTMLDivElement>(null);
-  useShaderPanel(ref, SHADER_PANEL_KIND.tool, SHADER_FRAME);
+  useShaderPanel(ref, SHADER_PANEL_KIND[params.kind], SHADER_FRAME);
   const definition = panelRegistry.definition(params.kind);
   const Tool = definition?.component;
   return (

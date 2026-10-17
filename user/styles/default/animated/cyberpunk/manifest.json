@@ -3,7 +3,7 @@
   "language": "glsl",
   "paintsPanelHeaders": true,
   "constants": {
-    "REFLECTION_REACH": 10
+    "REFLECTION_REACH": 1
   },
   "surfaces": {
     "background": {
