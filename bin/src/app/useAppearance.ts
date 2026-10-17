@@ -25,6 +25,15 @@ function applyTitleButtonHoverGrow(pct: number) {
   setCssVar('--title-button-hover-scale', String(1 + pct / 100));
 }
 
+/** A fraction of the grown size, so the CSS multiplies it onto the hover scale */
+function applyTitleButtonClickShrink(pct: number) {
+  setCssVar('--title-button-press-scale', String(1 - pct / 100));
+}
+
+function applyTitleButtonClickRotate(degrees: number) {
+  setCssVar('--title-button-press-rotate', `${degrees}deg`);
+}
+
 function applyGuiScale(pct: number) {
   setCssVar('--gui-scale', String(pct / 100));
 }
@@ -42,8 +51,12 @@ export function useAppearance() {
     applyOverlayDarken(readSetting('elevatedPanelDarken'));
     applyOverlayBlur(readSetting('elevatedPanelBlur'));
     applyTitleButtonHoverGrow(readSetting('titleButtonHoverGrow'));
+    applyTitleButtonClickShrink(readSetting('titleButtonClickShrink'));
+    applyTitleButtonClickRotate(readSetting('titleButtonClickRotate'));
 
     const unsubscribers = [
+      onSettingChange('titleButtonClickShrink', applyTitleButtonClickShrink),
+      onSettingChange('titleButtonClickRotate', applyTitleButtonClickRotate),
       onSettingChange('titleButtonHoverGrow', applyTitleButtonHoverGrow),
       onSettingChange('guiScale', applyGuiScale),
       onSettingChange('colorTransitionDuration', applyTransitionDuration),

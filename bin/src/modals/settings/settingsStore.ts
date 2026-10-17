@@ -50,6 +50,8 @@ export const SETTINGS_SCHEMA: SettingSchema = {
   torusDelay: number('torusDelay', -1000, 1000),
   torusHoverScale: number('torusHoverScale', 1, 1.5),
   titleButtonHoverGrow: number('titleButtonHoverGrow', 0, 50),
+  titleButtonClickShrink: number('titleButtonClickShrink', 0, 50),
+  titleButtonClickRotate: number('titleButtonClickRotate', 0, 180),
 };
 
 function storageKey(key: SettingKey): string {

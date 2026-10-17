@@ -155,7 +155,17 @@ html, body, #root {
 
 .title-menu .icon-btn { transition: background 0.12s, color 0.12s, var(--title-button-grow-transition); }
 .title-menu .panel-toggle { transition: background 0.12s, var(--title-button-grow-transition); }
-.title-menu .icon-btn:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
+.title-menu .icon-btn:hover,
+.title-app-icon:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
+
+/* Held down: shrinks from the grown size and turns, the whole button so its hitbox and hover box turn with it.
+   --title-press-direction is 1 or -1, picked at random on each press by the title bar */
+.title-menu .icon-btn:active,
+.title-app-icon:active {
+  transform:
+    scale(calc(var(--title-button-hover-scale, 1.15) * var(--title-button-press-scale, 0.9)))
+    rotate(calc(var(--title-press-direction, 1) * var(--title-button-press-rotate, 10deg)));
+}
 
 /* Out of the window's drag region, which would swallow the double-click and maximize the window instead */
 .title-app-icon {
@@ -165,7 +175,6 @@ html, body, #root {
   will-change: transform;
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.title-app-icon:hover { transform: scale(var(--title-button-hover-scale, 1.15)); }
 
 .app-header .app-logo {
   position: relative;

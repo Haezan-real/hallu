@@ -33,6 +33,8 @@ export interface SettingsValues {
   torusDelay: number;
   torusHoverScale: number;
   titleButtonHoverGrow: number;
+  titleButtonClickShrink: number;
+  titleButtonClickRotate: number;
 }
 
 export const DEFAULT_SETTINGS: SettingsValues = {
@@ -63,6 +65,8 @@ export const DEFAULT_SETTINGS: SettingsValues = {
   torusDelay: 0,
   torusHoverScale: 1.08,
   titleButtonHoverGrow: 15,
+  titleButtonClickShrink: 10,
+  titleButtonClickRotate: 10,
 };
 
 export const DEFAULT_LAYOUT = {

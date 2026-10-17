@@ -12,12 +12,18 @@ const HALLU_TEXT_SIZE = 64; //px, width and height of the square hallu_text.webp
 const HALLU_TEXT_MARGIN_LEFT = -5; //px between the webp's left edge and the app icon; negative overlaps
 const HALLU_TEXT_MARGIN_RIGHT = -4; //px between the webp's right edge and the fps counter; negative overlaps
 
+/** Each press of a title bar button turns it clockwise or anticlockwise at random */
+function randomizePressDirection(event: React.PointerEvent) {
+  const button = (event.target as Element).closest<HTMLElement>('.title-menu .icon-btn, .title-app-icon');
+  button?.style.setProperty('--title-press-direction', Math.random() < 0.5 ? '1' : '-1');
+}
+
 export default function TitleBar() {
   const fps = useFrameRate();
   const appIcon = useDayNightIcon();
 
   return (
-    <header className="app-header">
+    <header className="app-header" onPointerDownCapture={randomizePressDirection}>
       {/* gap is 0 so the hallu_text margins are the only spacing around it */}
       <div className="app-logo" style={{ gap: 0 }}>
         <img
