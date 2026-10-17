@@ -8,10 +8,10 @@
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
-  "hallu.styles.active": "default/plain/monokai",
+  "hallu.styles.active": "default/animated/aquatic",
   "hallu.modal.styles.pageState": {
-    "stylePage": "default/plain",
-    "activeStyle": "default/plain/monokai"
+    "stylePage": "default/animated",
+    "activeStyle": "default/animated/aquatic"
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.corePanels": {
@@ -185,7 +185,7 @@
         "title": "Timeline"
       }
     },
-    "activeGroup": "5"
+    "activeGroup": "4"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,

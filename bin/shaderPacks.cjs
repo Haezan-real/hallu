@@ -8,7 +8,7 @@
 // manifest.json:
 //   { "name": "...", "language": "glsl" | "wgsl", "surfaces": { "background": <surface> },
 //     "paintsPanelHeaders": true }
-// Panel title bars are solid --bg-panel unless the pack sets "paintsPanelHeaders", which makes
+// Panel title bars are solid --bg-base unless the pack sets "paintsPanelHeaders", which makes
 // them transparent so the pack draws them (see iPanelInfo below).
 // A surface is either one mainImage file ("background": "image.frag") or a list of passes
 // that run in order every frame, the last one drawing to the screen:

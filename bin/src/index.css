@@ -240,8 +240,7 @@ html, body, #root {
 .dockview-theme-hallu {
   --dv-background-color: transparent;
   --dv-group-view-background-color: transparent;
-  /* Same as the app's title bar */
-  --dv-tabs-and-actions-container-background-color: var(--bg-panel);
+  --dv-tabs-and-actions-container-background-color: var(--bg-base);
   --dv-tabs-and-actions-container-height: var(--bar-height-md);
   --dv-tabs-and-actions-container-font-size: inherit;
   --dv-tab-font-size: inherit;
@@ -402,7 +401,7 @@ html, body, #root {
 }
 /* Panel title bars stay solid unless the pack paints them itself ("paintsPanelHeaders" in its manifest) */
 .dockview-theme-hallu .dv-groupview > .dv-tabs-and-actions-container {
-  background: var(--bg-panel);
+  background: var(--bg-base);
 }
 .shader-paints-panel-headers .dockview-theme-hallu .dv-groupview > .dv-tabs-and-actions-container {
   background: transparent;

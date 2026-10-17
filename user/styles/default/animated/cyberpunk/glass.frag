@@ -304,7 +304,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   } else {
     col = base * shadowOn(p, first, ldir, px);
   }
-  if (first >= 0) col = mix(col, iTheme.bgPanel.rgb, headerMask(p, first, px));
+  if (first >= 0) col = mix(col, iTheme.bgBase.rgb, headerMask(p, first, px));
 
   // Then the panels in front, where their edges reach p. The solid frit runs a little past each
   // pane, over the seam with whatever borders it
@@ -323,7 +323,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
       col = mix(col + edge, fritColor, bleed);
       if (mask > 0.0) col = mix(col, pane(p, rect, sdf, px, shadowOn(p, i, ldir, px), ldir), mask);
     }
-    col = mix(col, iTheme.bgPanel.rgb, headerMask(p, i, px));
+    col = mix(col, iTheme.bgBase.rgb, headerMask(p, i, px));
   }
 
   fragColor = vec4(col, 1.0);
