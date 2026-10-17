@@ -8,7 +8,12 @@ import { ShaderBackgroundRenderer } from './shaderBackgroundRenderer';
 const SURFACE = 'background';
 /** On <html> while a shader is drawing, so panels only turn see-through when there's something behind them */
 const ACTIVE_CLASS = 'shader-background-active';
-const setActive = (active: boolean) => document.documentElement.classList.toggle(ACTIVE_CLASS, active);
+/** On <html> while the drawing pack paints the panels' title bars itself, so they turn transparent */
+const PAINTS_HEADERS_CLASS = 'shader-paints-panel-headers';
+const setActive = (active: boolean, paintsPanelHeaders = false) => {
+  document.documentElement.classList.toggle(ACTIVE_CLASS, active);
+  document.documentElement.classList.toggle(PAINTS_HEADERS_CLASS, active && paintsPanelHeaders);
+};
 
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
 
@@ -54,7 +59,7 @@ export default function ShaderBackground() {
       const failure = await renderer.setProgram(result, file => api.readShaderAsset(packId, file));
       if (disposed) return;
       if (failure) reportShaderErrors(failure.file, failure.errors);
-      else setActive(true);
+      else setActive(true, result.paintsPanelHeaders);
     };
 
     const start = async () => {

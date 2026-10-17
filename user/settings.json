@@ -8,10 +8,10 @@
   "hallu.settings.elevatedPanelBlurAmount": 0,
   "hallu.settings.playneedle_j": 0.049,
   "hallu.settings.playneedle_h_r": 1,
-  "hallu.styles.active": "default/animated/cyberpunk",
+  "hallu.styles.active": "default/plain/monokai",
   "hallu.modal.styles.pageState": {
-    "stylePage": "default/animated",
-    "activeStyle": "default/animated/cyberpunk"
+    "stylePage": "default/plain",
+    "activeStyle": "default/plain/monokai"
   },
   "hallu.settings.scrollAmount": 100,
   "hallu.layout.corePanels": {
@@ -20,8 +20,8 @@
       "referencePanel": "viewer",
       "direction": "left",
       "size": {
-        "width": 337,
-        "height": 622.35
+        "width": 486,
+        "height": 487
       }
     },
     "viewer": {
@@ -29,8 +29,8 @@
       "referencePanel": "mediaPool",
       "direction": "right",
       "size": {
-        "width": 1361,
-        "height": 622.35
+        "width": 1212,
+        "height": 487
       }
     },
     "timeline": {
@@ -38,7 +38,7 @@
       "direction": "below",
       "size": {
         "width": 1706,
-        "height": 352.65
+        "height": 488
       }
     }
   },
@@ -62,7 +62,7 @@
       "direction": "above",
       "size": {
         "width": 1706,
-        "height": 559.6666666666666
+        "height": 245.33332316080728
       }
     },
     "playneedleEditor": {
@@ -131,7 +131,7 @@
                   "activeView": "mediaPool",
                   "id": "5"
                 },
-                "size": 337
+                "size": 486
               },
               {
                 "type": "leaf",
@@ -142,10 +142,10 @@
                   "activeView": "viewer",
                   "id": "6"
                 },
-                "size": 1361
+                "size": 1212
               }
             ],
-            "size": 622.35
+            "size": 487
           },
           {
             "type": "leaf",
@@ -156,7 +156,7 @@
               "activeView": "timeline",
               "id": "4"
             },
-            "size": 352.65
+            "size": 488
           }
         ],
         "size": 1706
@@ -166,12 +166,6 @@
       "orientation": "VERTICAL"
     },
     "panels": {
-      "timeline": {
-        "id": "timeline",
-        "contentComponent": "timeline",
-        "tabComponent": "props.defaultTabComponent",
-        "title": "Timeline"
-      },
       "mediaPool": {
         "id": "mediaPool",
         "contentComponent": "mediaPool",
@@ -183,9 +177,15 @@
         "contentComponent": "viewer",
         "tabComponent": "props.defaultTabComponent",
         "title": "Viewer"
+      },
+      "timeline": {
+        "id": "timeline",
+        "contentComponent": "timeline",
+        "tabComponent": "props.defaultTabComponent",
+        "title": "Timeline"
       }
     },
-    "activeGroup": "6"
+    "activeGroup": "5"
   },
   "hallu.settings.guiScale": 100,
   "hallu.settings.playneedle_v_o": 0.4,

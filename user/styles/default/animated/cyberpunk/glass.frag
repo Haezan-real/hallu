@@ -190,6 +190,22 @@ float frit(vec2 p, vec4 rect, float px) {
   return max(solid, spot * step(fade, 1.0));
 }
 
+// A panel's content, below its title bar: the glass and frit go here
+vec4 contentRect(int i) {
+  vec4 rect = iPanels[i];
+  rect.w = max(rect.w - float(iPanelInfo[i].z), 0.0);
+  return rect;
+}
+
+// How much of p a panel's title bar covers. The UI draws it solid unless the manifest sets
+// "paintsPanelHeaders"; painting it the same here keeps the look either way
+float headerMask(vec2 p, int i, float px) {
+  float header = float(iPanelInfo[i].z);
+  if (header < 1.0) return 0.0;
+  vec4 rect = iPanels[i];
+  return linearstep(0.75 * px, -0.75 * px, panelSdf(p, vec4(rect.x, rect.y + rect.w - header, rect.z, header)));
+}
+
 bool isGlass(int i) {
   int kind = iPanelInfo[i].x;
   return kind != KIND_TIMELINE && kind != KIND_TIMELINE_LABELS;
@@ -283,29 +299,31 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
   vec3 col;
   if (first >= 0 && isGlass(first)) {
-    vec4 rect = iPanels[first];
+    vec4 rect = contentRect(first);
     col = pane(p, rect, panelSdf(p, rect), px, shadowOn(p, first, ldir, px), ldir);
   } else {
     col = base * shadowOn(p, first, ldir, px);
   }
+  if (first >= 0) col = mix(col, iTheme.bgPanel.rgb, headerMask(p, first, px));
 
   // Then the panels in front, where their edges reach p. The solid frit runs a little past each
   // pane, over the seam with whatever borders it
   vec3 fritColor = iTheme.splitter.rgb;
   for (int i = first + 1; i < iPanelCount; i++) {
     if (iPanelInfo[i].x == KIND_TIMELINE_LABELS || iPanels[i].z < 1.0) continue;
-    vec4 rect = iPanels[i];
+    if (panelSdf(p, iPanels[i]) > (FRIT_BLEED + 1.0) * px) continue;
+    vec4 rect = contentRect(i);
     float sdf = panelSdf(p, rect);
-    if (sdf > (FRIT_BLEED + 1.0) * px) continue;
     float mask = linearstep(0.75 * px, -0.75 * px, sdf);
     if (!isGlass(i)) {
       col = mix(col, base * shadowOn(p, i, ldir, px), mask);
-      continue;
+    } else {
+      float edge = EDGE * linearstep(px, -px, abs(sdf) - px);
+      float bleed = linearstep(0.5 * px, -0.5 * px, sdf - FRIT_BLEED * px);
+      col = mix(col + edge, fritColor, bleed);
+      if (mask > 0.0) col = mix(col, pane(p, rect, sdf, px, shadowOn(p, i, ldir, px), ldir), mask);
     }
-    float edge = EDGE * linearstep(px, -px, abs(sdf) - px);
-    float bleed = linearstep(0.5 * px, -0.5 * px, sdf - FRIT_BLEED * px);
-    col = mix(col + edge, fritColor, bleed);
-    if (mask > 0.0) col = mix(col, pane(p, rect, sdf, px, shadowOn(p, i, ldir, px), ldir), mask);
+    col = mix(col, iTheme.bgPanel.rgb, headerMask(p, i, px));
   }
 
   fragColor = vec4(col, 1.0);

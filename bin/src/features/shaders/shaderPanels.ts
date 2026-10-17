@@ -77,19 +77,23 @@ export function useShaderPanel(ref: RefObject<HTMLElement>, kind: ShaderPanelKin
   }, [ref, kind, frame]);
 }
 
-function panelBounds({ element, frame }: ShaderPanel, canvas: HTMLCanvasElement): DOMRect | null {
+/** The reported bounds, and how far down from their top the panel's own content starts (its header) */
+function panelBounds({ element, frame }: ShaderPanel, canvas: HTMLCanvasElement): { rect: DOMRect; header: number } | null {
   // A panel popped out into another window isn't over this background
   if (element.ownerDocument !== canvas.ownerDocument) return null;
   const rect = element.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) return null;
   const frameElement = frame ? element.closest(frame) : null;
-  return frameElement ? frameElement.getBoundingClientRect() : rect;
+  if (!frameElement) return { rect, header: 0 };
+  const frameRect = frameElement.getBoundingClientRect();
+  return { rect: frameRect, header: Math.max(0, rect.top - frameRect.top) };
 }
 
 /**
  * The shown panels back to front: rects as (x, y, width, height) in canvas pixels from the
- * bottom-left corner, like fragCoord, and info as (kind, floating, 0, 0), four values each.
- * Hidden panels are left out and the rest is zeros. Returns how many panels were written.
+ * bottom-left corner, like fragCoord, and info as (kind, floating, header height in canvas
+ * pixels, 0), four values each. Hidden panels are left out and the rest is zeros. Returns how
+ * many panels were written.
  */
 export function measureShaderPanels(canvas: HTMLCanvasElement, rects: Float32Array, info: Int32Array): number {
   rects.fill(0);
@@ -101,15 +105,16 @@ export function measureShaderPanels(canvas: HTMLCanvasElement, rects: Float32Arr
   let count = 0;
   for (const panel of panels) {
     if (count >= MAX_SHADER_PANELS) break;
-    const rect = panelBounds(panel, canvas);
-    if (!rect) continue;
+    const bounded = panelBounds(panel, canvas);
+    if (!bounded) continue;
+    const { rect, header } = bounded;
     rects.set([
       (rect.left - bounds.left) * scale,
       (bounds.bottom - rect.bottom) * scale,
       rect.width * scale,
       rect.height * scale,
     ], count * 4);
-    info.set([panel.kind, panel.layer.floating ? 1 : 0, 0, 0], count * 4);
+    info.set([panel.kind, panel.layer.floating ? 1 : 0, Math.round(header * scale), 0], count * 4);
     count++;
   }
   return count;

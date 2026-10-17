@@ -6,7 +6,10 @@
 // and caches the WGSL by content hash so unchanged shaders skip translation.
 //
 // manifest.json:
-//   { "name": "...", "language": "glsl" | "wgsl", "surfaces": { "background": <surface> } }
+//   { "name": "...", "language": "glsl" | "wgsl", "surfaces": { "background": <surface> },
+//     "paintsPanelHeaders": true }
+// Panel title bars are solid --bg-panel unless the pack sets "paintsPanelHeaders", which makes
+// them transparent so the pack draws them (see iPanelInfo below).
 // A surface is either one mainImage file ("background": "image.frag") or a list of passes
 // that run in order every frame, the last one drawing to the screen:
 //   { "storage": 1048576,                    optional storage buffer in bytes, shared by all passes
@@ -33,10 +36,12 @@
 // hallu.iTheme.bgBase), exactly matching the UI and fading along with theme transitions.
 // iPanels are the UI panels drawn over the background as (x, y, width, height) in screen pixels,
 // from the bottom-left corner like fragCoord. They follow the dock layout, so find a panel by
-// its kind rather than its index: iPanelInfo[i] is ivec4(kind, floating, 0, 0) for iPanels[i],
+// its kind rather than its index: iPanelInfo[i] is ivec4(kind, floating, header, 0) for iPanels[i],
 // where kind is 0 the media pool, 1 the viewer, 2 the timeline, 3 the timeline's track-label
-// column (inside the timeline) or 4 a tool panel, and floating is 1 for a panel in a floating
-// window. Entries run back to front, so where panels overlap the later one is drawn on top.
+// column (inside the timeline) or 4 a tool panel, floating is 1 for a panel in a floating
+// window, and header is the height in screen pixels of the title bar along the top of the rect
+// (0 for panels without one). The panel's content is the rect below it.
+// Entries run back to front, so where panels overlap the later one is drawn on top.
 // Only the first iPanelCount entries are used; hidden panels are left out. iPixelRatio is screen
 // pixels per CSS pixel, for sizes that should match the UI.
 const { execFile } = require('child_process');
@@ -395,6 +400,7 @@ function validateManifest(manifest) {
   if (!manifest || typeof manifest !== 'object') return 'manifest.json must contain an object';
   if (!LANGUAGES.includes(manifest.language)) return `"language" must be one of: ${LANGUAGES.join(', ')}`;
   if (!manifest.surfaces || typeof manifest.surfaces !== 'object') return '"surfaces" must map surface names to shaders';
+  if (manifest.paintsPanelHeaders !== undefined && typeof manifest.paintsPanelHeaders !== 'boolean') return '"paintsPanelHeaders" must be true or false';
   for (const [surface, spec] of Object.entries(manifest.surfaces)) {
     if (!SURFACES.includes(surface)) return `unknown surface "${surface}" (supported: ${SURFACES.join(', ')})`;
     try {
@@ -516,6 +522,7 @@ async function compileSurface(packId, surface) {
   return {
     ok: true,
     storage,
+    paintsPanelHeaders: manifest.paintsPanelHeaders === true,
     cached: compiled.every(result => result.cached),
     passes: passes.map((pass, index) => ({
       ...pass,
