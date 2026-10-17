@@ -1,6 +1,7 @@
 {
   "name": "cyberpunk",
   "language": "glsl",
+  "paintsPanelHeaders": true,
   "constants": {
     "REFLECTION_REACH": 10
   },
